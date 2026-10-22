@@ -4,12 +4,14 @@ import { LightingPreset, SurfaceFinish } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
 import { StatusBar } from './statusBar';
 import { ColorControls } from './colorControls';
+import { SwatchRamp } from './swatchRamp';
 
 export class AppShell {
   private root: HTMLElement;
   private bridge: IPhotoshopBridge;
   private viewport: Viewport | null = null;
   private colorControls: ColorControls | null = null;
+  private swatchRamp: SwatchRamp | null = null;
 
   constructor(root: HTMLElement, bridge: IPhotoshopBridge) {
     this.root = root;
@@ -41,8 +43,11 @@ export class AppShell {
           </button>
         </div>
 
-        <!-- 3D Viewport with Persistent Color Target (No Gizmos) -->
+        <!-- 3D Viewport with Persistent Color Target (No Lines) -->
         <div class="viewport-card" id="viewport-container"></div>
+
+        <!-- Analytical 5-Value Swatch Ramp (Task 1.7) -->
+        <div class="section-card" id="swatch-ramp-container"></div>
 
         <!-- In-Panel HSB & Hex Color Controls (Task 1.5) -->
         <div class="section-card" id="color-controls-container"></div>
@@ -113,9 +118,10 @@ export class AppShell {
         <div class="section-card">
           <h2>Controls Guide</h2>
           <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ps-text-secondary);">
+            <p>• 🎨 <strong>5-Value Swatches</strong>: Click any swatch to paint with that calculated lighting tone.</p>
             <p>• 🎯 <strong>Color Picker Target</strong>: Drag the circular reticle anywhere on the 3D canvas to sample lit colors.</p>
             <p>• 🧊 <strong>3D Mesh Drag</strong>: Drag the sphere/cube directly to rotate it on its own local axes.</p>
-            <p>• ☀️ <strong>Sun Position Sliders</strong>: Adjust Orbit (Horizontal) and Height (Vertical) to position key sunlight.</p>
+            <p>• ☀️ <strong>Sun Position Controls</strong>: Drag the 3D sun marker or use the Orbit/Height sliders.</p>
             <p>• 🌌 <strong>Background Drag</strong>: Drag the dark background to orbit the camera.</p>
           </div>
         </div>
@@ -140,7 +146,26 @@ export class AppShell {
       });
     }
 
-    // 2. Mount Color Controls (HSB Sliders & Hex input)
+    // 2. Mount Analytical 5-Value Swatch Ramp
+    const swatchRampContainer = this.root.querySelector<HTMLElement>('#swatch-ramp-container');
+    if (swatchRampContainer && this.viewport) {
+      this.swatchRamp = new SwatchRamp({
+        container: swatchRampContainer,
+        initialAlbedoHex: '#EB5757',
+        initialEnv: this.viewport.getLightingEngine().getEnvironment(),
+        initialFinish: this.viewport.getSurfaceFinish(),
+        onSelectSwatch: (swatch) => {
+          this.bridge.setForegroundColor(swatch.rgb);
+        },
+      });
+
+      // Synchronize finish changes to swatch ramp
+      this.viewport.onSurfaceFinishChange((finish) => {
+        this.swatchRamp?.updateParameters({ finish });
+      });
+    }
+
+    // 3. Mount Color Controls (HSB Sliders & Hex input)
     const colorControlsContainer = this.root.querySelector<HTMLElement>('#color-controls-container');
     if (colorControlsContainer) {
       this.colorControls = new ColorControls({
@@ -148,17 +173,18 @@ export class AppShell {
         initialHex: '#EB5757',
         onChange: (_hsb, _rgb, hex) => {
           this.viewport?.setSphereColor(hex);
+          this.swatchRamp?.updateParameters({ albedoHex: hex });
         },
       });
     }
 
-    // 3. Mount Status Bar
+    // 4. Mount Status Bar
     const statusBarContainer = this.root.querySelector<HTMLElement>('#status-bar-container');
     if (statusBarContainer) {
       new StatusBar(statusBarContainer, this.bridge);
     }
 
-    // 4. Bridge color events (if any external source updates color)
+    // 5. Bridge color events (if any external source updates color)
     this.bridge.onColorChange((_event: ColorChangeEvent) => {
       // Kept in sync
     });
@@ -256,7 +282,7 @@ export class AppShell {
       applyAnglesFromUI(parseInt(azimSlider.value, 10), val);
     });
 
-    // Synchronize presets back to the sliders
+    // Synchronize presets and sun angle changes back to the sliders & swatch ramp
     this.viewport.getLightingEngine().onEnvironmentChange((env) => {
       const azimDeg = Math.round((env.keyLight.azimuth * 180) / Math.PI);
       const elevDeg = Math.round((env.keyLight.elevation * 180) / Math.PI);
@@ -278,6 +304,9 @@ export class AppShell {
           btn.classList.remove('active');
         }
       });
+
+      // Update analytical swatches
+      this.swatchRamp?.updateParameters({ env });
     });
   }
 
@@ -305,9 +334,14 @@ export class AppShell {
     return this.colorControls;
   }
 
+  public getSwatchRamp(): SwatchRamp | null {
+    return this.swatchRamp;
+  }
+
   public destroy(): void {
     this.viewport?.dispose();
     this.viewport = null;
     this.colorControls = null;
+    this.swatchRamp = null;
   }
 }
