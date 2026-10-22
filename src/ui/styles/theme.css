@@ -3,7 +3,7 @@
   --ps-bg-panel: #1e1e1e;
   --ps-bg-elevated: #262626;
   --ps-bg-hover: #323232;
-  --ps-bg-input: #121212;
+  --ps-bg-input: #141414;
   --ps-border: #383838;
   --ps-border-subtle: #2b2b2b;
   --ps-text-primary: #ececec;
@@ -98,7 +98,7 @@ html, body {
   position: relative;
   aspect-ratio: 1 / 1;
   width: 100%;
-  max-width: 320px;
+  max-width: 300px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -130,7 +130,7 @@ html, body {
   color: var(--ps-text-secondary);
 }
 
-/* Presets Segment Control */
+/* Presets & Finish Segment Control */
 .preset-segmented-control {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -194,39 +194,152 @@ html, body {
   font-weight: 600;
 }
 
-.mock-controls-preview {
+/* Color Controls & HSB Sliders (Task 1.5) */
+.hex-group {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 6px;
-  font-size: 11px;
-  color: var(--ps-text-secondary);
 }
 
-.mock-button-row {
+.albedo-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--ps-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #EB5757;
+  transition: background-color 0.1s ease;
+}
+
+.ps-input-hex {
+  width: 72px;
+  background-color: var(--ps-bg-input);
+  border: 1px solid var(--ps-border);
+  color: var(--ps-text-primary);
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: var(--ps-radius-sm);
+  text-align: center;
+  text-transform: uppercase;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.ps-input-hex:focus {
+  border-color: var(--ps-accent-blue);
+  box-shadow: 0 0 0 1px var(--ps-accent-blue);
+}
+
+.slider-group {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 4px;
 }
 
-.ps-button {
-  background-color: var(--ps-bg-hover);
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-label {
+  width: 12px;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--ps-text-secondary);
+  text-align: center;
+}
+
+.slider-track-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.ps-slider {
+  width: 100%;
+  height: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 5px;
+  outline: none;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.ps-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #1a1a1a;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  transition: transform 0.1s ease;
+}
+
+.ps-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.ps-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #1a1a1a;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.hue-slider {
+  background: linear-gradient(to right,
+    #ff0000 0%,
+    #ffff00 17%,
+    #00ff00 33%,
+    #00ffff 50%,
+    #0000ff 67%,
+    #ff00ff 83%,
+    #ff0000 100%
+  );
+}
+
+.ps-input-num {
+  width: 42px;
+  background-color: var(--ps-bg-input);
   border: 1px solid var(--ps-border);
   color: var(--ps-text-primary);
-  padding: 5px 10px;
-  border-radius: var(--ps-radius-sm);
+  font-family: Consolas, monospace;
   font-size: 11px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  padding: 2px 4px;
+  border-radius: var(--ps-radius-sm);
+  text-align: right;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-appearance: textfield;
 }
 
-.ps-button:hover {
-  background-color: var(--ps-accent-blue);
-  border-color: var(--ps-accent-hover);
-  color: #fff;
+.ps-input-num::-webkit-outer-spin-button,
+.ps-input-num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.ps-button:active {
-  transform: translateY(1px);
+.ps-input-num:focus {
+  border-color: var(--ps-accent-blue);
+  box-shadow: 0 0 0 1px var(--ps-accent-blue);
+}
+
+.slider-unit {
+  width: 10px;
+  font-size: 11px;
+  color: var(--ps-text-disabled);
 }
 
 /* Status Bar */

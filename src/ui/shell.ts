@@ -3,11 +3,13 @@ import { Viewport } from '../render/Viewport';
 import { LightingPreset, SurfaceFinish } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
 import { StatusBar } from './statusBar';
+import { ColorControls } from './colorControls';
 
 export class AppShell {
   private root: HTMLElement;
   private bridge: IPhotoshopBridge;
   private viewport: Viewport | null = null;
+  private colorControls: ColorControls | null = null;
 
   constructor(root: HTMLElement, bridge: IPhotoshopBridge) {
     this.root = root;
@@ -28,7 +30,10 @@ export class AppShell {
         <!-- 3D Viewport with Orbit Ring Gizmo -->
         <div class="viewport-card" id="viewport-container"></div>
 
-        <!-- Time-of-Day Lighting Presets & Gizmo Controls -->
+        <!-- In-Panel HSB & Hex Color Controls (Task 1.5) -->
+        <div class="section-card" id="color-controls-container"></div>
+
+        <!-- Time-of-Day Lighting Presets & Gizmo Controls (Task 1.3) -->
         <div class="section-card">
           <div class="section-header">
             <h2>Lighting Environment & Presets</h2>
@@ -81,20 +86,6 @@ export class AppShell {
             Satin: Roughness 0.5, 30% Specular (soft, spread highlight)
           </p>
         </div>
-
-        <!-- Controls Placeholder & Bridge Tester -->
-        <div class="section-card">
-          <h2>Controls & Bridge Verification</h2>
-          <div class="mock-controls-preview">
-            <p>• <strong>Orbit Ring / Sun Handle</strong>: Drag yellow sun marker or ring to rotate key light.</p>
-            <p>• <strong>Background Drag</strong> (or <code>Alt</code> + Drag): Orbit camera around sphere.</p>
-            <div class="mock-button-row">
-              <button class="ps-button" id="btn-sample-sun">Sun Highlight (#FFE099)</button>
-              <button class="ps-button" id="btn-sample-shadow">Sky Shadow (#38507A)</button>
-              <button class="ps-button" id="btn-sample-bounce">Ground Bounce (#8C5332)</button>
-            </div>
-          </div>
-        </div>
       </main>
 
       <footer class="status-bar" id="status-bar-container"></footer>
@@ -106,25 +97,50 @@ export class AppShell {
       this.viewport = new Viewport({
         container: viewportContainer,
         sphereRadius: 1.25,
-        initialColor: 0xEB5757,
+        initialColor: '#EB5757',
       });
     }
 
-    // 2. Mount Status Bar
+    // 2. Mount Color Controls (HSB Sliders & Hex input)
+    const colorControlsContainer = this.root.querySelector<HTMLElement>('#color-controls-container');
+    if (colorControlsContainer) {
+      this.colorControls = new ColorControls({
+        container: colorControlsContainer,
+        initialHex: '#EB5757',
+        onChange: (_hsb, _rgb, hex) => {
+          this.viewport?.setSphereColor(hex);
+        },
+      });
+    }
+
+    // 3. Mount Status Bar
     const statusBarContainer = this.root.querySelector<HTMLElement>('#status-bar-container');
     if (statusBarContainer) {
       new StatusBar(statusBarContainer, this.bridge);
     }
 
-    // 3. Listen to color change from bridge to update base sphere color
-    this.bridge.onColorChange((event: ColorChangeEvent) => {
-      this.viewport?.setSphereColor(event.hex);
+    // 4. Listen to bridge color updates (e.g. from future sampling)
+    this.bridge.onColorChange((_event: ColorChangeEvent) => {
+      // Keep bridge updates reflected in status bar
     });
 
     this.bindPresetButtons();
     this.bindSurfaceFinishButtons();
-    this.bindVerificationButtons();
     this.bindLightingMetricsSync();
+  }
+
+  private bindPresetButtons(): void {
+    const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
+    presetBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const preset = btn.getAttribute('data-preset') as LightingPreset;
+        if (preset && this.viewport) {
+          this.viewport.setPreset(preset);
+          presetBtns.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+      });
+    });
   }
 
   private bindSurfaceFinishButtons(): void {
@@ -142,20 +158,6 @@ export class AppShell {
           if (descEl) {
             descEl.textContent = `${SURFACE_FINISHES[finish].name}: ${SURFACE_FINISHES[finish].description}`;
           }
-        }
-      });
-    });
-  }
-
-  private bindPresetButtons(): void {
-    const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
-    presetBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const preset = btn.getAttribute('data-preset') as LightingPreset;
-        if (preset && this.viewport) {
-          this.viewport.setPreset(preset);
-          presetBtns.forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
         }
       });
     });
@@ -187,26 +189,13 @@ export class AppShell {
     });
   }
 
-  private bindVerificationButtons(): void {
-    const sunBtn = this.root.querySelector<HTMLButtonElement>('#btn-sample-sun');
-    const shadowBtn = this.root.querySelector<HTMLButtonElement>('#btn-sample-shadow');
-    const bounceBtn = this.root.querySelector<HTMLButtonElement>('#btn-sample-bounce');
-
-    sunBtn?.addEventListener('click', () => {
-      this.bridge.setForegroundColor('#FFE099');
-    });
-
-    shadowBtn?.addEventListener('click', () => {
-      this.bridge.setForegroundColor('#38507A');
-    });
-
-    bounceBtn?.addEventListener('click', () => {
-      this.bridge.setForegroundColor('#8C5332');
-    });
+  public getColorControls(): ColorControls | null {
+    return this.colorControls;
   }
 
   public destroy(): void {
     this.viewport?.dispose();
     this.viewport = null;
+    this.colorControls = null;
   }
 }
