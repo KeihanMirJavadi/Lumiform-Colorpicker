@@ -17,8 +17,8 @@ export class SwatchRamp {
   private env: LightingEnvironment;
   private finish: SurfaceFinish;
   private currentSwatches: AnalyticalSwatch[] = [];
-  private selectedRole: string | null = null;
   private listeners: Set<(swatch: AnalyticalSwatch) => void> = new Set();
+  private flashTimeouts: Map<string, number> = new Map();
 
   constructor(options: SwatchRampOptions) {
     this.container = options.container;
@@ -76,7 +76,7 @@ export class SwatchRamp {
           ${this.currentSwatches
             .map(
               (s) => `
-            <div class="swatch-block ${this.selectedRole === s.role ? 'selected' : ''}" data-role="${s.role}" title="${s.label} (${s.hex}): ${s.description}">
+            <div class="swatch-block" data-role="${s.role}" title="${s.label} (${s.hex}): ${s.description}">
               <div class="swatch-fill" style="background-color: ${s.hex};"></div>
               <div class="swatch-meta">
                 <span class="swatch-tag">${s.tag}</span>
@@ -99,11 +99,25 @@ export class SwatchRamp {
       block.addEventListener('click', () => {
         const role = block.getAttribute('data-role');
         const found = this.currentSwatches.find((s) => s.role === role);
-        if (found) {
-          this.selectedRole = found.role;
-          blocks.forEach((b) => b.classList.remove('selected'));
-          block.classList.add('selected');
+        if (found && role) {
+          // Cancel any existing flash timeout for this block
+          const existingTimeout = this.flashTimeouts.get(role);
+          if (existingTimeout) {
+            window.clearTimeout(existingTimeout);
+          }
 
+          // Trigger click flash feedback animation (appears and immediately fades out)
+          block.classList.remove('clicked');
+          void block.offsetWidth; // Force DOM reflow to retrigger animation
+          block.classList.add('clicked');
+
+          const timer = window.setTimeout(() => {
+            block.classList.remove('clicked');
+            this.flashTimeouts.delete(role);
+          }, 380);
+          this.flashTimeouts.set(role, timer);
+
+          // Dispatch color to set Photoshop brush / foreground color
           this.listeners.forEach((cb) => cb(found));
         }
       });
