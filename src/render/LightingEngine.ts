@@ -1,14 +1,25 @@
 import * as THREE from 'three';
 import { LightingPreset } from '../core/types';
-import { LIGHTING_PRESETS, LightingEnvironment, sphericalToCartesian } from '../core/lighting';
+import {
+  LIGHTING_PRESETS,
+  LightingEnvironment,
+  sphericalToCartesian,
+  computeDynamicAtmosphere,
+} from '../core/lighting';
 import { SunIndicator } from './SunIndicator';
 import { LumiformShaderUniforms } from './shaders/lumiformShader';
+import { SkyShaderUniforms } from './shaders/skyShader';
+import { GroundShaderUniforms } from './shaders/groundShader';
 
 export class LightingEngine {
   private activePreset: LightingPreset | 'custom' = 'daylight';
   private environment: LightingEnvironment;
   private sunIndicator: SunIndicator;
-  private shaderUniforms: LumiformShaderUniforms | null = null;
+
+  private meshUniforms: LumiformShaderUniforms | null = null;
+  private skyUniforms: SkyShaderUniforms | null = null;
+  private groundUniforms: GroundShaderUniforms | null = null;
+
   private changeListeners: Set<(env: LightingEnvironment) => void> = new Set();
 
   constructor() {
@@ -29,30 +40,48 @@ export class LightingEngine {
         elevation: presetConfig.keyLight.elevation,
       },
       ambient: {
-        skyColor: new THREE.Color(presetConfig.ambient.skyColor),
+        zenithColor: new THREE.Color(presetConfig.ambient.zenithColor),
+        equatorColor: new THREE.Color(presetConfig.ambient.equatorColor),
         horizonColor: new THREE.Color(presetConfig.ambient.horizonColor),
         groundColor: new THREE.Color(presetConfig.ambient.groundColor),
+        skyColor: new THREE.Color(presetConfig.ambient.equatorColor),
         intensity: presetConfig.ambient.intensity,
       },
     };
 
     this.sunIndicator.setColor(this.environment.keyLight.color);
 
-    // Direct sun drag syncs to engine and shaders; switches preset to 'custom' (deselects presets)
-    this.sunIndicator.onDirectionChange((dir, azimuth, elevation) => {
+    // Direct sun drag syncs to engine and dynamically updates atmospheric colors
+    this.sunIndicator.onDirectionChange((_dir, azimuth, elevation) => {
       this.activePreset = 'custom';
       this.environment.preset = 'custom';
       this.environment.keyLight.azimuth = azimuth;
       this.environment.keyLight.elevation = elevation;
-      if (this.shaderUniforms) {
-        this.shaderUniforms.uLightDir.value.copy(dir);
-      }
+
+      this.updateDynamicAtmosphere(elevation);
+      this.syncShaderUniforms();
       this.notifyChange();
     });
   }
 
-  public bindUniforms(uniforms: LumiformShaderUniforms): void {
-    this.shaderUniforms = uniforms;
+  public bindUniforms(
+    mesh: LumiformShaderUniforms,
+    sky?: SkyShaderUniforms,
+    ground?: GroundShaderUniforms
+  ): void {
+    this.meshUniforms = mesh;
+    if (sky) this.skyUniforms = sky;
+    if (ground) this.groundUniforms = ground;
+    this.syncShaderUniforms();
+  }
+
+  public bindSkyUniforms(sky: SkyShaderUniforms): void {
+    this.skyUniforms = sky;
+    this.syncShaderUniforms();
+  }
+
+  public bindGroundUniforms(ground: GroundShaderUniforms): void {
+    this.groundUniforms = ground;
     this.syncShaderUniforms();
   }
 
@@ -82,9 +111,11 @@ export class LightingEngine {
     this.environment.keyLight.azimuth = config.keyLight.azimuth;
     this.environment.keyLight.elevation = config.keyLight.elevation;
 
-    this.environment.ambient.skyColor.set(config.ambient.skyColor);
+    this.environment.ambient.zenithColor.set(config.ambient.zenithColor);
+    this.environment.ambient.equatorColor.set(config.ambient.equatorColor);
     this.environment.ambient.horizonColor.set(config.ambient.horizonColor);
     this.environment.ambient.groundColor.set(config.ambient.groundColor);
+    this.environment.ambient.skyColor.set(config.ambient.equatorColor);
     this.environment.ambient.intensity = config.ambient.intensity;
 
     this.sunIndicator.setAngles(config.keyLight.azimuth, config.keyLight.elevation, false);
@@ -100,10 +131,25 @@ export class LightingEngine {
     this.environment.keyLight.azimuth = (azimuth % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
     this.environment.keyLight.elevation = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, elevation));
 
+    this.updateDynamicAtmosphere(this.environment.keyLight.elevation);
     this.sunIndicator.setAngles(this.environment.keyLight.azimuth, this.environment.keyLight.elevation, false);
+    this.sunIndicator.setColor(this.environment.keyLight.color);
 
     this.syncShaderUniforms();
     this.notifyChange();
+  }
+
+  private updateDynamicAtmosphere(elevation: number): void {
+    const atmos = computeDynamicAtmosphere(elevation);
+    this.environment.ambient.zenithColor.copy(atmos.zenithColor);
+    this.environment.ambient.equatorColor.copy(atmos.equatorColor);
+    this.environment.ambient.horizonColor.copy(atmos.horizonColor);
+    this.environment.ambient.groundColor.copy(atmos.groundColor);
+    this.environment.ambient.skyColor.copy(atmos.equatorColor);
+    this.environment.ambient.intensity = atmos.ambientIntensity;
+
+    this.environment.keyLight.color.copy(atmos.sunColor);
+    this.environment.keyLight.intensity = atmos.sunIntensity;
   }
 
   public onEnvironmentChange(callback: (env: LightingEnvironment) => void): () => void {
@@ -114,17 +160,46 @@ export class LightingEngine {
     };
   }
 
-  private syncShaderUniforms(): void {
-    if (!this.shaderUniforms) return;
+  public syncShaderUniforms(): void {
+    const dir = this.getDirection();
 
-    this.shaderUniforms.uLightDir.value.copy(this.getDirection());
-    this.shaderUniforms.uKeyColor.value.copy(this.environment.keyLight.color);
-    this.shaderUniforms.uKeyIntensity.value = this.environment.keyLight.intensity;
+    // 1. Mesh Material Uniforms
+    if (this.meshUniforms) {
+      this.meshUniforms.uLightDir.value.copy(dir);
+      this.meshUniforms.uKeyColor.value.copy(this.environment.keyLight.color);
+      this.meshUniforms.uKeyIntensity.value = this.environment.keyLight.intensity;
 
-    this.shaderUniforms.uSkyColor.value.copy(this.environment.ambient.skyColor);
-    this.shaderUniforms.uHorizonColor.value.copy(this.environment.ambient.horizonColor);
-    this.shaderUniforms.uGroundColor.value.copy(this.environment.ambient.groundColor);
-    this.shaderUniforms.uAmbientIntensity.value = this.environment.ambient.intensity;
+      this.meshUniforms.uZenithColor.value.copy(this.environment.ambient.zenithColor);
+      this.meshUniforms.uEquatorColor.value.copy(this.environment.ambient.equatorColor);
+      this.meshUniforms.uHorizonColor.value.copy(this.environment.ambient.horizonColor);
+      this.meshUniforms.uGroundColor.value.copy(this.environment.ambient.groundColor);
+      this.meshUniforms.uSkyColor.value.copy(this.environment.ambient.skyColor);
+      this.meshUniforms.uAmbientIntensity.value = this.environment.ambient.intensity;
+    }
+
+    // 2. Sky Dome Uniforms
+    if (this.skyUniforms) {
+      this.skyUniforms.uLightDir.value.copy(dir);
+      this.skyUniforms.uZenithColor.value.copy(this.environment.ambient.zenithColor);
+      this.skyUniforms.uEquatorColor.value.copy(this.environment.ambient.equatorColor);
+      this.skyUniforms.uHorizonColor.value.copy(this.environment.ambient.horizonColor);
+      this.skyUniforms.uGroundColor.value.copy(this.environment.ambient.groundColor);
+      this.skyUniforms.uSunColor.value.copy(this.environment.keyLight.color);
+      this.skyUniforms.uSunIntensity.value = this.environment.keyLight.intensity;
+    }
+
+    // 3. Ground Plane Uniforms
+    if (this.groundUniforms) {
+      this.groundUniforms.uLightDir.value.copy(dir);
+      this.groundUniforms.uKeyColor.value.copy(this.environment.keyLight.color);
+      this.groundUniforms.uKeyIntensity.value = this.environment.keyLight.intensity;
+
+      this.groundUniforms.uZenithColor.value.copy(this.environment.ambient.zenithColor);
+      this.groundUniforms.uEquatorColor.value.copy(this.environment.ambient.equatorColor);
+      this.groundUniforms.uHorizonColor.value.copy(this.environment.ambient.horizonColor);
+      this.groundUniforms.uGroundColor.value.copy(this.environment.ambient.groundColor);
+      this.groundUniforms.uAmbientIntensity.value = this.environment.ambient.intensity;
+    }
   }
 
   private notifyChange(): void {

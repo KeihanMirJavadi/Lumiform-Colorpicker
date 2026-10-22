@@ -110,6 +110,13 @@ html, body {
   font-weight: 500;
 }
 
+.mesh-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
 .mesh-toggle-group {
   display: flex;
   gap: 4px;
@@ -138,6 +145,7 @@ html, body {
   font-weight: 600;
 }
 
+.mesh-reset-btn,
 .ps-btn-reset-rotation {
   background: var(--ps-bg-elevated);
   border: 1px solid var(--ps-border);
@@ -152,12 +160,14 @@ html, body {
   transition: all 0.15s ease;
 }
 
+.mesh-reset-btn:hover,
 .ps-btn-reset-rotation:hover {
   color: var(--ps-text-primary);
   background: var(--ps-bg-hover);
   border-color: #555;
 }
 
+.mesh-reset-btn:active,
 .ps-btn-reset-rotation:active {
   transform: translateY(1px);
 }

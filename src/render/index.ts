@@ -5,3 +5,5 @@ export * from './ColorPickerTarget';
 export * from './Eyedropper';
 export * from './Viewport';
 export * from './shaders/lumiformShader';
+export * from './shaders/skyShader';
+export * from './shaders/groundShader';

@@ -35,11 +35,19 @@ export function evaluateLightingAnalytical(
   const NdotL = Math.max(0, normN.dot(normL));
   const keyDiffuse = env.keyLight.color.clone().multiplyScalar(NdotL * env.keyLight.intensity);
 
-  // 2. 3-Zone Ambient
+  // 2. 3-Tone Ambient (Zenith, Equator, Horizon, Ground)
   let ambientCol: THREE.Color;
+  const zenith = env.ambient.zenithColor ?? env.ambient.skyColor;
+  const equator = env.ambient.equatorColor ?? env.ambient.skyColor;
+
   if (normN.y >= 0) {
-    const t = Math.pow(Math.max(0, Math.min(1, normN.y)), 0.85);
-    ambientCol = new THREE.Color().lerpColors(env.ambient.horizonColor, env.ambient.skyColor, t);
+    if (normN.y < 0.45) {
+      const t = normN.y / 0.45;
+      ambientCol = new THREE.Color().lerpColors(env.ambient.horizonColor, equator, t);
+    } else {
+      const t = (normN.y - 0.45) / 0.55;
+      ambientCol = new THREE.Color().lerpColors(equator, zenith, t);
+    }
   } else {
     const t = Math.pow(Math.max(0, Math.min(1, -normN.y)), 0.85);
     ambientCol = new THREE.Color().lerpColors(env.ambient.horizonColor, env.ambient.groundColor, t);
@@ -67,7 +75,7 @@ export function evaluateLightingAnalytical(
     if (specularIntensity > 0.05 && roughness < 0.7) {
       const VdotN = Math.max(0, normV.dot(normN));
       const edgeFresnel = Math.pow(Math.max(0, Math.min(1, 1 - VdotN)), 4);
-      const ambientReflect = (normN.y >= 0 ? env.ambient.skyColor : env.ambient.groundColor).clone();
+      const ambientReflect = (normN.y >= 0 ? zenith : env.ambient.groundColor).clone();
       ambientReflect.multiplyScalar(edgeFresnel * (1 - roughness) * specularIntensity * 0.45 * env.ambient.intensity);
       specular.add(ambientReflect);
     }

@@ -6,9 +6,11 @@ export interface LumiformShaderUniforms {
   uLightDir: { value: THREE.Vector3 };
   uKeyColor: { value: THREE.Color };
   uKeyIntensity: { value: number };
-  uSkyColor: { value: THREE.Color };
+  uZenithColor: { value: THREE.Color };
+  uEquatorColor: { value: THREE.Color };
   uHorizonColor: { value: THREE.Color };
   uGroundColor: { value: THREE.Color };
+  uSkyColor: { value: THREE.Color };
   uAmbientIntensity: { value: number };
   uRoughness: { value: number };
   uSpecularIntensity: { value: number };
@@ -32,9 +34,11 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uKeyColor;
   uniform float uKeyIntensity;
 
-  uniform vec3 uSkyColor;
+  uniform vec3 uZenithColor;
+  uniform vec3 uEquatorColor;
   uniform vec3 uHorizonColor;
   uniform vec3 uGroundColor;
+  uniform vec3 uSkyColor;
   uniform float uAmbientIntensity;
 
   uniform float uRoughness;
@@ -53,11 +57,16 @@ const fragmentShader = /* glsl */ `
     float NdotL = max(0.0, dot(N, L));
     vec3 keyDiffuse = uKeyColor * (NdotL * uKeyIntensity);
 
-    // 2. 3-Zone Ambient Environment (Sky, Horizon, Ground)
+    // 2. 3-Tone Ambient Environment (Zenith, Equator, Horizon, Ground)
     vec3 ambientColor;
     if (N.y >= 0.0) {
-      float t = pow(clamp(N.y, 0.0, 1.0), 0.85);
-      ambientColor = mix(uHorizonColor, uSkyColor, t);
+      if (N.y < 0.45) {
+        float t = N.y / 0.45;
+        ambientColor = mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
+      } else {
+        float t = (N.y - 0.45) / 0.55;
+        ambientColor = mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
+      }
     } else {
       float t = pow(clamp(-N.y, 0.0, 1.0), 0.85);
       ambientColor = mix(uHorizonColor, uGroundColor, t);
@@ -71,12 +80,10 @@ const fragmentShader = /* glsl */ `
     // 4. Specular Component (Surface Finish Roughness + Specular Intensity)
     vec3 specular = vec3(0.0);
     if (uSpecularIntensity > 0.001 && NdotL > 0.0) {
-      // Shininess exponent: maps roughness 0.0 -> ~1024 (ultra sharp), 0.08 -> ~588 (sharp gloss), 0.45 -> ~45 (satin), 1.0 -> 1 (matte)
       float shininess = exp2(10.0 * (1.0 - clamp(uRoughness, 0.0, 1.0)));
       float NdotH = max(0.0, dot(N, H));
       float specFactor = pow(NdotH, shininess);
 
-      // Schlick Fresnel approximation: transitions from base specular intensity to 1.0 at glancing angles
       float VdotH = max(0.0, dot(V, H));
       float fresnel = mix(uSpecularIntensity, 1.0, pow(clamp(1.0 - VdotH, 0.0, 1.0), 5.0));
 
@@ -87,7 +94,7 @@ const fragmentShader = /* glsl */ `
     if (uSpecularIntensity > 0.05 && uRoughness < 0.7) {
       float VdotN = max(0.0, dot(V, N));
       float edgeFresnel = pow(clamp(1.0 - VdotN, 0.0, 1.0), 4.0);
-      vec3 ambientReflect = (N.y >= 0.0) ? uSkyColor : uGroundColor;
+      vec3 ambientReflect = (N.y >= 0.0) ? uZenithColor : uGroundColor;
       specular += ambientReflect * (edgeFresnel * (1.0 - uRoughness) * uSpecularIntensity * 0.45 * uAmbientIntensity);
     }
 
@@ -109,11 +116,13 @@ export function createLumiformMaterial(initialAlbedo: THREE.Color | string | num
   const uniforms: LumiformShaderUniforms = {
     uAlbedo: { value: albedo },
     uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-    uKeyColor: { value: new THREE.Color('#FFF2DB') },
+    uKeyColor: { value: new THREE.Color('#FFF5E6') },
     uKeyIntensity: { value: 2.2 },
-    uSkyColor: { value: new THREE.Color('#5C8ECC') },
-    uHorizonColor: { value: new THREE.Color('#9BB9DE') },
-    uGroundColor: { value: new THREE.Color('#7A5435') },
+    uZenithColor: { value: new THREE.Color('#1E40AF') },
+    uEquatorColor: { value: new THREE.Color('#60A5FA') },
+    uHorizonColor: { value: new THREE.Color('#E0F2FE') },
+    uGroundColor: { value: new THREE.Color('#5A4638') },
+    uSkyColor: { value: new THREE.Color('#60A5FA') },
     uAmbientIntensity: { value: 0.85 },
     uRoughness: { value: 0.45 },
     uSpecularIntensity: { value: 0.4 },

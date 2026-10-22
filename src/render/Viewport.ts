@@ -3,6 +3,8 @@ import { OrbitCamera } from './OrbitCamera';
 import { LightingEngine } from './LightingEngine';
 import { ColorPickerTarget } from './ColorPickerTarget';
 import { createLumiformMaterial, LumiformShaderUniforms } from './shaders/lumiformShader';
+import { createSkyDomeMaterial, SkyShaderUniforms } from './shaders/skyShader';
+import { createGroundMaterial, GroundShaderUniforms } from './shaders/groundShader';
 import { LightingPreset, SurfaceFinish, RGBColor } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
 
@@ -31,6 +33,12 @@ export class Viewport {
   private cubeGeometry: THREE.BoxGeometry;
   private currentMeshType: MeshGeometryType = 'sphere';
 
+  // Environment: Dynamic 3-Tone Sky Dome & Ground Plane with Drop Shadow
+  private skyGeometry: THREE.SphereGeometry;
+  private skyMesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
+  private groundGeometry: THREE.PlaneGeometry;
+  private groundMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
+
   private raycaster: THREE.Raycaster;
   private pointer: THREE.Vector2;
   private resizeObserver: ResizeObserver;
@@ -51,14 +59,14 @@ export class Viewport {
   constructor(options: ViewportOptions) {
     this.container = options.container;
 
-    // 1. Three.js Scene Setup (clean dark canvas, only sun and mesh, NO lines)
+    // 1. Three.js Scene Setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x181818);
 
     // 2. Perspective Camera
     const aspect = (this.container.clientWidth || 300) / (this.container.clientHeight || 300);
     this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-    this.camera.position.set(0, 0, 4.2);
+    this.camera.position.set(0, 0.4, 4.3);
 
     // 3. WebGL Renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -81,12 +89,27 @@ export class Viewport {
 
     // 4. Camera Orbit Controls (for background dragging)
     this.orbitCamera = new OrbitCamera(this.camera, {
-      radius: 4.2,
+      radius: 4.3,
       rotateSpeed: 0.006,
     });
 
-    // 5. High-Resolution Geometries (Sphere and Cube)
+    // 5. Dynamic 3-Tone Sky Dome (Zenith, Equator, Horizon)
+    this.skyGeometry = new THREE.SphereGeometry(45, 36, 24);
+    const skyMaterial = createSkyDomeMaterial();
+    this.skyMesh = new THREE.Mesh(this.skyGeometry, skyMaterial);
+    this.skyMesh.renderOrder = -1;
+    this.scene.add(this.skyMesh);
+
+    // 6. Ground Plane with Physical Sphere Drop Shadow & Ambient Color Bleed
     const sphereRadius = options.sphereRadius ?? 1.25;
+    this.groundGeometry = new THREE.PlaneGeometry(18, 18, 32, 32);
+    const groundMaterial = createGroundMaterial();
+    this.groundMesh = new THREE.Mesh(this.groundGeometry, groundMaterial);
+    this.groundMesh.position.set(0, -sphereRadius, 0);
+    this.groundMesh.rotation.x = -Math.PI / 2;
+    this.scene.add(this.groundMesh);
+
+    // 7. High-Resolution Geometries (Sphere and Cube)
     this.sphereGeometry = new THREE.SphereGeometry(sphereRadius, 96, 96);
     this.cubeGeometry = new THREE.BoxGeometry(1.8, 1.8, 1.8);
 
@@ -98,16 +121,20 @@ export class Viewport {
     this.meshGroup.add(this.targetMesh);
     this.scene.add(this.meshGroup);
 
-    // 6. Lighting Engine & Sun Indicator (Only the glowing sun itself, NO lines/rings)
+    // 8. Lighting Engine & Sun Indicator (Only the glowing sun itself, NO lines/rings)
     this.lightingEngine = new LightingEngine();
-    this.lightingEngine.bindUniforms(material.uniforms as LumiformShaderUniforms);
+    this.lightingEngine.bindUniforms(
+      material.uniforms as LumiformShaderUniforms,
+      skyMaterial.uniforms as SkyShaderUniforms,
+      groundMaterial.uniforms as GroundShaderUniforms
+    );
     this.scene.add(this.lightingEngine.getSunIndicator().group);
 
     this.lightingEngine.onEnvironmentChange(() => {
       this.colorPickerTarget?.scheduleResample();
     });
 
-    // 7. Persistent Draggable Color Picker Puck
+    // 9. Persistent Draggable Color Picker Puck
     this.colorPickerTarget = new ColorPickerTarget({
       container: this.container,
       renderer: this.renderer,
@@ -118,17 +145,17 @@ export class Viewport {
       },
     });
 
-    // 8. Raycasting & Pointer Events
+    // 10. Raycasting & Pointer Events
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
 
     this.bindPointerEvents(canvas);
 
-    // 9. Resize Handling
+    // 11. Resize Handling
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(this.container);
 
-    // 10. Start Render Loop
+    // 12. Start Render Loop
     this.animate = this.animate.bind(this);
     this.startLoop();
 
@@ -299,6 +326,11 @@ export class Viewport {
     const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
     const uniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
     uniforms.uAlbedo.value.copy(col);
+
+    // Update ground color bleeding uniform
+    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+    groundUniforms.uSphereAlbedo.value.copy(col);
+
     this.colorPickerTarget.scheduleResample();
   }
 
@@ -396,6 +428,10 @@ export class Viewport {
       this.animationFrameId = null;
     }
     this.resizeObserver.disconnect();
+    this.skyGeometry.dispose();
+    this.skyMesh.material.dispose();
+    this.groundGeometry.dispose();
+    this.groundMesh.material.dispose();
     this.sphereGeometry.dispose();
     this.cubeGeometry.dispose();
     this.targetMesh.material.dispose();
