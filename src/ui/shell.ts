@@ -99,6 +99,11 @@ export class AppShell {
         sphereRadius: 1.25,
         initialColor: '#EB5757',
       });
+
+      // Task 1.6: Eyedropper sampling updates active Photoshop brush via bridge
+      this.viewport.onColorSample((rgb, _hex) => {
+        this.bridge.setForegroundColor(rgb);
+      });
     }
 
     // 2. Mount Color Controls (HSB Sliders & Hex input)

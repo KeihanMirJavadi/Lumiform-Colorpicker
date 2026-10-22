@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { OrbitCamera } from './OrbitCamera';
 import { LightingEngine } from './LightingEngine';
+import { EyedropperController, EyedropperSampleEvent } from './Eyedropper';
 import { createLumiformMaterial, LumiformShaderUniforms } from './shaders/lumiformShader';
-import { LightingPreset, SurfaceFinish } from '../core/types';
+import { LightingPreset, SurfaceFinish, RGBColor } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
 
 export interface ViewportOptions {
@@ -18,6 +19,7 @@ export class Viewport {
   private camera: THREE.PerspectiveCamera;
   private orbitCamera: OrbitCamera;
   private lightingEngine: LightingEngine;
+  private eyedropper: EyedropperController;
   private sphereMesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   private raycaster: THREE.Raycaster;
   private pointer: THREE.Vector2;
@@ -25,10 +27,16 @@ export class Viewport {
   private animationFrameId: number | null = null;
   private isDisposed = false;
 
+  // Eyedropper Loupe DOM Elements
+  private loupeEl: HTMLElement | null = null;
+  private loupeSwatchEl: HTMLElement | null = null;
+  private loupeHexEl: HTMLElement | null = null;
+
   // Interaction mode tracking
-  private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'sphere' = 'none';
+  private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'eyedropper' = 'none';
   private currentFinish: SurfaceFinish = 'satin';
   private finishListeners: Set<(finish: SurfaceFinish) => void> = new Set();
+  private sampleListeners: Set<(rgb: RGBColor, hex: string) => void> = new Set();
 
   constructor(options: ViewportOptions) {
     this.container = options.container;
@@ -46,7 +54,7 @@ export class Viewport {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
-      preserveDrawingBuffer: true, // Needed for eyedropper sampling
+      preserveDrawingBuffer: true, // Crucial for WebGL readPixels eyedropper readback
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(this.container.clientWidth || 300, this.container.clientHeight || 300);
@@ -79,19 +87,67 @@ export class Viewport {
     this.lightingEngine.bindUniforms(material.uniforms as LumiformShaderUniforms);
     this.scene.add(this.lightingEngine.getGizmo().group);
 
-    // 7. Raycasting & Pointer Setup
+    // 7. Eyedropper Controller
+    this.eyedropper = new EyedropperController(this.renderer);
+    this.setupLoupeElement();
+    this.eyedropper.onSample((event: EyedropperSampleEvent) => {
+      if (this.loupeSwatchEl) {
+        this.loupeSwatchEl.style.backgroundColor = event.hex;
+      }
+      if (this.loupeHexEl) {
+        this.loupeHexEl.textContent = event.hex;
+      }
+      this.sampleListeners.forEach((cb) => cb(event.rgb, event.hex));
+    });
+
+    // 8. Raycasting & Pointer Setup
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
 
     this.bindPointerEvents(canvas);
 
-    // 8. Responsive Resize Handling
+    // 9. Responsive Resize Handling
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(this.container);
 
-    // 9. Start Rendering Loop
+    // 10. Start Rendering Loop
     this.animate = this.animate.bind(this);
     this.startLoop();
+  }
+
+  private setupLoupeElement(): void {
+    const loupe = document.createElement('div');
+    loupe.className = 'eyedropper-loupe';
+    loupe.style.display = 'none';
+    loupe.innerHTML = `
+      <div class="loupe-swatch" id="loupe-swatch"></div>
+      <span class="loupe-hex" id="loupe-hex">#EB5757</span>
+    `;
+    this.container.appendChild(loupe);
+
+    this.loupeEl = loupe;
+    this.loupeSwatchEl = loupe.querySelector('#loupe-swatch');
+    this.loupeHexEl = loupe.querySelector('#loupe-hex');
+  }
+
+  private showLoupe(clientX: number, clientY: number): void {
+    if (!this.loupeEl) return;
+    this.updateLoupePosition(clientX, clientY);
+    this.loupeEl.style.display = 'flex';
+  }
+
+  private hideLoupe(): void {
+    if (!this.loupeEl) return;
+    this.loupeEl.style.display = 'none';
+  }
+
+  private updateLoupePosition(clientX: number, clientY: number): void {
+    if (!this.loupeEl) return;
+    const rect = this.container.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    this.loupeEl.style.left = `${x}px`;
+    this.loupeEl.style.top = `${y}px`;
   }
 
   private bindPointerEvents(canvas: HTMLCanvasElement): void {
@@ -101,7 +157,7 @@ export class Viewport {
 
       this.raycaster.setFromCamera(this.pointer, this.camera);
 
-      // Check gizmo handles first (sun marker or orbit ring)
+      // 1. Check gizmo handles first (sun marker or orbit ring)
       const gizmoObjects = this.lightingEngine.getGizmo().getSunObjects();
       const gizmoHits = this.raycaster.intersectObjects(gizmoObjects, true);
 
@@ -112,15 +168,17 @@ export class Viewport {
         return;
       }
 
-      // Check sphere
+      // 2. Check sphere hit (Eyedropper mode)
       const sphereHits = this.raycaster.intersectObject(this.sphereMesh);
       if (sphereHits.length > 0 && !e.altKey) {
-        this.interactionMode = 'sphere';
+        this.interactionMode = 'eyedropper';
         canvas.style.cursor = 'crosshair';
+        this.showLoupe(e.clientX, e.clientY);
+        this.eyedropper.startSampling(e.clientX, e.clientY);
         return;
       }
 
-      // Otherwise: Camera orbit
+      // 3. Otherwise: Camera orbit around sphere
       this.interactionMode = 'orbit-camera';
       canvas.style.cursor = 'grabbing';
       this.orbitCamera.onPointerDown(e.clientX, e.clientY);
@@ -134,6 +192,12 @@ export class Viewport {
 
       if (this.interactionMode === 'orbit-camera') {
         this.orbitCamera.onPointerMove(e.clientX, e.clientY);
+        return;
+      }
+
+      if (this.interactionMode === 'eyedropper') {
+        this.updateLoupePosition(e.clientX, e.clientY);
+        this.eyedropper.updateSampling(e.clientX, e.clientY);
         return;
       }
 
@@ -165,6 +229,9 @@ export class Viewport {
         this.lightingEngine.getGizmo().onPointerUp();
       } else if (this.interactionMode === 'orbit-camera') {
         this.orbitCamera.onPointerUp();
+      } else if (this.interactionMode === 'eyedropper') {
+        this.eyedropper.stopSampling();
+        this.hideLoupe();
       }
 
       this.interactionMode = 'none';
@@ -234,6 +301,13 @@ export class Viewport {
     };
   }
 
+  public onColorSample(callback: (rgb: RGBColor, hex: string) => void): () => void {
+    this.sampleListeners.add(callback);
+    return () => {
+      this.sampleListeners.delete(callback);
+    };
+  }
+
   public setPreset(preset: LightingPreset): void {
     this.lightingEngine.setPreset(preset);
   }
@@ -256,6 +330,7 @@ export class Viewport {
     this.sphereMesh.geometry.dispose();
     this.sphereMesh.material.dispose();
     this.lightingEngine.dispose();
+    this.eyedropper.dispose();
     this.renderer.dispose();
   }
 }
