@@ -1,5 +1,5 @@
 import { IPhotoshopBridge, ColorChangeEvent } from '../bridge/IPhotoshopBridge';
-import { Viewport } from '../render/Viewport';
+import { Viewport, MeshGeometryType } from '../render/Viewport';
 import { LightingPreset, SurfaceFinish } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
 import { StatusBar } from './statusBar';
@@ -27,7 +27,16 @@ export class AppShell {
       </header>
 
       <main class="panel-content">
-        <!-- 3D Viewport with Orbit Ring Gizmo -->
+        <!-- 3D Viewport Toolbar (Mesh Switcher) -->
+        <div class="viewport-toolbar">
+          <span class="toolbar-label">3D Test Form:</span>
+          <div class="mesh-toggle-group">
+            <button class="mesh-toggle-btn active" data-mesh="sphere" id="btn-mesh-sphere">🔮 Sphere</button>
+            <button class="mesh-toggle-btn" data-mesh="cube" id="btn-mesh-cube">🧊 Cube</button>
+          </div>
+        </div>
+
+        <!-- 3D Viewport with Orbit Ring Gizmo & Persistent Color Target -->
         <div class="viewport-card" id="viewport-container"></div>
 
         <!-- In-Panel HSB & Hex Color Controls (Task 1.5) -->
@@ -86,6 +95,17 @@ export class AppShell {
             Satin: Roughness 0.5, 30% Specular (soft, spread highlight)
           </p>
         </div>
+
+        <!-- Interaction Guide Card -->
+        <div class="section-card">
+          <h2>Decoupled Controls Guide</h2>
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ps-text-secondary);">
+            <p>• 🎯 <strong>Color Picker Target</strong>: Drag the white ring anywhere on the 3D canvas to sample that lit color.</p>
+            <p>• 🧊 <strong>3D Mesh Drag</strong>: Drag the sphere/cube directly to rotate it on its own local axes.</p>
+            <p>• ☀️ <strong>Sun Handle</strong>: Drag the glowing yellow sun marker on the orbit ring to change sun angle.</p>
+            <p>• 🌌 <strong>Background Drag</strong>: Drag the dark background to orbit the camera.</p>
+          </div>
+        </div>
       </main>
 
       <footer class="status-bar" id="status-bar-container"></footer>
@@ -98,9 +118,10 @@ export class AppShell {
         container: viewportContainer,
         sphereRadius: 1.25,
         initialColor: '#EB5757',
+        initialMeshType: 'sphere',
       });
 
-      // Task 1.6: Eyedropper sampling updates active Photoshop brush via bridge
+      // Connect Color Picker Target sampling directly to Photoshop bridge
       this.viewport.onColorSample((rgb, _hex) => {
         this.bridge.setForegroundColor(rgb);
       });
@@ -124,14 +145,29 @@ export class AppShell {
       new StatusBar(statusBarContainer, this.bridge);
     }
 
-    // 4. Listen to bridge color updates (e.g. from future sampling)
+    // 4. Bridge color events (if any external source updates color)
     this.bridge.onColorChange((_event: ColorChangeEvent) => {
-      // Keep bridge updates reflected in status bar
+      // Kept in sync
     });
 
+    this.bindMeshToggleButtons();
     this.bindPresetButtons();
     this.bindSurfaceFinishButtons();
     this.bindLightingMetricsSync();
+  }
+
+  private bindMeshToggleButtons(): void {
+    const meshBtns = this.root.querySelectorAll<HTMLButtonElement>('.mesh-toggle-btn');
+    meshBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const meshType = btn.getAttribute('data-mesh') as MeshGeometryType;
+        if (meshType && this.viewport) {
+          this.viewport.setMeshType(meshType);
+          meshBtns.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+      });
+    });
   }
 
   private bindPresetButtons(): void {

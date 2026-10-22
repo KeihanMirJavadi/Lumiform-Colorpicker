@@ -12,6 +12,7 @@ export class LightGizmo {
   private ringMesh: THREE.LineLoop;
   private elevationRingMesh: THREE.LineLoop;
   private sunMarker: THREE.Mesh;
+  private sunHitProxy: THREE.Mesh;
   private sunGlow: THREE.Sprite;
   private radius: number;
   private azimuth: number;
@@ -65,6 +66,14 @@ export class LightGizmo {
     this.sunMarker.name = 'SunHandle';
     this.group.add(this.sunMarker);
 
+    // Hit Proxy for Sun Marker (enlarged comfortable click zone without visual clutter)
+    const proxyGeo = new THREE.SphereGeometry(0.24, 12, 12);
+    const proxyMat = new THREE.MeshBasicMaterial({
+      visible: false,
+    });
+    this.sunHitProxy = new THREE.Mesh(proxyGeo, proxyMat);
+    this.group.add(this.sunHitProxy);
+
     // 4. Sun Glow Sprite
     const canvas = document.createElement('canvas');
     canvas.width = 64;
@@ -93,7 +102,7 @@ export class LightGizmo {
   }
 
   public getSunObjects(): THREE.Object3D[] {
-    return [this.sunMarker, this.ringMesh];
+    return [this.sunMarker, this.sunHitProxy];
   }
 
   public setLightDirection(azimuth: number, elevation: number, notify = true): void {
@@ -171,6 +180,7 @@ export class LightGizmo {
   private updatePositions(): void {
     const sunPos = sphericalToCartesian(this.azimuth, this.elevation, this.radius);
     this.sunMarker.position.copy(sunPos);
+    this.sunHitProxy.position.copy(sunPos);
     this.sunGlow.position.copy(sunPos);
 
     // Rotate elevation meridian circle to align with current sun azimuth
@@ -185,6 +195,8 @@ export class LightGizmo {
     (this.elevationRingMesh.material as THREE.Material).dispose();
     this.sunMarker.geometry.dispose();
     (this.sunMarker.material as THREE.Material).dispose();
+    this.sunHitProxy.geometry.dispose();
+    (this.sunHitProxy.material as THREE.Material).dispose();
     this.sunGlow.material.dispose();
   }
 }
