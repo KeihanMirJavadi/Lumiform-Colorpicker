@@ -53,17 +53,10 @@ export function evaluateLightingAnalytical(
     0.22 * env.ambient.intensity
   );
 
-  let ambientCol: THREE.Color;
-  if (normN.y >= 0) {
-    ambientCol = skyLight.multiplyScalar(env.ambient.intensity);
-  } else {
-    const t = Math.pow(Math.max(0, Math.min(1, -normN.y)), 0.75);
-    ambientCol = new THREE.Color().lerpColors(
-      env.ambient.horizonColor.clone().multiplyScalar(env.ambient.intensity),
-      groundBounceGI.multiplyScalar(env.ambient.intensity),
-      t
-    );
-  }
+  const upWeight = Math.max(0, Math.min(1, normN.y * 0.5 + 0.5));
+  let ambientCol = new THREE.Color().lerpColors(groundBounceGI, skyLight, upWeight).multiplyScalar(env.ambient.intensity);
+  const ambientFloor = new THREE.Color().lerpColors(skyLight, groundBounceGI, 0.5).multiplyScalar(env.ambient.intensity * 0.15);
+  ambientCol.add(ambientFloor);
   const totalAmbient = ambientCol;
 
   // 3. Diffuse Component

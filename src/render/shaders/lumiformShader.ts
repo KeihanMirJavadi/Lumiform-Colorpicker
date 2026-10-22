@@ -14,6 +14,8 @@ export interface LumiformShaderUniforms {
   uAmbientIntensity: { value: number };
   uRoughness: { value: number };
   uSpecularIntensity: { value: number };
+  uSphereCenter: { value: THREE.Vector3 };
+  uIsSphere: { value: number };
 }
 
 const vertexShader = /* glsl */ `
@@ -43,12 +45,23 @@ const fragmentShader = /* glsl */ `
 
   uniform float uRoughness;
   uniform float uSpecularIntensity;
+  uniform vec3 uSphereCenter;
+  uniform float uIsSphere;
 
   varying vec3 vWorldNormal;
   varying vec3 vWorldPosition;
 
   void main() {
-    vec3 N = normalize(vWorldNormal);
+    // For a sphere, the true outward normal in world space is radially outward from center.
+    // This ensures lighting is invariant to local rotation of the sphere.
+    // For a cube (uIsSphere = 0), face normals rotate with the mesh.
+    vec3 N;
+    if (uIsSphere > 0.5) {
+      N = normalize(vWorldPosition - uSphereCenter);
+    } else {
+      N = normalize(vWorldNormal);
+    }
+
     vec3 L = normalize(uLightDir);
     vec3 V = normalize(cameraPosition - vWorldPosition);
     vec3 H = normalize(L + V);
@@ -59,6 +72,7 @@ const fragmentShader = /* glsl */ `
 
     // 2. Physical Hemispherical Sky Fill + Ground Bounce GI
     // Upper hemisphere receives sky dome fill from above (Zenith, Equator, Horizon):
+    float upWeight = clamp(N.y * 0.5 + 0.5, 0.0, 1.0);
     vec3 skyLight;
     if (N.y < 0.45) {
       float t = max(0.0, N.y) / 0.45;
@@ -70,18 +84,16 @@ const fragmentShader = /* glsl */ `
 
     // Lower hemisphere receives secondary ground bounce GI (from key sunlight + ambient hitting ground):
     vec3 groundBounceGI = uGroundColor * (
-      0.35 * max(0.0, L.y) * uKeyIntensity +
-      0.22 * uAmbientIntensity
+      0.30 * max(0.0, L.y) * uKeyIntensity +
+      0.18 * uAmbientIntensity
     );
 
-    // Natural hemispherical blend:
-    vec3 ambientLight;
-    if (N.y >= 0.0) {
-      ambientLight = skyLight * uAmbientIntensity;
-    } else {
-      float t = pow(clamp(-N.y, 0.0, 1.0), 0.75);
-      ambientLight = mix(uHorizonColor * uAmbientIntensity, groundBounceGI * uAmbientIntensity, t);
-    }
+    // Natural hemispherical blend between sky fill and ground bounce:
+    vec3 ambientLight = mix(groundBounceGI, skyLight, smoothstep(0.2, 0.8, upWeight)) * uAmbientIntensity;
+
+    // Gentle ambient floor ensures shadows retain rich color and never clip to black:
+    vec3 ambientFloor = mix(skyLight, groundBounceGI, 0.5) * (uAmbientIntensity * 0.15);
+    ambientLight += ambientFloor;
 
     // 3. Diffuse component applied to Base Albedo
     vec3 diffuseLight = keyDiffuse + ambientLight;
@@ -131,11 +143,13 @@ export function createLumiformMaterial(initialAlbedo: THREE.Color | string | num
     uZenithColor: { value: new THREE.Color('#3B82F6') },
     uEquatorColor: { value: new THREE.Color('#93C5FD') },
     uHorizonColor: { value: new THREE.Color('#E0F2FE') },
-    uGroundColor: { value: new THREE.Color('#4B3C2F') },
+    uGroundColor: { value: new THREE.Color('#4A853D') },
     uSkyColor: { value: new THREE.Color('#93C5FD') },
     uAmbientIntensity: { value: 0.9 },
     uRoughness: { value: 0.45 },
     uSpecularIntensity: { value: 0.4 },
+    uSphereCenter: { value: new THREE.Vector3(0, 0, 0) },
+    uIsSphere: { value: 1.0 },
   };
 
   return new THREE.ShaderMaterial({

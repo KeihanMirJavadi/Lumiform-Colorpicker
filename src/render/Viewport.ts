@@ -167,10 +167,13 @@ export class Viewport {
 
   public setMeshType(type: MeshGeometryType): void {
     this.currentMeshType = type;
+    const uniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
     if (type === 'cube') {
       this.targetMesh.geometry = this.cubeGeometry;
+      uniforms.uIsSphere.value = 0.0;
     } else {
       this.targetMesh.geometry = this.sphereGeometry;
+      uniforms.uIsSphere.value = 1.0;
     }
     this.meshTypeListeners.forEach((cb) => cb(type));
     this.colorPickerTarget.scheduleResample();
