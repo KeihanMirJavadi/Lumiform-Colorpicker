@@ -146,13 +146,13 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Set up Vite, TypeScript, Three.js, clean directory structure (`src/core`, `src/render`, `src/ui`, `src/bridge`), Photoshop-dark theme CSS, and a Mock Photoshop status bridge.
   * **Acceptance Criteria:** `npm run dev` builds and serves a clean dark-themed shell with a working mock status bar without warnings or errors.
 
-* [ ] **Task 1.2: 3D Viewport & Sphere Rendering**
-  * **State:** `current`
+* [x] **Task 1.2: 3D Viewport & Sphere Rendering**
+  * **State:** `Done`
   * **Description:** Implement Three.js scene, camera, high-resolution sphere geometry, background camera orbit controls, and resize handling.
   * **Acceptance Criteria:** Smooth 60fps rendering, responsive canvas resizing, background-drag camera orbit without interfering with UI.
 
 * [ ] **Task 1.3: Lighting Engine & Interactive Orbit Ring**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Implement directional key light with 360° azimuth/elevation circular gizmo, 3-zone ambient model (Sky/Horizon/Ground), and 3 presets (Daylight, Golden Hour, Night).
   * **Acceptance Criteria:** Dragging gizmo ring repositions light source smoothly; clicking presets immediately updates lighting atmosphere.
 
