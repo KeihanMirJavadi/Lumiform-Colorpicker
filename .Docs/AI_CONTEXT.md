@@ -151,13 +151,13 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Implement Three.js scene, camera, high-resolution sphere geometry, background camera orbit controls, and resize handling.
   * **Acceptance Criteria:** Smooth 60fps rendering, responsive canvas resizing, background-drag camera orbit without interfering with UI.
 
-* [ ] **Task 1.3: Lighting Engine & Interactive Orbit Ring**
-  * **State:** `current`
+* [x] **Task 1.3: Lighting Engine & Interactive Orbit Ring**
+  * **State:** `Done`
   * **Description:** Implement directional key light with 360° azimuth/elevation circular gizmo, 3-zone ambient model (Sky/Horizon/Ground), and 3 presets (Daylight, Golden Hour, Night).
   * **Acceptance Criteria:** Dragging gizmo ring repositions light source smoothly; clicking presets immediately updates lighting atmosphere.
 
 * [ ] **Task 1.4: Surface Finish (Matte / Satin / Glossy)**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Implement 3-state surface finish selector modifying roughness and specular power in the shader.
   * **Acceptance Criteria:** Switching finish modes immediately updates highlight sharpness and material response.
 
