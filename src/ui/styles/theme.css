@@ -320,6 +320,69 @@ html, body {
   font-weight: 600;
 }
 
+/* 3-Axis Sun Sliders (Matching Diagram 1 Green, 2 White, 3 Yellow) */
+.sun-sliders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sun-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sun-axis-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: Consolas, monospace;
+}
+
+.axis-green {
+  border: 1.5px solid #22c55e;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.axis-white {
+  border: 1.5px solid #e2e8f0;
+  color: #f8fafc;
+  background: rgba(226, 232, 240, 0.15);
+}
+
+.axis-yellow {
+  border: 1.5px solid #eab308;
+  color: #facc15;
+  background: rgba(234, 179, 8, 0.15);
+}
+
+.sun-axis-name {
+  width: 38px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ps-text-secondary);
+}
+
+.sun-slider-green {
+  background: linear-gradient(to right, #15803d, #22c55e);
+}
+
+.sun-slider-white {
+  background: linear-gradient(to right, #475569, #cbd5e1);
+}
+
+.sun-slider-yellow {
+  background: linear-gradient(to right, #a16207, #facc15);
+}
+
 /* Color Controls & HSB Sliders (Task 1.5) */
 .hex-group {
   display: flex;

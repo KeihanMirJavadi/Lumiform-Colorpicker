@@ -12,16 +12,21 @@ export class LightingEngine {
   private changeListeners: Set<(env: LightingEnvironment) => void> = new Set();
 
   constructor() {
+    const presetConfig = LIGHTING_PRESETS[this.activePreset];
+
     this.gizmo = new LightGizmo({
       radius: 1.85,
+      initialRoll: presetConfig.keyLight.roll,
+      initialAzimuth: presetConfig.keyLight.azimuth,
+      initialElevation: presetConfig.keyLight.elevation,
     });
 
-    const presetConfig = LIGHTING_PRESETS[this.activePreset];
     this.environment = {
       preset: this.activePreset,
       keyLight: {
         color: new THREE.Color(presetConfig.keyLight.color),
         intensity: presetConfig.keyLight.intensity,
+        roll: presetConfig.keyLight.roll,
         azimuth: presetConfig.keyLight.azimuth,
         elevation: presetConfig.keyLight.elevation,
       },
@@ -33,11 +38,12 @@ export class LightingEngine {
       },
     };
 
-    this.gizmo.setLightDirection(this.environment.keyLight.azimuth, this.environment.keyLight.elevation, false);
+    this.gizmo.setAngles(this.environment.keyLight.roll, this.environment.keyLight.azimuth, this.environment.keyLight.elevation, false);
     this.gizmo.setSunColor(this.environment.keyLight.color);
 
-    // Synchronize gizmo user drags back to engine
-    this.gizmo.onDirectionChange((dir, azimuth, elevation) => {
+    // Synchronize gizmo direct dragging back to engine
+    this.gizmo.onDirectionChange((dir, roll, azimuth, elevation) => {
+      this.environment.keyLight.roll = roll;
       this.environment.keyLight.azimuth = azimuth;
       this.environment.keyLight.elevation = elevation;
       if (this.shaderUniforms) {
@@ -71,6 +77,7 @@ export class LightingEngine {
     this.environment.preset = preset;
     this.environment.keyLight.color.set(config.keyLight.color);
     this.environment.keyLight.intensity = config.keyLight.intensity;
+    this.environment.keyLight.roll = config.keyLight.roll;
     this.environment.keyLight.azimuth = config.keyLight.azimuth;
     this.environment.keyLight.elevation = config.keyLight.elevation;
 
@@ -79,15 +86,24 @@ export class LightingEngine {
     this.environment.ambient.groundColor.set(config.ambient.groundColor);
     this.environment.ambient.intensity = config.ambient.intensity;
 
-    this.gizmo.setLightDirection(config.keyLight.azimuth, config.keyLight.elevation, false);
+    this.gizmo.setAngles(config.keyLight.roll, config.keyLight.azimuth, config.keyLight.elevation, false);
     this.gizmo.setSunColor(this.environment.keyLight.color);
 
     this.syncShaderUniforms();
     this.notifyChange();
   }
 
-  public setLightAngles(azimuth: number, elevation: number): void {
-    this.gizmo.setLightDirection(azimuth, elevation, true);
+  public setLightAngles(roll: number, azimuth: number, elevation: number): void {
+    this.environment.keyLight.roll = roll;
+    this.environment.keyLight.azimuth = azimuth;
+    this.environment.keyLight.elevation = elevation;
+
+    this.gizmo.setAngles(roll, azimuth, elevation, false);
+
+    if (this.shaderUniforms) {
+      this.shaderUniforms.uLightDir.value.copy(this.gizmo.getDirection());
+    }
+    this.notifyChange();
   }
 
   public onEnvironmentChange(callback: (env: LightingEnvironment) => void): () => void {

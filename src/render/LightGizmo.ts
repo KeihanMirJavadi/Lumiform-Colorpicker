@@ -1,64 +1,98 @@
 import * as THREE from 'three';
-import { sphericalToCartesian } from '../core/lighting';
+import { calculateLightDirection } from '../core/lighting';
 
 export interface LightGizmoOptions {
   radius?: number;
+  initialRoll?: number;
   initialAzimuth?: number;
   initialElevation?: number;
 }
 
 export class LightGizmo {
   public group: THREE.Group;
-  private ringMesh: THREE.LineLoop;
-  private elevationRingMesh: THREE.LineLoop;
+
+  // 3-axis colored reference rings (matching diagram: 1 Green, 2 White, 3 Yellow)
+  private ringRoll: THREE.LineLoop;      // 1: Green (XY coronal ring around Z)
+  private ringAzimuth: THREE.LineLoop;   // 2: White/Grey (XZ equator ring around Y)
+  private ringElevation: THREE.LineLoop; // 3: Yellow (YZ sagittal ring around X)
+
   private sunMarker: THREE.Mesh;
   private sunHitProxy: THREE.Mesh;
   private sunGlow: THREE.Sprite;
+
   private radius: number;
-  private azimuth: number;
-  private elevation: number;
+  private roll: number;      // 1: Green (-PI to +PI)
+  private azimuth: number;   // 2: White (0 to 2*PI)
+  private elevation: number; // 3: Yellow (-PI/2 to +PI/2)
+
   private isDragging = false;
   private previousPointer = { x: 0, y: 0 };
-  private listeners: Set<(dir: THREE.Vector3, azimuth: number, elevation: number) => void> = new Set();
+  private listeners: Set<(dir: THREE.Vector3, roll: number, azimuth: number, elevation: number) => void> = new Set();
 
   constructor(options: LightGizmoOptions = {}) {
     this.radius = options.radius ?? 1.85;
+    this.roll = options.initialRoll ?? 0.0;
     this.azimuth = options.initialAzimuth ?? 0.65;
     this.elevation = options.initialElevation ?? 0.95;
 
     this.group = new THREE.Group();
     this.group.name = 'LightGizmo';
 
-    // 1. Orbital Ring (Equator / Ground reference)
-    const ringPoints: THREE.Vector3[] = [];
     const segments = 64;
+    const ringPoints: THREE.Vector3[] = [];
     for (let i = 0; i <= segments; i++) {
       const theta = (i / segments) * Math.PI * 2;
-      ringPoints.push(new THREE.Vector3(Math.cos(theta) * this.radius, 0, Math.sin(theta) * this.radius));
+      ringPoints.push(new THREE.Vector3(Math.cos(theta) * this.radius, Math.sin(theta) * this.radius, 0));
     }
-    const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPoints);
-    const ringMat = new THREE.LineBasicMaterial({
-      color: 0x4a5568,
+    const circleGeometry = new THREE.BufferGeometry().setFromPoints(ringPoints);
+
+    // 1. Ring 1 (Green in diagram): Frontal Coronal Plane (XY plane around Z)
+    const rollMat = new THREE.LineBasicMaterial({
+      color: 0x22c55e,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.55,
       linewidth: 1,
     });
-    this.ringMesh = new THREE.LineLoop(ringGeo, ringMat);
-    this.group.add(this.ringMesh);
+    this.ringRoll = new THREE.LineLoop(circleGeometry.clone(), rollMat);
+    this.ringRoll.name = 'Ring1_Roll_Green';
+    this.group.add(this.ringRoll);
 
-    // 2. Active Light Elevation Arc / Meridian Ring
-    const elevRingGeo = new THREE.BufferGeometry().setFromPoints(ringPoints);
-    const elevRingMat = new THREE.LineBasicMaterial({
-      color: 0x60a5fa,
+    // 2. Ring 2 (White/Grey in diagram): Horizontal Equator Plane (XZ plane around Y)
+    const azimPoints: THREE.Vector3[] = [];
+    for (let i = 0; i <= segments; i++) {
+      const theta = (i / segments) * Math.PI * 2;
+      azimPoints.push(new THREE.Vector3(Math.cos(theta) * this.radius, 0, Math.sin(theta) * this.radius));
+    }
+    const azimGeo = new THREE.BufferGeometry().setFromPoints(azimPoints);
+    const azimMat = new THREE.LineBasicMaterial({
+      color: 0xe2e8f0,
       transparent: true,
-      opacity: 0.3,
+      opacity: 0.55,
+      linewidth: 1,
     });
-    this.elevationRingMesh = new THREE.LineLoop(elevRingGeo, elevRingMat);
-    this.elevationRingMesh.rotation.y = this.azimuth;
-    this.group.add(this.elevationRingMesh);
+    this.ringAzimuth = new THREE.LineLoop(azimGeo, azimMat);
+    this.ringAzimuth.name = 'Ring2_Azimuth_White';
+    this.group.add(this.ringAzimuth);
 
-    // 3. Sun Marker (Interactive 3D Sphere Handle)
-    const sunGeo = new THREE.SphereGeometry(0.12, 16, 16);
+    // 3. Ring 3 (Yellow in diagram): Vertical Sagittal Plane (YZ plane around X)
+    const elevPoints: THREE.Vector3[] = [];
+    for (let i = 0; i <= segments; i++) {
+      const theta = (i / segments) * Math.PI * 2;
+      elevPoints.push(new THREE.Vector3(0, Math.sin(theta) * this.radius, Math.cos(theta) * this.radius));
+    }
+    const elevGeo = new THREE.BufferGeometry().setFromPoints(elevPoints);
+    const elevMat = new THREE.LineBasicMaterial({
+      color: 0xeab308,
+      transparent: true,
+      opacity: 0.55,
+      linewidth: 1,
+    });
+    this.ringElevation = new THREE.LineLoop(elevGeo, elevMat);
+    this.ringElevation.name = 'Ring3_Elevation_Yellow';
+    this.group.add(this.ringElevation);
+
+    // 4. Sun Marker (Interactive 3D Sphere Handle)
+    const sunGeo = new THREE.SphereGeometry(0.13, 16, 16);
     const sunMat = new THREE.MeshBasicMaterial({
       color: 0xffe082,
     });
@@ -66,15 +100,15 @@ export class LightGizmo {
     this.sunMarker.name = 'SunHandle';
     this.group.add(this.sunMarker);
 
-    // Hit Proxy for Sun Marker (enlarged comfortable click zone without visual clutter)
-    const proxyGeo = new THREE.SphereGeometry(0.24, 12, 12);
+    // Hit Proxy for Sun Marker
+    const proxyGeo = new THREE.SphereGeometry(0.26, 12, 12);
     const proxyMat = new THREE.MeshBasicMaterial({
       visible: false,
     });
     this.sunHitProxy = new THREE.Mesh(proxyGeo, proxyMat);
     this.group.add(this.sunHitProxy);
 
-    // 4. Sun Glow Sprite
+    // 5. Sun Glow Sprite
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
@@ -95,7 +129,7 @@ export class LightGizmo {
       blending: THREE.AdditiveBlending,
     });
     this.sunGlow = new THREE.Sprite(spriteMat);
-    this.sunGlow.scale.set(0.6, 0.6, 1.0);
+    this.sunGlow.scale.set(0.65, 0.65, 1.0);
     this.group.add(this.sunGlow);
 
     this.updatePositions();
@@ -105,16 +139,19 @@ export class LightGizmo {
     return [this.sunMarker, this.sunHitProxy];
   }
 
-  public setLightDirection(azimuth: number, elevation: number, notify = true): void {
+  public setAngles(roll: number, azimuth: number, elevation: number, notify = true): void {
+    // Wrap roll between -PI and +PI
+    this.roll = Math.max(-Math.PI, Math.min(Math.PI, roll));
+    // Wrap azimuth 0 to 2*PI
     this.azimuth = (azimuth % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-    // Clamp elevation between -0.2 (slight underside) and 1.52 (~87° near zenith)
-    this.elevation = Math.max(-0.2, Math.min(Math.PI / 2 - 0.05, elevation));
+    // Clamp elevation -PI/2 to +PI/2
+    this.elevation = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, elevation));
 
     this.updatePositions();
 
     if (notify) {
-      const dir = sphericalToCartesian(this.azimuth, this.elevation).normalize();
-      this.listeners.forEach((cb) => cb(dir, this.azimuth, this.elevation));
+      const dir = calculateLightDirection(this.roll, this.azimuth, this.elevation);
+      this.listeners.forEach((cb) => cb(dir, this.roll, this.azimuth, this.elevation));
     }
   }
 
@@ -127,7 +164,7 @@ export class LightGizmo {
     this.isDragging = true;
     this.previousPointer = { x: clientX, y: clientY };
     this.sunMarker.scale.set(1.3, 1.3, 1.3);
-    this.sunGlow.scale.set(0.8, 0.8, 1.0);
+    this.sunGlow.scale.set(0.85, 0.85, 1.0);
   }
 
   public onPointerMove(clientX: number, clientY: number): boolean {
@@ -137,12 +174,11 @@ export class LightGizmo {
     const deltaY = clientY - this.previousPointer.y;
     this.previousPointer = { x: clientX, y: clientY };
 
-    // Azimuth: horizontal dragging rotates around the Y axis
+    // Direct drag adjusts azimuth (horizontal drag) and elevation (vertical drag)
     const azimuthDelta = -deltaX * 0.012;
-    // Elevation: vertical dragging changes elevation angle
     const elevationDelta = -deltaY * 0.012;
 
-    this.setLightDirection(this.azimuth + azimuthDelta, this.elevation + elevationDelta, true);
+    this.setAngles(this.roll, this.azimuth + azimuthDelta, this.elevation + elevationDelta, true);
     return true;
   }
 
@@ -150,12 +186,16 @@ export class LightGizmo {
     if (this.isDragging) {
       this.isDragging = false;
       this.sunMarker.scale.set(1.0, 1.0, 1.0);
-      this.sunGlow.scale.set(0.6, 0.6, 1.0);
+      this.sunGlow.scale.set(0.65, 0.65, 1.0);
     }
   }
 
   public get active(): boolean {
     return this.isDragging;
+  }
+
+  public getRoll(): number {
+    return this.roll;
   }
 
   public getAzimuth(): number {
@@ -167,10 +207,10 @@ export class LightGizmo {
   }
 
   public getDirection(): THREE.Vector3 {
-    return sphericalToCartesian(this.azimuth, this.elevation).normalize();
+    return calculateLightDirection(this.roll, this.azimuth, this.elevation);
   }
 
-  public onDirectionChange(callback: (dir: THREE.Vector3, azimuth: number, elevation: number) => void): () => void {
+  public onDirectionChange(callback: (dir: THREE.Vector3, roll: number, azimuth: number, elevation: number) => void): () => void {
     this.listeners.add(callback);
     return () => {
       this.listeners.delete(callback);
@@ -178,21 +218,22 @@ export class LightGizmo {
   }
 
   private updatePositions(): void {
-    const sunPos = sphericalToCartesian(this.azimuth, this.elevation, this.radius);
+    const dir = calculateLightDirection(this.roll, this.azimuth, this.elevation);
+    const sunPos = dir.clone().multiplyScalar(this.radius);
+
     this.sunMarker.position.copy(sunPos);
     this.sunHitProxy.position.copy(sunPos);
     this.sunGlow.position.copy(sunPos);
-
-    // Rotate elevation meridian circle to align with current sun azimuth
-    this.elevationRingMesh.rotation.y = this.azimuth + Math.PI / 2;
   }
 
   public dispose(): void {
     this.listeners.clear();
-    this.ringMesh.geometry.dispose();
-    (this.ringMesh.material as THREE.Material).dispose();
-    this.elevationRingMesh.geometry.dispose();
-    (this.elevationRingMesh.material as THREE.Material).dispose();
+    this.ringRoll.geometry.dispose();
+    (this.ringRoll.material as THREE.Material).dispose();
+    this.ringAzimuth.geometry.dispose();
+    (this.ringAzimuth.material as THREE.Material).dispose();
+    this.ringElevation.geometry.dispose();
+    (this.ringElevation.material as THREE.Material).dispose();
     this.sunMarker.geometry.dispose();
     (this.sunMarker.material as THREE.Material).dispose();
     this.sunHitProxy.geometry.dispose();

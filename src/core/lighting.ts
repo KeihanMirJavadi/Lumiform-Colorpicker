@@ -11,8 +11,9 @@ export interface Ambient3ZoneConfig {
 export interface KeyLightConfig {
   color: THREE.Color;
   intensity: number;
-  azimuth: number;   // Angle in radians around Y axis (0 to 2*PI)
-  elevation: number; // Angle in radians above horizon (-PI/2 to PI/2)
+  roll: number;      // 1 (Green in diagram): Frontal tilt around Z (-PI to +PI, in degrees -180° to +180°)
+  azimuth: number;   // 2 (White in diagram): Horizontal orbit around Y (0 to 2*PI, in degrees 0° to 360°)
+  elevation: number; // 3 (Yellow in diagram): Vertical pitch around X (-PI/2 to +PI/2, in degrees -90° to +90°)
 }
 
 export interface LightingEnvironment {
@@ -21,8 +22,20 @@ export interface LightingEnvironment {
   ambient: Ambient3ZoneConfig;
 }
 
+/**
+ * Computes 3D directional vector from 3-axis angles:
+ * 1 (Roll / Z-axis frontal tilt)
+ * 2 (Azimuth / Y-axis horizontal orbit)
+ * 3 (Elevation / X-axis vertical tilt)
+ */
+export function calculateLightDirection(roll: number, azimuth: number, elevation: number): THREE.Vector3 {
+  // Using YXZ Euler rotation: horizontal azimuth (Y), then elevation pitch (X), then frontal roll (Z)
+  const euler = new THREE.Euler(-elevation, azimuth, roll, 'YXZ');
+  const baseVector = new THREE.Vector3(0, 0, 1);
+  return baseVector.applyEuler(euler).normalize();
+}
+
 export function sphericalToCartesian(azimuth: number, elevation: number, distance = 1.0): THREE.Vector3 {
-  // elevation 0 is horizon, PI/2 is directly overhead (zenith)
   const cosElev = Math.cos(elevation);
   const sinElev = Math.sin(elevation);
   const x = distance * cosElev * Math.sin(azimuth);
@@ -44,7 +57,7 @@ export function cartesianToSpherical(v: THREE.Vector3): { azimuth: number; eleva
 export const LIGHTING_PRESETS: Record<LightingPreset, {
   name: string;
   description: string;
-  keyLight: { color: string; intensity: number; azimuth: number; elevation: number };
+  keyLight: { color: string; intensity: number; roll: number; azimuth: number; elevation: number };
   ambient: { skyColor: string; horizonColor: string; groundColor: string; intensity: number };
 }> = {
   'daylight': {
@@ -53,6 +66,7 @@ export const LIGHTING_PRESETS: Record<LightingPreset, {
     keyLight: {
       color: '#FFF2DB',
       intensity: 2.2,
+      roll: 0.0,     // 0°
       azimuth: 0.65, // ~37°
       elevation: 0.95, // ~54° high sun
     },
@@ -69,6 +83,7 @@ export const LIGHTING_PRESETS: Record<LightingPreset, {
     keyLight: {
       color: '#FFA347',
       intensity: 2.8,
+      roll: 0.0,
       azimuth: 0.85, // ~48°
       elevation: 0.28, // ~16° low sun
     },
@@ -85,6 +100,7 @@ export const LIGHTING_PRESETS: Record<LightingPreset, {
     keyLight: {
       color: '#A8C7F0',
       intensity: 1.6,
+      roll: 0.0,
       azimuth: 2.3, // ~131° rim angle
       elevation: 0.45, // ~25°
     },

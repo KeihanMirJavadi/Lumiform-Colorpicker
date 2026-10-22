@@ -337,6 +337,11 @@ export class Viewport {
     this.colorPickerTarget.scheduleResample();
   }
 
+  public setLightAngles(roll: number, azimuth: number, elevation: number): void {
+    this.lightingEngine.setLightAngles(roll, azimuth, elevation);
+    this.colorPickerTarget.scheduleResample();
+  }
+
   public getLightingEngine(): LightingEngine {
     return this.lightingEngine;
   }

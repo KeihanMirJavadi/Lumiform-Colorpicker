@@ -42,10 +42,10 @@ export class AppShell {
         <!-- In-Panel HSB & Hex Color Controls (Task 1.5) -->
         <div class="section-card" id="color-controls-container"></div>
 
-        <!-- Time-of-Day Lighting Presets & Gizmo Controls (Task 1.3) -->
+        <!-- Time-of-Day Lighting Presets & 3-Axis Sun Sliders (Task 1.3 / User Spec) -->
         <div class="section-card">
           <div class="section-header">
-            <h2>Lighting Environment & Presets</h2>
+            <h2>Sun Position & Lighting Presets</h2>
           </div>
           <div class="preset-segmented-control">
             <button class="preset-btn active" data-preset="daylight" id="btn-preset-daylight">
@@ -59,18 +59,39 @@ export class AppShell {
             </button>
           </div>
 
-          <div class="light-metrics-row">
-            <div class="metric-item">
-              <span>Azimuth:</span>
-              <span class="metric-value" id="val-azimuth">37°</span>
+          <!-- 3-Axis Sun Position Sliders (Matching Diagram 1 Green, 2 White, 3 Yellow) -->
+          <div class="sun-sliders-container">
+            <!-- Axis 1: Roll / Tilt (Green) -->
+            <div class="sun-slider-row">
+              <div class="sun-axis-badge axis-green" title="Axis 1: Frontal Tilt / Roll (Green in diagram)">1</div>
+              <span class="sun-axis-name">Tilt</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider sun-slider-green" id="slider-sun-roll" min="-180" max="180" value="0" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-sun-roll" min="-180" max="180" value="0" />
+              <span class="slider-unit">°</span>
             </div>
-            <div class="metric-item">
-              <span>Elevation:</span>
-              <span class="metric-value" id="val-elevation">54°</span>
+
+            <!-- Axis 2: Azimuth / Horizontal Orbit (White) -->
+            <div class="sun-slider-row">
+              <div class="sun-axis-badge axis-white" title="Axis 2: Horizontal Orbit / Azimuth (White in diagram)">2</div>
+              <span class="sun-axis-name">Orbit</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="37" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="37" />
+              <span class="slider-unit">°</span>
             </div>
-            <div class="metric-item">
-              <span>Sun Gizmo:</span>
-              <span class="metric-value" style="color: #4ade80;">Active</span>
+
+            <!-- Axis 3: Elevation / Vertical Height (Yellow) -->
+            <div class="sun-slider-row">
+              <div class="sun-axis-badge axis-yellow" title="Axis 3: Vertical Height / Elevation (Yellow in diagram)">3</div>
+              <span class="sun-axis-name">Height</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider sun-slider-yellow" id="slider-sun-elev" min="-89" max="89" value="54" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="54" />
+              <span class="slider-unit">°</span>
             </div>
           </div>
         </div>
@@ -102,7 +123,7 @@ export class AppShell {
           <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ps-text-secondary);">
             <p>• 🎯 <strong>Color Picker Target</strong>: Drag the white ring anywhere on the 3D canvas to sample that lit color.</p>
             <p>• 🧊 <strong>3D Mesh Drag</strong>: Drag the sphere/cube directly to rotate it on its own local axes.</p>
-            <p>• ☀️ <strong>Sun Handle</strong>: Drag the glowing yellow sun marker on the orbit ring to change sun angle.</p>
+            <p>• ☀️ <strong>Sun Position Controls</strong>: Use the 3 sliders (1 Green Tilt, 2 White Orbit, 3 Yellow Height) or drag the 3D sun marker directly.</p>
             <p>• 🌌 <strong>Background Drag</strong>: Drag the dark background to orbit the camera.</p>
           </div>
         </div>
@@ -152,8 +173,8 @@ export class AppShell {
 
     this.bindMeshToggleButtons();
     this.bindPresetButtons();
+    this.bindSunSliders();
     this.bindSurfaceFinishButtons();
-    this.bindLightingMetricsSync();
   }
 
   private bindMeshToggleButtons(): void {
@@ -184,6 +205,106 @@ export class AppShell {
     });
   }
 
+  private bindSunSliders(): void {
+    if (!this.viewport) return;
+
+    // Sliders
+    const rollSlider = this.root.querySelector<HTMLInputElement>('#slider-sun-roll')!;
+    const azimSlider = this.root.querySelector<HTMLInputElement>('#slider-sun-azim')!;
+    const elevSlider = this.root.querySelector<HTMLInputElement>('#slider-sun-elev')!;
+
+    // Number Inputs
+    const rollNum = this.root.querySelector<HTMLInputElement>('#num-sun-roll')!;
+    const azimNum = this.root.querySelector<HTMLInputElement>('#num-sun-azim')!;
+    const elevNum = this.root.querySelector<HTMLInputElement>('#num-sun-elev')!;
+
+    const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
+
+    const applyAnglesFromUI = (rollDeg: number, azimDeg: number, elevDeg: number) => {
+      const rollRad = (rollDeg * Math.PI) / 180;
+      const azimRad = (azimDeg * Math.PI) / 180;
+      const elevRad = (elevDeg * Math.PI) / 180;
+      this.viewport?.setLightAngles(rollRad, azimRad, elevRad);
+    };
+
+    // Slider inputs
+    rollSlider.addEventListener('input', () => {
+      const val = parseInt(rollSlider.value, 10);
+      rollNum.value = val.toString();
+      applyAnglesFromUI(val, parseInt(azimSlider.value, 10), parseInt(elevSlider.value, 10));
+    });
+
+    azimSlider.addEventListener('input', () => {
+      const val = parseInt(azimSlider.value, 10);
+      azimNum.value = val.toString();
+      applyAnglesFromUI(parseInt(rollSlider.value, 10), val, parseInt(elevSlider.value, 10));
+    });
+
+    elevSlider.addEventListener('input', () => {
+      const val = parseInt(elevSlider.value, 10);
+      elevNum.value = val.toString();
+      applyAnglesFromUI(parseInt(rollSlider.value, 10), parseInt(azimSlider.value, 10), val);
+    });
+
+    // Number inputs
+    rollNum.addEventListener('change', () => {
+      let val = parseInt(rollNum.value, 10);
+      if (isNaN(val)) val = 0;
+      val = Math.max(-180, Math.min(180, val));
+      rollNum.value = val.toString();
+      rollSlider.value = val.toString();
+      applyAnglesFromUI(val, parseInt(azimSlider.value, 10), parseInt(elevSlider.value, 10));
+    });
+
+    azimNum.addEventListener('change', () => {
+      let val = parseInt(azimNum.value, 10);
+      if (isNaN(val)) val = 0;
+      val = ((val % 360) + 360) % 360;
+      azimNum.value = val.toString();
+      azimSlider.value = val.toString();
+      applyAnglesFromUI(parseInt(rollSlider.value, 10), val, parseInt(elevSlider.value, 10));
+    });
+
+    elevNum.addEventListener('change', () => {
+      let val = parseInt(elevNum.value, 10);
+      if (isNaN(val)) val = 0;
+      val = Math.max(-89, Math.min(89, val));
+      elevNum.value = val.toString();
+      elevSlider.value = val.toString();
+      applyAnglesFromUI(parseInt(rollSlider.value, 10), parseInt(azimSlider.value, 10), val);
+    });
+
+    // Synchronize 3D Gizmo drags or preset clicks back to the sliders
+    this.viewport.getLightingEngine().onEnvironmentChange((env) => {
+      const rollDeg = Math.round((env.keyLight.roll * 180) / Math.PI);
+      const azimDeg = Math.round((env.keyLight.azimuth * 180) / Math.PI);
+      const elevDeg = Math.round((env.keyLight.elevation * 180) / Math.PI);
+
+      if (document.activeElement !== rollSlider && document.activeElement !== rollNum) {
+        rollSlider.value = rollDeg.toString();
+        rollNum.value = rollDeg.toString();
+      }
+
+      if (document.activeElement !== azimSlider && document.activeElement !== azimNum) {
+        azimSlider.value = azimDeg.toString();
+        azimNum.value = azimDeg.toString();
+      }
+
+      if (document.activeElement !== elevSlider && document.activeElement !== elevNum) {
+        elevSlider.value = elevDeg.toString();
+        elevNum.value = elevDeg.toString();
+      }
+
+      presetBtns.forEach((btn) => {
+        if (btn.getAttribute('data-preset') === env.preset) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    });
+  }
+
   private bindSurfaceFinishButtons(): void {
     const finishBtns = this.root.querySelectorAll<HTMLButtonElement>('.finish-btn');
     const descEl = this.root.querySelector<HTMLElement>('#finish-desc');
@@ -199,32 +320,6 @@ export class AppShell {
           if (descEl) {
             descEl.textContent = `${SURFACE_FINISHES[finish].name}: ${SURFACE_FINISHES[finish].description}`;
           }
-        }
-      });
-    });
-  }
-
-  private bindLightingMetricsSync(): void {
-    if (!this.viewport) return;
-
-    const azimuthEl = this.root.querySelector<HTMLElement>('#val-azimuth');
-    const elevationEl = this.root.querySelector<HTMLElement>('#val-elevation');
-    const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
-
-    this.viewport.getLightingEngine().onEnvironmentChange((env) => {
-      if (azimuthEl) {
-        const deg = Math.round((env.keyLight.azimuth * 180) / Math.PI);
-        azimuthEl.textContent = `${deg}°`;
-      }
-      if (elevationEl) {
-        const deg = Math.round((env.keyLight.elevation * 180) / Math.PI);
-        elevationEl.textContent = `${deg}°`;
-      }
-      presetBtns.forEach((btn) => {
-        if (btn.getAttribute('data-preset') === env.preset) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
         }
       });
     });
