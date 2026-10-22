@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { OrbitCamera } from './OrbitCamera';
+import { LightingEngine } from './LightingEngine';
+import { createLumiformMaterial, LumiformShaderUniforms } from './shaders/lumiformShader';
+import { LightingPreset } from '../core/types';
 
 export interface ViewportOptions {
   container: HTMLElement;
@@ -13,7 +16,8 @@ export class Viewport {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private orbitCamera: OrbitCamera;
-  private sphereMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  private lightingEngine: LightingEngine;
+  private sphereMesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   private raycaster: THREE.Raycaster;
   private pointer: THREE.Vector2;
   private resizeObserver: ResizeObserver;
@@ -21,14 +25,14 @@ export class Viewport {
   private isDisposed = false;
 
   // Interaction mode tracking
-  private isOrbiting = false;
+  private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'sphere' = 'none';
 
   constructor(options: ViewportOptions) {
     this.container = options.container;
 
     // 1. Scene setup
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x181818); // Match Photoshop dark background
+    this.scene.background = new THREE.Color(0x181818); // Match Photoshop dark canvas
 
     // 2. Camera setup
     const aspect = (this.container.clientWidth || 300) / (this.container.clientHeight || 300);
@@ -39,21 +43,18 @@ export class Viewport {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
-      preserveDrawingBuffer: true, // Needed for eyedropper sampling in Task 1.6
+      preserveDrawingBuffer: true, // Needed for eyedropper sampling
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(this.container.clientWidth || 300, this.container.clientHeight || 300);
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
 
     const canvas = this.renderer.domElement;
     canvas.style.display = 'block';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
-    canvas.style.touchAction = 'none'; // Prevent browser gestures
+    canvas.style.touchAction = 'none';
     canvas.style.cursor = 'grab';
 
-    // Clear placeholder and append canvas
     this.container.innerHTML = '';
     this.container.appendChild(canvas);
 
@@ -63,24 +64,17 @@ export class Viewport {
       rotateSpeed: 0.006,
     });
 
-    // 5. High-Resolution Sphere Mesh
+    // 5. High-Resolution Sphere Mesh with Custom 3-Zone Lumiform Shader
     const sphereRadius = options.sphereRadius ?? 1.25;
     const geometry = new THREE.SphereGeometry(sphereRadius, 96, 96);
-    const material = new THREE.MeshStandardMaterial({
-      color: options.initialColor ?? 0xEB5757,
-      roughness: 0.35,
-      metalness: 0.0,
-    });
+    const material = createLumiformMaterial(options.initialColor ?? 0xEB5757);
     this.sphereMesh = new THREE.Mesh(geometry, material);
     this.scene.add(this.sphereMesh);
 
-    // 6. Preliminary Stage 1.2 Lighting
-    const keyLight = new THREE.DirectionalLight(0xfff4e5, 2.5); // Warm key sunlight
-    keyLight.position.set(2.5, 3.5, 3.0);
-    this.scene.add(keyLight);
-
-    const skyAmbient = new THREE.HemisphereLight(0x7395c7, 0x473024, 0.9); // Cool sky + warm ground bounce
-    this.scene.add(skyAmbient);
+    // 6. Lighting Engine & Orbit Gizmo
+    this.lightingEngine = new LightingEngine();
+    this.lightingEngine.bindUniforms(material.uniforms as LumiformShaderUniforms);
+    this.scene.add(this.lightingEngine.getGizmo().group);
 
     // 7. Raycasting & Pointer Setup
     this.raycaster = new THREE.Raycaster();
@@ -103,30 +97,56 @@ export class Viewport {
       this.updatePointerCoordinates(e);
 
       this.raycaster.setFromCamera(this.pointer, this.camera);
-      const intersects = this.raycaster.intersectObject(this.sphereMesh);
 
-      // If user clicks on background or holds Alt/Option, orbit camera
-      if (intersects.length === 0 || e.altKey) {
-        this.isOrbiting = true;
-        canvas.style.cursor = 'grabbing';
-        this.orbitCamera.onPointerDown(e.clientX, e.clientY);
-      } else {
-        // Pointer is on the sphere (ready for Task 1.6 Eyedropper)
+      // Check gizmo handles first (sun marker or orbit ring)
+      const gizmoObjects = this.lightingEngine.getGizmo().getSunObjects();
+      const gizmoHits = this.raycaster.intersectObjects(gizmoObjects, true);
+
+      if (gizmoHits.length > 0) {
+        this.interactionMode = 'orbit-light';
         canvas.style.cursor = 'crosshair';
+        this.lightingEngine.getGizmo().onPointerDown(e.clientX, e.clientY);
+        return;
       }
+
+      // Check sphere
+      const sphereHits = this.raycaster.intersectObject(this.sphereMesh);
+      if (sphereHits.length > 0 && !e.altKey) {
+        this.interactionMode = 'sphere';
+        canvas.style.cursor = 'crosshair';
+        return;
+      }
+
+      // Otherwise: Camera orbit
+      this.interactionMode = 'orbit-camera';
+      canvas.style.cursor = 'grabbing';
+      this.orbitCamera.onPointerDown(e.clientX, e.clientY);
     });
 
     canvas.addEventListener('pointermove', (e: PointerEvent) => {
-      if (this.isOrbiting) {
+      if (this.interactionMode === 'orbit-light') {
+        this.lightingEngine.getGizmo().onPointerMove(e.clientX, e.clientY);
+        return;
+      }
+
+      if (this.interactionMode === 'orbit-camera') {
         this.orbitCamera.onPointerMove(e.clientX, e.clientY);
         return;
       }
 
+      // Hover feedback when not dragging
       this.updatePointerCoordinates(e);
       this.raycaster.setFromCamera(this.pointer, this.camera);
-      const intersects = this.raycaster.intersectObject(this.sphereMesh);
 
-      if (intersects.length > 0) {
+      const gizmoObjects = this.lightingEngine.getGizmo().getSunObjects();
+      const gizmoHits = this.raycaster.intersectObjects(gizmoObjects, true);
+      if (gizmoHits.length > 0) {
+        canvas.style.cursor = 'pointer';
+        return;
+      }
+
+      const sphereHits = this.raycaster.intersectObject(this.sphereMesh);
+      if (sphereHits.length > 0) {
         canvas.style.cursor = 'crosshair';
       } else {
         canvas.style.cursor = 'grab';
@@ -137,11 +157,15 @@ export class Viewport {
       if (canvas.hasPointerCapture(e.pointerId)) {
         canvas.releasePointerCapture(e.pointerId);
       }
-      if (this.isOrbiting) {
-        this.isOrbiting = false;
+
+      if (this.interactionMode === 'orbit-light') {
+        this.lightingEngine.getGizmo().onPointerUp();
+      } else if (this.interactionMode === 'orbit-camera') {
         this.orbitCamera.onPointerUp();
-        canvas.style.cursor = 'grab';
       }
+
+      this.interactionMode = 'none';
+      canvas.style.cursor = 'grab';
     };
 
     canvas.addEventListener('pointerup', endPointerAction);
@@ -180,8 +204,18 @@ export class Viewport {
     this.animationFrameId = requestAnimationFrame(this.animate);
   }
 
-  public setSphereColor(colorHex: string | number): void {
-    this.sphereMesh.material.color.set(colorHex);
+  public setSphereColor(colorHex: string | number | THREE.Color): void {
+    const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
+    const uniforms = this.sphereMesh.material.uniforms as LumiformShaderUniforms;
+    uniforms.uAlbedo.value.copy(col);
+  }
+
+  public setPreset(preset: LightingPreset): void {
+    this.lightingEngine.setPreset(preset);
+  }
+
+  public getLightingEngine(): LightingEngine {
+    return this.lightingEngine;
   }
 
   public getCanvas(): HTMLCanvasElement {
@@ -197,6 +231,7 @@ export class Viewport {
     this.resizeObserver.disconnect();
     this.sphereMesh.geometry.dispose();
     this.sphereMesh.material.dispose();
+    this.lightingEngine.dispose();
     this.renderer.dispose();
   }
 }
