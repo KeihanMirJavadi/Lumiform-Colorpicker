@@ -23,7 +23,8 @@ export function evaluateLightingAnalytical(
   V: THREE.Vector3,
   albedoCol: THREE.Color,
   env: LightingEnvironment,
-  finish: SurfaceFinish
+  roughness: number,
+  specularIntensity: number
 ): { rgb: RGBColor; hex: string } {
   const normN = N.clone().normalize();
   const normL = L.clone().normalize();
@@ -50,19 +51,26 @@ export function evaluateLightingAnalytical(
   const diffuse = albedoCol.clone().multiply(totalDiffuseLight);
 
   // 4. Specular Component
-  const finishConfig = SURFACE_FINISHES[finish];
   const specular = new THREE.Color(0, 0, 0);
 
-  if (finishConfig.specularIntensity > 0.001 && NdotL > 0) {
-    const shininess = Math.pow(2, 10 * (1 - Math.max(0, Math.min(1, finishConfig.roughness))));
+  if (specularIntensity > 0.001 && NdotL > 0) {
+    const shininess = Math.pow(2, 10 * (1 - Math.max(0, Math.min(1, roughness))));
     const NdotH = Math.max(0, normN.dot(H));
     const specFactor = Math.pow(NdotH, shininess);
 
     const VdotH = Math.max(0, normV.dot(H));
-    const fresnel = 0.04 + (1 - 0.04) * Math.pow(Math.max(0, Math.min(1, 1 - VdotH)), 5);
+    const fresnel = specularIntensity + (1 - specularIntensity) * Math.pow(Math.max(0, Math.min(1, 1 - VdotH)), 5);
 
-    const specScalar = specFactor * fresnel * finishConfig.specularIntensity * env.keyLight.intensity;
+    const specScalar = specFactor * fresnel * env.keyLight.intensity;
     specular.copy(env.keyLight.color).multiplyScalar(specScalar);
+
+    if (specularIntensity > 0.05 && roughness < 0.7) {
+      const VdotN = Math.max(0, normV.dot(normN));
+      const edgeFresnel = Math.pow(Math.max(0, Math.min(1, 1 - VdotN)), 4);
+      const ambientReflect = (normN.y >= 0 ? env.ambient.skyColor : env.ambient.groundColor).clone();
+      ambientReflect.multiplyScalar(edgeFresnel * (1 - roughness) * specularIntensity * 0.45 * env.ambient.intensity);
+      specular.add(ambientReflect);
+    }
   }
 
   // 5. Total Radiance
@@ -97,8 +105,26 @@ export function calculate5ValueRamp(
   viewDir: THREE.Vector3,
   albedoHex: string,
   env: LightingEnvironment,
-  finish: SurfaceFinish
+  roughnessOrFinish: number | SurfaceFinish,
+  specularIntensityParam?: number
 ): AnalyticalSwatch[] {
+  let roughness: number;
+  let specularIntensity: number;
+
+  if (typeof roughnessOrFinish === 'string') {
+    if (roughnessOrFinish in SURFACE_FINISHES) {
+      const cfg = SURFACE_FINISHES[roughnessOrFinish as Exclude<SurfaceFinish, 'custom'>];
+      roughness = cfg.roughness;
+      specularIntensity = cfg.specularIntensity;
+    } else {
+      roughness = 0.45;
+      specularIntensity = 0.4;
+    }
+  } else {
+    roughness = roughnessOrFinish;
+    specularIntensity = specularIntensityParam ?? 0.4;
+  }
+
   const L = lightDir.clone().normalize();
   const V = viewDir.clone().normalize();
   const albedoCol = new THREE.Color(albedoHex);
@@ -107,11 +133,9 @@ export function calculate5ValueRamp(
   const nHighlight = new THREE.Vector3().addVectors(L, V).normalize();
 
   // 2. Half-Tone Normal: Normal at 45° toward light vector L
-  // Blend view direction V and light direction L with bias toward L
   const nHalftone = new THREE.Vector3().addVectors(V.clone().multiplyScalar(0.7), L.clone().multiplyScalar(0.7)).normalize();
 
   // 3. Terminator Normal: Perpendicular to L (N · L = 0)
-  // Cross product orthogonalization
   let nTerminator = new THREE.Vector3().crossVectors(L, new THREE.Vector3(0, 1, 0));
   if (nTerminator.lengthSq() < 0.001) {
     nTerminator = new THREE.Vector3().crossVectors(L, new THREE.Vector3(1, 0, 0));
@@ -163,7 +187,7 @@ export function calculate5ValueRamp(
   ];
 
   return swatches.map((s) => {
-    const { rgb, hex } = evaluateLightingAnalytical(s.normal, L, V, albedoCol, env, finish);
+    const { rgb, hex } = evaluateLightingAnalytical(s.normal, L, V, albedoCol, env, roughness, specularIntensity);
     return {
       role: s.role,
       label: s.label,

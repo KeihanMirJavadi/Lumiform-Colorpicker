@@ -71,16 +71,24 @@ const fragmentShader = /* glsl */ `
     // 4. Specular Component (Surface Finish Roughness + Specular Intensity)
     vec3 specular = vec3(0.0);
     if (uSpecularIntensity > 0.001 && NdotL > 0.0) {
-      // Physically scaled shininess exponent: 512.0 for glossy (0.1), 32.0 for satin (0.5)
+      // Shininess exponent: maps roughness 0.0 -> ~1024 (ultra sharp), 0.08 -> ~588 (sharp gloss), 0.45 -> ~45 (satin), 1.0 -> 1 (matte)
       float shininess = exp2(10.0 * (1.0 - clamp(uRoughness, 0.0, 1.0)));
       float NdotH = max(0.0, dot(N, H));
       float specFactor = pow(NdotH, shininess);
 
-      // Schlick Fresnel approximation
+      // Schlick Fresnel approximation: transitions from base specular intensity to 1.0 at glancing angles
       float VdotH = max(0.0, dot(V, H));
-      float fresnel = 0.04 + (1.0 - 0.04) * pow(clamp(1.0 - VdotH, 0.0, 1.0), 5.0);
+      float fresnel = mix(uSpecularIntensity, 1.0, pow(clamp(1.0 - VdotH, 0.0, 1.0), 5.0));
 
-      specular = uKeyColor * (specFactor * fresnel * uSpecularIntensity * uKeyIntensity);
+      specular = uKeyColor * (specFactor * fresnel * uKeyIntensity);
+    }
+
+    // 5. Subtle ambient reflection / rim sheen on glossy finishes
+    if (uSpecularIntensity > 0.05 && uRoughness < 0.7) {
+      float VdotN = max(0.0, dot(V, N));
+      float edgeFresnel = pow(clamp(1.0 - VdotN, 0.0, 1.0), 4.0);
+      vec3 ambientReflect = (N.y >= 0.0) ? uSkyColor : uGroundColor;
+      specular += ambientReflect * (edgeFresnel * (1.0 - uRoughness) * uSpecularIntensity * 0.45 * uAmbientIntensity);
     }
 
     // Total Surface Radiance
@@ -107,8 +115,8 @@ export function createLumiformMaterial(initialAlbedo: THREE.Color | string | num
     uHorizonColor: { value: new THREE.Color('#9BB9DE') },
     uGroundColor: { value: new THREE.Color('#7A5435') },
     uAmbientIntensity: { value: 0.85 },
-    uRoughness: { value: 0.35 },
-    uSpecularIntensity: { value: 0.5 },
+    uRoughness: { value: 0.45 },
+    uSpecularIntensity: { value: 0.4 },
   };
 
   return new THREE.ShaderMaterial({

@@ -2,12 +2,15 @@ import * as THREE from 'three';
 import { AnalyticalSwatch, calculate5ValueRamp } from '../core/swatchCalculator';
 import { LightingEnvironment } from '../core/lighting';
 import { SurfaceFinish } from '../core/types';
+import { SURFACE_FINISHES } from '../core/material';
 
 export interface SwatchRampOptions {
   container: HTMLElement;
   initialAlbedoHex?: string;
   initialEnv: LightingEnvironment;
-  initialFinish: SurfaceFinish;
+  initialFinish?: SurfaceFinish;
+  initialRoughness?: number;
+  initialSpecular?: number;
   onSelectSwatch?: (swatch: AnalyticalSwatch) => void;
 }
 
@@ -16,6 +19,8 @@ export class SwatchRamp {
   private albedoHex: string;
   private env: LightingEnvironment;
   private finish: SurfaceFinish;
+  private roughness: number;
+  private specular: number;
   private currentSwatches: AnalyticalSwatch[] = [];
   private listeners: Set<(swatch: AnalyticalSwatch) => void> = new Set();
   private flashTimeouts: Map<string, number> = new Map();
@@ -24,7 +29,23 @@ export class SwatchRamp {
     this.container = options.container;
     this.albedoHex = options.initialAlbedoHex ?? '#EB5757';
     this.env = options.initialEnv;
-    this.finish = options.initialFinish;
+    this.finish = options.initialFinish ?? 'satin';
+
+    if (options.initialRoughness !== undefined) {
+      this.roughness = options.initialRoughness;
+    } else if (this.finish in SURFACE_FINISHES) {
+      this.roughness = SURFACE_FINISHES[this.finish as Exclude<SurfaceFinish, 'custom'>].roughness;
+    } else {
+      this.roughness = 0.45;
+    }
+
+    if (options.initialSpecular !== undefined) {
+      this.specular = options.initialSpecular;
+    } else if (this.finish in SURFACE_FINISHES) {
+      this.specular = SURFACE_FINISHES[this.finish as Exclude<SurfaceFinish, 'custom'>].specularIntensity;
+    } else {
+      this.specular = 0.4;
+    }
 
     if (options.onSelectSwatch) {
       this.listeners.add(options.onSelectSwatch);
@@ -37,10 +58,14 @@ export class SwatchRamp {
     albedoHex?: string;
     env?: LightingEnvironment;
     finish?: SurfaceFinish;
+    roughness?: number;
+    specular?: number;
   }): void {
     if (params.albedoHex !== undefined) this.albedoHex = params.albedoHex;
     if (params.env !== undefined) this.env = params.env;
     if (params.finish !== undefined) this.finish = params.finish;
+    if (params.roughness !== undefined) this.roughness = params.roughness;
+    if (params.specular !== undefined) this.specular = params.specular;
 
     this.recalculateAndRender();
   }
@@ -59,7 +84,8 @@ export class SwatchRamp {
       viewDir,
       this.albedoHex,
       this.env,
-      this.finish
+      this.roughness,
+      this.specular
     );
 
     this.render();

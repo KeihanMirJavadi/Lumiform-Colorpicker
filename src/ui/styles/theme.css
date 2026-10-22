@@ -413,6 +413,14 @@ html, body {
   background: linear-gradient(to right, #a16207, #facc15);
 }
 
+.finish-slider-roughness {
+  background: linear-gradient(to right, #334155, #94a3b8);
+}
+
+.finish-slider-specular {
+  background: linear-gradient(to right, #1e293b, #38bdf8);
+}
+
 /* Color Controls & HSB Sliders (Task 1.5) */
 .hex-group {
   display: flex;

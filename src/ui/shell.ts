@@ -21,24 +21,23 @@ export class AppShell {
 
   private init(): void {
     this.root.innerHTML = `
-      <header class="panel-header">
-        <div class="title-group">
-          <h1>Lumiform Colorpicker</h1>
-          <span class="badge">Phase 1 Dev</span>
-        </div>
+      <header class="app-header">
+        <span class="app-logo">Lumiform Colorpicker</span>
+        <span class="app-version">v0.1.0</span>
       </header>
 
       <main class="panel-content">
-        <!-- 3D Viewport Toolbar (Mesh Switcher & Reset Rotation) -->
-        <div class="viewport-toolbar">
-          <div class="toolbar-left">
-            <span class="toolbar-label">3D Form:</span>
-            <div class="mesh-toggle-group">
-              <button class="mesh-toggle-btn active" data-mesh="sphere" id="btn-mesh-sphere">🔮 Sphere</button>
-              <button class="mesh-toggle-btn" data-mesh="cube" id="btn-mesh-cube">🧊 Cube</button>
-            </div>
+        <!-- 3D Mesh Toggle (Sphere vs Cube) & Reset Rotation -->
+        <div class="mesh-toggle-row">
+          <div class="mesh-toggle-group">
+            <button class="mesh-toggle-btn active" data-mesh="sphere" id="btn-mesh-sphere">
+              <span>🔮</span> Sphere
+            </button>
+            <button class="mesh-toggle-btn" data-mesh="cube" id="btn-mesh-cube">
+              <span>🧊</span> Cube
+            </button>
           </div>
-          <button class="ps-btn-reset-rotation" id="btn-reset-rotation" title="Reset central 3D mesh rotation">
+          <button class="mesh-reset-btn" id="btn-reset-rotation" title="Reset Mesh Rotation">
             <span>↺</span> Reset Rotation
           </button>
         </div>
@@ -93,10 +92,10 @@ export class AppShell {
           </div>
         </div>
 
-        <!-- Surface Finish Mode (Task 1.4) -->
+        <!-- Surface Finish Mode & Reflectivity Controls (Task 1.4 & Roughness / Specular Sliders) -->
         <div class="section-card">
           <div class="section-header">
-            <h2>Surface Finish Mode</h2>
+            <h2>Surface Finish & Reflectivity</h2>
           </div>
           <div class="preset-segmented-control">
             <button class="finish-btn" data-finish="matte" id="btn-finish-matte">
@@ -109,8 +108,32 @@ export class AppShell {
               <span>💎</span> Glossy
             </button>
           </div>
+
+          <!-- Direct Custom Sliders for Roughness and Specular Intensity -->
+          <div class="finish-sliders-container" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+            <!-- Roughness Slider -->
+            <div class="sun-slider-row">
+              <span class="sun-axis-name" style="width: 58px;">Roughness</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider finish-slider-roughness" id="slider-finish-roughness" min="0" max="100" value="45" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-finish-roughness" min="0" max="100" value="45" />
+              <span class="slider-unit">%</span>
+            </div>
+
+            <!-- Specular Intensity Slider -->
+            <div class="sun-slider-row">
+              <span class="sun-axis-name" style="width: 58px;">Specular</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider finish-slider-specular" id="slider-finish-specular" min="0" max="100" value="40" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-finish-specular" min="0" max="100" value="40" />
+              <span class="slider-unit">%</span>
+            </div>
+          </div>
+
           <p id="finish-desc" style="margin-top: 8px; font-size: 11px; color: var(--ps-text-secondary);">
-            Satin: Roughness 0.5, 30% Specular (soft, spread highlight)
+            Satin: 45% Roughness, 40% Specular (soft, spread highlight)
           </p>
         </div>
 
@@ -130,18 +153,16 @@ export class AppShell {
       <footer class="status-bar" id="status-bar-container"></footer>
     `;
 
-    // 1. Mount 3D Viewport
+    // 1. Mount Viewport
     const viewportContainer = this.root.querySelector<HTMLElement>('#viewport-container');
     if (viewportContainer) {
       this.viewport = new Viewport({
         container: viewportContainer,
-        sphereRadius: 1.25,
         initialColor: '#EB5757',
         initialMeshType: 'sphere',
       });
 
-      // Connect Color Picker Target sampling directly to Photoshop bridge
-      this.viewport.onColorSample((rgb, _hex) => {
+      this.viewport.onColorSample((rgb: { r: number; g: number; b: number }) => {
         this.bridge.setForegroundColor(rgb);
       });
     }
@@ -154,14 +175,16 @@ export class AppShell {
         initialAlbedoHex: '#EB5757',
         initialEnv: this.viewport.getLightingEngine().getEnvironment(),
         initialFinish: this.viewport.getSurfaceFinish(),
+        initialRoughness: this.viewport.getRoughness(),
+        initialSpecular: this.viewport.getSpecular(),
         onSelectSwatch: (swatch) => {
           this.bridge.setForegroundColor(swatch.rgb);
         },
       });
 
       // Synchronize finish changes to swatch ramp
-      this.viewport.onSurfaceFinishChange((finish) => {
-        this.swatchRamp?.updateParameters({ finish });
+      this.viewport.onSurfaceFinishChange((finish, roughness, specular) => {
+        this.swatchRamp?.updateParameters({ finish, roughness, specular });
       });
     }
 
@@ -192,7 +215,7 @@ export class AppShell {
     this.bindMeshToggleButtons();
     this.bindPresetButtons();
     this.bindSunSliders();
-    this.bindSurfaceFinishButtons();
+    this.bindSurfaceFinishControls();
   }
 
   private bindMeshToggleButtons(): void {
@@ -267,7 +290,7 @@ export class AppShell {
     azimNum.addEventListener('change', () => {
       let val = parseInt(azimNum.value, 10);
       if (isNaN(val)) val = 0;
-      val = ((val % 360) + 360) % 360;
+      val = Math.max(0, Math.min(360, val));
       azimNum.value = val.toString();
       azimSlider.value = val.toString();
       applyAnglesFromUI(val, parseInt(elevSlider.value, 10));
@@ -310,23 +333,96 @@ export class AppShell {
     });
   }
 
-  private bindSurfaceFinishButtons(): void {
+  private bindSurfaceFinishControls(): void {
+    if (!this.viewport) return;
+
     const finishBtns = this.root.querySelectorAll<HTMLButtonElement>('.finish-btn');
     const descEl = this.root.querySelector<HTMLElement>('#finish-desc');
 
+    const roughnessSlider = this.root.querySelector<HTMLInputElement>('#slider-finish-roughness')!;
+    const roughnessNum = this.root.querySelector<HTMLInputElement>('#num-finish-roughness')!;
+    const specularSlider = this.root.querySelector<HTMLInputElement>('#slider-finish-specular')!;
+    const specularNum = this.root.querySelector<HTMLInputElement>('#num-finish-specular')!;
+
+    const updateUIState = (finish: SurfaceFinish, roughness: number, specular: number) => {
+      const roughPct = Math.round(roughness * 100);
+      const specPct = Math.round(specular * 100);
+
+      if (document.activeElement !== roughnessSlider && document.activeElement !== roughnessNum) {
+        roughnessSlider.value = roughPct.toString();
+        roughnessNum.value = roughPct.toString();
+      }
+      if (document.activeElement !== specularSlider && document.activeElement !== specularNum) {
+        specularSlider.value = specPct.toString();
+        specularNum.value = specPct.toString();
+      }
+
+      finishBtns.forEach((b) => {
+        if (b.getAttribute('data-finish') === finish) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+
+      if (descEl) {
+        if (finish !== 'custom' && finish in SURFACE_FINISHES) {
+          const cfg = SURFACE_FINISHES[finish as Exclude<SurfaceFinish, 'custom'>];
+          descEl.textContent = `${cfg.name}: ${cfg.description}`;
+        } else {
+          descEl.textContent = `Custom: ${roughPct}% Roughness, ${specPct}% Specular`;
+        }
+      }
+    };
+
+    // Preset button clicks
     finishBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         const finish = btn.getAttribute('data-finish') as SurfaceFinish;
         if (finish && this.viewport) {
           this.viewport.setSurfaceFinish(finish);
-          finishBtns.forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
-
-          if (descEl) {
-            descEl.textContent = `${SURFACE_FINISHES[finish].name}: ${SURFACE_FINISHES[finish].description}`;
-          }
         }
       });
+    });
+
+    // Slider inputs
+    const applySlidersFromUI = () => {
+      const r = Math.max(0, Math.min(100, parseInt(roughnessSlider.value, 10) || 0)) / 100;
+      const s = Math.max(0, Math.min(100, parseInt(specularSlider.value, 10) || 0)) / 100;
+      this.viewport?.setRoughnessAndSpecular(r, s);
+    };
+
+    roughnessSlider.addEventListener('input', () => {
+      roughnessNum.value = roughnessSlider.value;
+      applySlidersFromUI();
+    });
+
+    roughnessNum.addEventListener('change', () => {
+      let val = parseInt(roughnessNum.value, 10);
+      if (isNaN(val)) val = 0;
+      val = Math.max(0, Math.min(100, val));
+      roughnessNum.value = val.toString();
+      roughnessSlider.value = val.toString();
+      applySlidersFromUI();
+    });
+
+    specularSlider.addEventListener('input', () => {
+      specularNum.value = specularSlider.value;
+      applySlidersFromUI();
+    });
+
+    specularNum.addEventListener('change', () => {
+      let val = parseInt(specularNum.value, 10);
+      if (isNaN(val)) val = 0;
+      val = Math.max(0, Math.min(100, val));
+      specularNum.value = val.toString();
+      specularSlider.value = val.toString();
+      applySlidersFromUI();
+    });
+
+    // Listen to changes from viewport (initial setup & updates)
+    this.viewport.onSurfaceFinishChange((finish, roughness, specular) => {
+      updateUIState(finish, roughness, specular);
     });
   }
 

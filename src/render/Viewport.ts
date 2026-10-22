@@ -41,8 +41,10 @@ export class Viewport {
   private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'rotate-mesh' = 'none';
   private previousPointerPos = { x: 0, y: 0 };
   private currentFinish: SurfaceFinish = 'satin';
+  private currentRoughness = 0.45;
+  private currentSpecular = 0.4;
 
-  private finishListeners: Set<(finish: SurfaceFinish) => void> = new Set();
+  private finishListeners: Set<(finish: SurfaceFinish, roughness: number, specular: number) => void> = new Set();
   private sampleListeners: Set<(rgb: RGBColor, hex: string) => void> = new Set();
   private meshTypeListeners: Set<(type: MeshGeometryType) => void> = new Set();
 
@@ -301,12 +303,40 @@ export class Viewport {
   }
 
   public setSurfaceFinish(finish: SurfaceFinish): void {
-    this.currentFinish = finish;
-    const config = SURFACE_FINISHES[finish];
+    if (finish !== 'custom' && finish in SURFACE_FINISHES) {
+      const config = SURFACE_FINISHES[finish as Exclude<SurfaceFinish, 'custom'>];
+      this.currentFinish = finish;
+      this.currentRoughness = config.roughness;
+      this.currentSpecular = config.specularIntensity;
+
+      const uniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
+      uniforms.uRoughness.value = this.currentRoughness;
+      uniforms.uSpecularIntensity.value = this.currentSpecular;
+
+      this.finishListeners.forEach((cb) => cb(this.currentFinish, this.currentRoughness, this.currentSpecular));
+      this.colorPickerTarget.scheduleResample();
+    }
+  }
+
+  public setRoughnessAndSpecular(roughness: number, specular: number): void {
+    this.currentRoughness = Math.max(0, Math.min(1, roughness));
+    this.currentSpecular = Math.max(0, Math.min(1, specular));
+
+    if (Math.abs(this.currentRoughness - 1.0) < 0.01 && this.currentSpecular < 0.01) {
+      this.currentFinish = 'matte';
+    } else if (Math.abs(this.currentRoughness - 0.45) < 0.02 && Math.abs(this.currentSpecular - 0.4) < 0.02) {
+      this.currentFinish = 'satin';
+    } else if (Math.abs(this.currentRoughness - 0.08) < 0.02 && Math.abs(this.currentSpecular - 0.95) < 0.02) {
+      this.currentFinish = 'glossy';
+    } else {
+      this.currentFinish = 'custom';
+    }
+
     const uniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
-    uniforms.uRoughness.value = config.roughness;
-    uniforms.uSpecularIntensity.value = config.specularIntensity;
-    this.finishListeners.forEach((cb) => cb(finish));
+    uniforms.uRoughness.value = this.currentRoughness;
+    uniforms.uSpecularIntensity.value = this.currentSpecular;
+
+    this.finishListeners.forEach((cb) => cb(this.currentFinish, this.currentRoughness, this.currentSpecular));
     this.colorPickerTarget.scheduleResample();
   }
 
@@ -314,9 +344,17 @@ export class Viewport {
     return this.currentFinish;
   }
 
-  public onSurfaceFinishChange(callback: (finish: SurfaceFinish) => void): () => void {
+  public getRoughness(): number {
+    return this.currentRoughness;
+  }
+
+  public getSpecular(): number {
+    return this.currentSpecular;
+  }
+
+  public onSurfaceFinishChange(callback: (finish: SurfaceFinish, roughness: number, specular: number) => void): () => void {
     this.finishListeners.add(callback);
-    callback(this.currentFinish);
+    callback(this.currentFinish, this.currentRoughness, this.currentSpecular);
     return () => {
       this.finishListeners.delete(callback);
     };

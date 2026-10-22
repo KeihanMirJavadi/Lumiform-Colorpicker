@@ -8,26 +8,26 @@ export interface SurfaceFinishConfig {
   description: string;
 }
 
-export const SURFACE_FINISHES: Record<SurfaceFinish, SurfaceFinishConfig> = {
+export const SURFACE_FINISHES: Record<Exclude<SurfaceFinish, 'custom'>, SurfaceFinishConfig> = {
   matte: {
     finish: 'matte',
     name: 'Matte',
     roughness: 1.0,
     specularIntensity: 0.0,
-    description: 'Roughness 1.0, 0% Specular (pure diffuse Lambertian)',
+    description: '100% Roughness, 0% Specular (pure diffuse Lambertian)',
   },
   satin: {
     finish: 'satin',
     name: 'Satin',
-    roughness: 0.5,
-    specularIntensity: 0.3,
-    description: 'Roughness 0.5, 30% Specular (soft, spread highlight)',
+    roughness: 0.45,
+    specularIntensity: 0.4,
+    description: '45% Roughness, 40% Specular (soft, spread highlight)',
   },
   glossy: {
     finish: 'glossy',
     name: 'Glossy',
-    roughness: 0.1,
-    specularIntensity: 0.9,
-    description: 'Roughness 0.1, 90% Specular (sharp specular highlight + Fresnel)',
+    roughness: 0.08,
+    specularIntensity: 0.95,
+    description: '8% Roughness, 95% Specular (sharp specular highlight + Fresnel)',
   },
 };
