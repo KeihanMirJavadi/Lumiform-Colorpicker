@@ -37,8 +37,8 @@ export class Viewport {
   private animationFrameId: number | null = null;
   private isDisposed = false;
 
-  // Interaction tracking (Clean: rotate mesh vs orbit camera)
-  private interactionMode: 'none' | 'orbit-camera' | 'rotate-mesh' = 'none';
+  // Interaction tracking (Sun drag, Mesh rotation, Camera orbit)
+  private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'rotate-mesh' = 'none';
   private previousPointerPos = { x: 0, y: 0 };
   private currentFinish: SurfaceFinish = 'satin';
 
@@ -49,7 +49,7 @@ export class Viewport {
   constructor(options: ViewportOptions) {
     this.container = options.container;
 
-    // 1. Three.js Scene Setup (clean dark canvas, zero gizmo clutter)
+    // 1. Three.js Scene Setup (clean dark canvas, only sun and mesh, NO lines)
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x181818);
 
@@ -96,9 +96,10 @@ export class Viewport {
     this.meshGroup.add(this.targetMesh);
     this.scene.add(this.meshGroup);
 
-    // 6. Lighting Engine (Sliders-driven, no 3D screen gizmos)
+    // 6. Lighting Engine & Sun Indicator (Only the glowing sun itself, NO lines/rings)
     this.lightingEngine = new LightingEngine();
     this.lightingEngine.bindUniforms(material.uniforms as LumiformShaderUniforms);
+    this.scene.add(this.lightingEngine.getSunIndicator().group);
 
     this.lightingEngine.onEnvironmentChange(() => {
       this.colorPickerTarget?.scheduleResample();
@@ -166,7 +167,16 @@ export class Viewport {
 
       this.raycaster.setFromCamera(this.pointer, this.camera);
 
-      // Check 3D Mesh hit (Isolated 3D Object Rotation)
+      // 1. Check Sun Handle hit (direct drag on the 3D Sun)
+      const sunHits = this.raycaster.intersectObjects(this.lightingEngine.getSunIndicator().getHitObjects(), true);
+      if (sunHits.length > 0) {
+        this.interactionMode = 'orbit-light';
+        canvas.style.cursor = 'crosshair';
+        this.lightingEngine.getSunIndicator().onPointerDown(e.clientX, e.clientY);
+        return;
+      }
+
+      // 2. Check 3D Mesh hit (Isolated 3D Object Rotation)
       const meshHits = this.raycaster.intersectObject(this.targetMesh);
       if (meshHits.length > 0 && !e.altKey) {
         this.interactionMode = 'rotate-mesh';
@@ -174,13 +184,19 @@ export class Viewport {
         return;
       }
 
-      // Otherwise: Camera Orbit around the scene
+      // 3. Otherwise: Camera Orbit around the scene
       this.interactionMode = 'orbit-camera';
       canvas.style.cursor = 'grabbing';
       this.orbitCamera.onPointerDown(e.clientX, e.clientY);
     });
 
     canvas.addEventListener('pointermove', (e: PointerEvent) => {
+      if (this.interactionMode === 'orbit-light') {
+        this.lightingEngine.getSunIndicator().onPointerMove(e.clientX, e.clientY);
+        this.colorPickerTarget.scheduleResample();
+        return;
+      }
+
       if (this.interactionMode === 'rotate-mesh') {
         const deltaX = e.clientX - this.previousPointerPos.x;
         const deltaY = e.clientY - this.previousPointerPos.y;
@@ -204,6 +220,12 @@ export class Viewport {
       this.updatePointerCoordinates(e);
       this.raycaster.setFromCamera(this.pointer, this.camera);
 
+      const sunHits = this.raycaster.intersectObjects(this.lightingEngine.getSunIndicator().getHitObjects(), true);
+      if (sunHits.length > 0) {
+        canvas.style.cursor = 'pointer';
+        return;
+      }
+
       const meshHits = this.raycaster.intersectObject(this.targetMesh);
       if (meshHits.length > 0) {
         canvas.style.cursor = 'grab';
@@ -217,7 +239,9 @@ export class Viewport {
         canvas.releasePointerCapture(e.pointerId);
       }
 
-      if (this.interactionMode === 'orbit-camera') {
+      if (this.interactionMode === 'orbit-light') {
+        this.lightingEngine.getSunIndicator().onPointerUp();
+      } else if (this.interactionMode === 'orbit-camera') {
         this.orbitCamera.onPointerUp();
       }
 

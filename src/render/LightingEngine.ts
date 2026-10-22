@@ -1,16 +1,24 @@
 import * as THREE from 'three';
 import { LightingPreset } from '../core/types';
 import { LIGHTING_PRESETS, LightingEnvironment, sphericalToCartesian } from '../core/lighting';
+import { SunIndicator } from './SunIndicator';
 import { LumiformShaderUniforms } from './shaders/lumiformShader';
 
 export class LightingEngine {
   private activePreset: LightingPreset = 'daylight';
   private environment: LightingEnvironment;
+  private sunIndicator: SunIndicator;
   private shaderUniforms: LumiformShaderUniforms | null = null;
   private changeListeners: Set<(env: LightingEnvironment) => void> = new Set();
 
   constructor() {
     const presetConfig = LIGHTING_PRESETS[this.activePreset];
+
+    this.sunIndicator = new SunIndicator({
+      radius: 1.85,
+      initialAzimuth: presetConfig.keyLight.azimuth,
+      initialElevation: presetConfig.keyLight.elevation,
+    });
 
     this.environment = {
       preset: this.activePreset,
@@ -27,11 +35,27 @@ export class LightingEngine {
         intensity: presetConfig.ambient.intensity,
       },
     };
+
+    this.sunIndicator.setColor(this.environment.keyLight.color);
+
+    // Direct sun drag syncs to engine and shaders
+    this.sunIndicator.onDirectionChange((dir, azimuth, elevation) => {
+      this.environment.keyLight.azimuth = azimuth;
+      this.environment.keyLight.elevation = elevation;
+      if (this.shaderUniforms) {
+        this.shaderUniforms.uLightDir.value.copy(dir);
+      }
+      this.notifyChange();
+    });
   }
 
   public bindUniforms(uniforms: LumiformShaderUniforms): void {
     this.shaderUniforms = uniforms;
     this.syncShaderUniforms();
+  }
+
+  public getSunIndicator(): SunIndicator {
+    return this.sunIndicator;
   }
 
   public getEnvironment(): LightingEnvironment {
@@ -61,15 +85,18 @@ export class LightingEngine {
     this.environment.ambient.groundColor.set(config.ambient.groundColor);
     this.environment.ambient.intensity = config.ambient.intensity;
 
+    this.sunIndicator.setAngles(config.keyLight.azimuth, config.keyLight.elevation, false);
+    this.sunIndicator.setColor(this.environment.keyLight.color);
+
     this.syncShaderUniforms();
     this.notifyChange();
   }
 
   public setLightAngles(azimuth: number, elevation: number): void {
-    // Wrap azimuth 0 to 2*PI
     this.environment.keyLight.azimuth = (azimuth % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-    // Clamp elevation -PI/2 to +PI/2
     this.environment.keyLight.elevation = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, elevation));
+
+    this.sunIndicator.setAngles(this.environment.keyLight.azimuth, this.environment.keyLight.elevation, false);
 
     this.syncShaderUniforms();
     this.notifyChange();
@@ -102,5 +129,6 @@ export class LightingEngine {
 
   public dispose(): void {
     this.changeListeners.clear();
+    this.sunIndicator.dispose();
   }
 }
