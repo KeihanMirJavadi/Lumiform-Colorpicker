@@ -1,0 +1,32 @@
+{
+  "name": "lumiform-colorpicker",
+  "version": "0.1.0",
+  "description": "Real-Time 3D Color Picker & Light Simulator for Photoshop 2025",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KeihanMirJavadi/Lumiform-Colorpicker.git"
+  },
+  "keywords": [
+    "photoshop",
+    "uxp",
+    "colorpicker",
+    "threejs",
+    "lighting"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}
