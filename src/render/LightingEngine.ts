@@ -5,14 +5,14 @@ import { SunIndicator } from './SunIndicator';
 import { LumiformShaderUniforms } from './shaders/lumiformShader';
 
 export class LightingEngine {
-  private activePreset: LightingPreset = 'daylight';
+  private activePreset: LightingPreset | 'custom' = 'daylight';
   private environment: LightingEnvironment;
   private sunIndicator: SunIndicator;
   private shaderUniforms: LumiformShaderUniforms | null = null;
   private changeListeners: Set<(env: LightingEnvironment) => void> = new Set();
 
   constructor() {
-    const presetConfig = LIGHTING_PRESETS[this.activePreset];
+    const presetConfig = LIGHTING_PRESETS['daylight'];
 
     this.sunIndicator = new SunIndicator({
       radius: 1.85,
@@ -38,8 +38,10 @@ export class LightingEngine {
 
     this.sunIndicator.setColor(this.environment.keyLight.color);
 
-    // Direct sun drag syncs to engine and shaders
+    // Direct sun drag syncs to engine and shaders; switches preset to 'custom' (deselects presets)
     this.sunIndicator.onDirectionChange((dir, azimuth, elevation) => {
+      this.activePreset = 'custom';
+      this.environment.preset = 'custom';
       this.environment.keyLight.azimuth = azimuth;
       this.environment.keyLight.elevation = elevation;
       if (this.shaderUniforms) {
@@ -62,7 +64,7 @@ export class LightingEngine {
     return this.environment;
   }
 
-  public getActivePreset(): LightingPreset {
+  public getActivePreset(): LightingPreset | 'custom' {
     return this.activePreset;
   }
 
@@ -93,6 +95,8 @@ export class LightingEngine {
   }
 
   public setLightAngles(azimuth: number, elevation: number): void {
+    this.activePreset = 'custom';
+    this.environment.preset = 'custom';
     this.environment.keyLight.azimuth = (azimuth % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
     this.environment.keyLight.elevation = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, elevation));
 

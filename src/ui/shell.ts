@@ -206,6 +206,9 @@ export class AppShell {
     const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
 
     const applyAnglesFromUI = (azimDeg: number, elevDeg: number) => {
+      // Immediately deselect presets on manual slider adjustment
+      presetBtns.forEach((btn) => btn.classList.remove('active'));
+
       const azimRad = (azimDeg * Math.PI) / 180;
       const elevRad = (elevDeg * Math.PI) / 180;
       this.viewport?.setLightAngles(azimRad, elevRad);
@@ -259,7 +262,7 @@ export class AppShell {
       }
 
       presetBtns.forEach((btn) => {
-        if (btn.getAttribute('data-preset') === env.preset) {
+        if (env.preset !== 'custom' && btn.getAttribute('data-preset') === env.preset) {
           btn.classList.add('active');
         } else {
           btn.classList.remove('active');

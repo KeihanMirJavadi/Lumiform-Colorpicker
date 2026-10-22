@@ -16,7 +16,7 @@ export interface KeyLightConfig {
 }
 
 export interface LightingEnvironment {
-  preset: LightingPreset;
+  preset: LightingPreset | 'custom';
   keyLight: KeyLightConfig;
   ambient: Ambient3ZoneConfig;
 }
