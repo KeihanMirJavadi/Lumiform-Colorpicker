@@ -147,6 +147,11 @@ export class Viewport {
     this.colorPickerTarget.scheduleResample();
   }
 
+  public resetMeshRotation(): void {
+    this.meshGroup.rotation.set(0, 0, 0);
+    this.colorPickerTarget.scheduleResample();
+  }
+
   public getMeshType(): MeshGeometryType {
     return this.currentMeshType;
   }

@@ -98,6 +98,12 @@ html, body {
   padding: 0 4px 6px 4px;
 }
 
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .toolbar-label {
   font-size: 11px;
   color: var(--ps-text-secondary);
@@ -130,6 +136,30 @@ html, body {
   color: #fff;
   border-color: var(--ps-accent-hover);
   font-weight: 600;
+}
+
+.ps-btn-reset-rotation {
+  background: var(--ps-bg-elevated);
+  border: 1px solid var(--ps-border);
+  color: var(--ps-text-secondary);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--ps-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.ps-btn-reset-rotation:hover {
+  color: var(--ps-text-primary);
+  background: var(--ps-bg-hover);
+  border-color: #555;
+}
+
+.ps-btn-reset-rotation:active {
+  transform: translateY(1px);
 }
 
 /* Viewport Area */

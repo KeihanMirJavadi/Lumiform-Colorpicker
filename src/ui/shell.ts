@@ -27,13 +27,18 @@ export class AppShell {
       </header>
 
       <main class="panel-content">
-        <!-- 3D Viewport Toolbar (Mesh Switcher) -->
+        <!-- 3D Viewport Toolbar (Mesh Switcher & Reset Rotation) -->
         <div class="viewport-toolbar">
-          <span class="toolbar-label">3D Test Form:</span>
-          <div class="mesh-toggle-group">
-            <button class="mesh-toggle-btn active" data-mesh="sphere" id="btn-mesh-sphere">🔮 Sphere</button>
-            <button class="mesh-toggle-btn" data-mesh="cube" id="btn-mesh-cube">🧊 Cube</button>
+          <div class="toolbar-left">
+            <span class="toolbar-label">3D Form:</span>
+            <div class="mesh-toggle-group">
+              <button class="mesh-toggle-btn active" data-mesh="sphere" id="btn-mesh-sphere">🔮 Sphere</button>
+              <button class="mesh-toggle-btn" data-mesh="cube" id="btn-mesh-cube">🧊 Cube</button>
+            </div>
           </div>
+          <button class="ps-btn-reset-rotation" id="btn-reset-rotation" title="Reset central 3D mesh rotation">
+            <span>↺</span> Reset Rotation
+          </button>
         </div>
 
         <!-- 3D Viewport with Persistent Color Target (No Gizmos) -->
@@ -175,6 +180,11 @@ export class AppShell {
           btn.classList.add('active');
         }
       });
+    });
+
+    const resetBtn = this.root.querySelector<HTMLButtonElement>('#btn-reset-rotation');
+    resetBtn?.addEventListener('click', () => {
+      this.viewport?.resetMeshRotation();
     });
   }
 
