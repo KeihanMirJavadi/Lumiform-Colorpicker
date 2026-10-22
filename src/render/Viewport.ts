@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { OrbitCamera } from './OrbitCamera';
 import { LightingEngine } from './LightingEngine';
 import { createLumiformMaterial, LumiformShaderUniforms } from './shaders/lumiformShader';
-import { LightingPreset } from '../core/types';
+import { LightingPreset, SurfaceFinish } from '../core/types';
+import { SURFACE_FINISHES } from '../core/material';
 
 export interface ViewportOptions {
   container: HTMLElement;
@@ -26,6 +27,8 @@ export class Viewport {
 
   // Interaction mode tracking
   private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'sphere' = 'none';
+  private currentFinish: SurfaceFinish = 'satin';
+  private finishListeners: Set<(finish: SurfaceFinish) => void> = new Set();
 
   constructor(options: ViewportOptions) {
     this.container = options.container;
@@ -208,6 +211,27 @@ export class Viewport {
     const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
     const uniforms = this.sphereMesh.material.uniforms as LumiformShaderUniforms;
     uniforms.uAlbedo.value.copy(col);
+  }
+
+  public setSurfaceFinish(finish: SurfaceFinish): void {
+    this.currentFinish = finish;
+    const config = SURFACE_FINISHES[finish];
+    const uniforms = this.sphereMesh.material.uniforms as LumiformShaderUniforms;
+    uniforms.uRoughness.value = config.roughness;
+    uniforms.uSpecularIntensity.value = config.specularIntensity;
+    this.finishListeners.forEach((cb) => cb(finish));
+  }
+
+  public getSurfaceFinish(): SurfaceFinish {
+    return this.currentFinish;
+  }
+
+  public onSurfaceFinishChange(callback: (finish: SurfaceFinish) => void): () => void {
+    this.finishListeners.add(callback);
+    callback(this.currentFinish);
+    return () => {
+      this.finishListeners.delete(callback);
+    };
   }
 
   public setPreset(preset: LightingPreset): void {
