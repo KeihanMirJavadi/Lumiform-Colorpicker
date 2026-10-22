@@ -156,13 +156,13 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Implement directional key light with 360° azimuth/elevation circular gizmo, 3-zone ambient model (Sky/Horizon/Ground), and 3 presets (Daylight, Golden Hour, Night).
   * **Acceptance Criteria:** Dragging gizmo ring repositions light source smoothly; clicking presets immediately updates lighting atmosphere.
 
-* [ ] **Task 1.4: Surface Finish (Matte / Satin / Glossy)**
-  * **State:** `current`
+* [x] **Task 1.4: Surface Finish (Matte / Satin / Glossy)**
+  * **State:** `Done`
   * **Description:** Implement 3-state surface finish selector modifying roughness and specular power in the shader.
   * **Acceptance Criteria:** Switching finish modes immediately updates highlight sharpness and material response.
 
 * [ ] **Task 1.5: In-Panel HSB & Hex Color Controls**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Build compact HSB sliders and hex code input that update the 3D sphere's base diffuse albedo.
   * **Acceptance Criteria:** Changing Hue, Saturation, or Brightness updates the sphere material in real time; hex validation syncs cleanly.
 
