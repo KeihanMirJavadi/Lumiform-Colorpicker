@@ -51,16 +51,46 @@ const fragmentShader = /* glsl */ `
 
   varying vec3 vWorldPosition;
 
+  // Calculates soft drop shadow for a 3D box centered at origin in local space
+  float calcCubeSoftShadow(vec3 ro, vec3 rd, vec3 halfSize) {
+    // 1. Exact Branchless Kay-Kajiya Ray-AABB intersection test for direct umbra
+    vec3 m = 1.0 / (rd + vec3(equal(rd, vec3(0.0))) * 1e-6);
+    vec3 n = m * ro;
+    vec3 k = abs(m) * halfSize;
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+    float tNear = max(max(t1.x, t1.y), t1.z);
+    float tFar  = min(min(t2.x, t2.y), t2.z);
+
+    if (tNear <= tFar && tFar > 0.0) {
+      return 0.0; // Ray directly intersects the 3D cube body (full umbra)
+    }
+
+    // 2. Inigo Quilez SDF soft penumbra for rays that graze past the box
+    float res = 1.0;
+    float t = 0.04;
+    for (int i = 0; i < 20; i++) {
+      vec3 p = ro + rd * t;
+      vec3 q = abs(p) - halfSize;
+      float h = length(max(q, 0.0));
+      res = min(res, 14.0 * h / t);
+      t += max(0.04, h * 0.7);
+      if (t > 6.0) break;
+    }
+    return clamp(res, 0.0, 1.0);
+  }
+
   void main() {
     vec3 P = vWorldPosition;
     vec3 L = normalize(uLightDir);
 
     float shadowFactor = 1.0;
     float contactAO = 1.0;
+    float distToMeshSurface = 0.0;
 
-    if (L.y > 0.005) {
-      if (uMeshType < 0.5) {
-        // --- 1A. SPHERE DROP SHADOW ---
+    if (uMeshType < 0.5) {
+      // --- 1A. SPHERE DROP SHADOW & CONTACT AO ---
+      if (L.y > 0.005) {
         vec3 W = uSphereCenter - P;
         float tProj = dot(W, L);
         if (tProj > 0.0) {
@@ -70,31 +100,25 @@ const fragmentShader = /* glsl */ `
           float occlusion = 1.0 - smoothstep(uSphereRadius - penumbra, uSphereRadius + penumbra, d);
           shadowFactor = 1.0 - occlusion;
         }
-
-        // Circular contact AO
-        float rTouch = length(P.xz - uSphereCenter.xz);
-        contactAO = clamp(rTouch / 0.55, 0.22, 1.0);
-      } else {
-        // --- 1B. CUBE DROP SHADOW (Rotates with 3D Cube) ---
-        // Transform ground point P and light L into cube's local rotated space
-        vec3 P_local = (uCubeInvMatrix * vec4(P, 1.0)).xyz;
-        vec3 L_local = normalize((uCubeInvMatrix * vec4(L, 0.0)).xyz);
-
-        float tMid = max(0.0, -dot(P_local, L_local));
-        vec3 Q = P_local + tMid * L_local;
-
-        // Inigo Quilez Box Signed Distance Function in local space
-        vec3 dBox = abs(Q) - uCubeHalfSize;
-        float distToBox = length(max(dBox, vec3(0.0))) + min(max(dBox.x, max(dBox.y, dBox.z)), 0.0);
-
-        float penumbra = 0.035 + 0.08 * clamp(tMid / uSphereRadius - 1.0, 0.0, 4.0);
-        float occlusion = 1.0 - smoothstep(0.0, penumbra, distToBox);
-        shadowFactor = 1.0 - occlusion;
-
-        // Rectangular contact AO matching cube footprint
-        float rTouch = length(max(abs(P_local.xz) - uCubeHalfSize.xz, vec2(0.0)));
-        contactAO = clamp(rTouch / 0.55, 0.22, 1.0);
       }
+
+      // Circular contact AO & distance
+      float rTouch = length(P.xz - uSphereCenter.xz);
+      contactAO = clamp(rTouch / 0.55, 0.22, 1.0);
+      distToMeshSurface = length(P - uSphereCenter) - uSphereRadius;
+    } else {
+      // --- 1B. CUBE DROP SHADOW & CONTACT AO (Exact Ray-Box Slab + IQ SDF Penumbra) ---
+      vec3 P_local = (uCubeInvMatrix * vec4(P, 1.0)).xyz;
+      vec3 L_local = normalize((uCubeInvMatrix * vec4(L, 0.0)).xyz);
+
+      if (L.y > 0.005) {
+        shadowFactor = calcCubeSoftShadow(P_local, L_local, uCubeHalfSize);
+      }
+
+      // Contact AO: 3D Euclidean distance from ground point to the oriented cube
+      vec3 qContact = max(abs(P_local) - uCubeHalfSize, vec3(0.0));
+      distToMeshSurface = length(qContact);
+      contactAO = clamp(distToMeshSurface / 0.45, 0.22, 1.0);
     }
 
     // 2. Ground Ambient GI from 3-Tone Sky Dome
@@ -105,8 +129,7 @@ const fragmentShader = /* glsl */ `
     ) * uAmbientIntensity;
 
     // 3. Mesh Material Color Bleeding / Reflected Downward Bounce into shadow
-    float dSphere = length(P - uSphereCenter) - uSphereRadius;
-    float bounceSpread = max(0.0, 1.0 - dSphere / 1.75);
+    float bounceSpread = max(0.0, 1.0 - distToMeshSurface / 1.75);
     vec3 colorBleed = uSphereAlbedo * (
       0.30 * bounceSpread * uKeyIntensity * max(0.1, L.y) +
       0.15 * bounceSpread * uAmbientIntensity
@@ -149,7 +172,7 @@ export function createGroundMaterial(): THREE.ShaderMaterial {
     uSphereRadius: { value: 1.25 },
     uMeshType: { value: 0.0 }, // 0.0 = Sphere, 1.0 = Cube
     uCubeInvMatrix: { value: new THREE.Matrix4() },
-    uCubeHalfSize: { value: new THREE.Vector3(1.05, 1.05, 1.05) },
+    uCubeHalfSize: { value: new THREE.Vector3(1.25, 1.25, 1.25) },
   };
 
   return new THREE.ShaderMaterial({

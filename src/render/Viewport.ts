@@ -111,7 +111,7 @@ export class Viewport {
 
     // 7. High-Resolution Geometries (Sphere and Cube)
     this.sphereGeometry = new THREE.SphereGeometry(sphereRadius, 96, 96);
-    this.cubeGeometry = new THREE.BoxGeometry(2.1, 2.1, 2.1);
+    this.cubeGeometry = new THREE.BoxGeometry(2.5, 2.5, 2.5);
 
     const material = createLumiformMaterial(options.initialColor ?? 0xEB5757);
 
@@ -159,7 +159,11 @@ export class Viewport {
     this.animate = this.animate.bind(this);
     this.startLoop();
 
-    this.updateCubeShadowMatrix();
+    if (options.initialMeshType) {
+      this.setMeshType(options.initialMeshType);
+    } else {
+      this.updateCubeShadowMatrix();
+    }
 
     // Initial resample once rendered
     requestAnimationFrame(() => {
@@ -338,6 +342,9 @@ export class Viewport {
 
   private animate(): void {
     if (this.isDisposed) return;
+    if (this.currentMeshType === 'cube') {
+      this.updateCubeShadowMatrix();
+    }
     this.renderer.render(this.scene, this.camera);
     this.animationFrameId = requestAnimationFrame(this.animate);
   }
