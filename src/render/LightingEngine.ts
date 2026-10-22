@@ -15,6 +15,7 @@ export class LightingEngine {
   private activePreset: LightingPreset | 'custom' = 'daylight';
   private environment: LightingEnvironment;
   private sunIndicator: SunIndicator;
+  private groundAlbedo: THREE.Color = new THREE.Color('#4A853D'); // Default Grass Green
 
   private meshUniforms: LumiformShaderUniforms | null = null;
   private skyUniforms: SkyShaderUniforms | null = null;
@@ -43,7 +44,7 @@ export class LightingEngine {
         zenithColor: new THREE.Color(presetConfig.ambient.zenithColor),
         equatorColor: new THREE.Color(presetConfig.ambient.equatorColor),
         horizonColor: new THREE.Color(presetConfig.ambient.horizonColor),
-        groundColor: new THREE.Color(presetConfig.ambient.groundColor),
+        groundColor: new THREE.Color(this.groundAlbedo), // Default Grass
         skyColor: new THREE.Color(presetConfig.ambient.equatorColor),
         intensity: presetConfig.ambient.intensity,
       },
@@ -114,7 +115,7 @@ export class LightingEngine {
     this.environment.ambient.zenithColor.set(config.ambient.zenithColor);
     this.environment.ambient.equatorColor.set(config.ambient.equatorColor);
     this.environment.ambient.horizonColor.set(config.ambient.horizonColor);
-    this.environment.ambient.groundColor.set(config.ambient.groundColor);
+    this.environment.ambient.groundColor.copy(this.groundAlbedo);
     this.environment.ambient.skyColor.set(config.ambient.equatorColor);
     this.environment.ambient.intensity = config.ambient.intensity;
 
@@ -139,17 +140,46 @@ export class LightingEngine {
     this.notifyChange();
   }
 
+  public setKeyLightColor(colorHex: string | THREE.Color): void {
+    const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
+    this.activePreset = 'custom';
+    this.environment.preset = 'custom';
+    this.environment.keyLight.color.copy(col);
+    this.sunIndicator.setColor(col);
+
+    this.syncShaderUniforms();
+    this.notifyChange();
+  }
+
+  public setGroundColor(colorHex: string | THREE.Color): void {
+    const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
+    this.groundAlbedo.copy(col);
+    this.environment.ambient.groundColor.copy(col);
+
+    if (this.groundUniforms) {
+      this.groundUniforms.uGroundAlbedo.value.copy(col);
+      this.groundUniforms.uGroundColor.value.copy(col);
+    }
+    this.syncShaderUniforms();
+    this.notifyChange();
+  }
+
+  public getGroundColor(): THREE.Color {
+    return this.groundAlbedo.clone();
+  }
+
   private updateDynamicAtmosphere(elevation: number): void {
     const atmos = computeDynamicAtmosphere(elevation);
     this.environment.ambient.zenithColor.copy(atmos.zenithColor);
     this.environment.ambient.equatorColor.copy(atmos.equatorColor);
     this.environment.ambient.horizonColor.copy(atmos.horizonColor);
-    this.environment.ambient.groundColor.copy(atmos.groundColor);
+    this.environment.ambient.groundColor.copy(this.groundAlbedo);
     this.environment.ambient.skyColor.copy(atmos.equatorColor);
     this.environment.ambient.intensity = atmos.ambientIntensity;
 
     this.environment.keyLight.color.copy(atmos.sunColor);
     this.environment.keyLight.intensity = atmos.sunIntensity;
+    this.sunIndicator.setColor(this.environment.keyLight.color);
   }
 
   public onEnvironmentChange(callback: (env: LightingEnvironment) => void): () => void {
@@ -198,6 +228,7 @@ export class LightingEngine {
       this.groundUniforms.uEquatorColor.value.copy(this.environment.ambient.equatorColor);
       this.groundUniforms.uHorizonColor.value.copy(this.environment.ambient.horizonColor);
       this.groundUniforms.uGroundColor.value.copy(this.environment.ambient.groundColor);
+      this.groundUniforms.uGroundAlbedo.value.copy(this.groundAlbedo);
       this.groundUniforms.uAmbientIntensity.value = this.environment.ambient.intensity;
     }
   }

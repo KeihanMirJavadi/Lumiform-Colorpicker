@@ -299,7 +299,7 @@ html, body {
 /* Presets & Finish Segment Control */
 .preset-segmented-control {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
   gap: 4px;
   background-color: var(--ps-bg-input);
   padding: 3px;
@@ -307,7 +307,7 @@ html, body {
   border: 1px solid var(--ps-border-subtle);
 }
 
-.preset-btn, .finish-btn {
+.preset-btn, .finish-btn, .ground-preset-btn {
   background: none;
   border: none;
   color: var(--ps-text-secondary);
@@ -323,12 +323,12 @@ html, body {
   transition: all 0.15s ease;
 }
 
-.preset-btn:hover, .finish-btn:hover {
+.preset-btn:hover, .finish-btn:hover, .ground-preset-btn:hover {
   color: var(--ps-text-primary);
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-.preset-btn.active, .finish-btn.active {
+.preset-btn.active, .finish-btn.active, .ground-preset-btn.active {
   background-color: var(--ps-accent-blue);
   color: #ffffff;
   font-weight: 600;

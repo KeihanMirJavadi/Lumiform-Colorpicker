@@ -114,10 +114,10 @@ export function createGroundMaterial(): THREE.ShaderMaterial {
     uZenithColor: { value: new THREE.Color('#3B82F6') },
     uEquatorColor: { value: new THREE.Color('#93C5FD') },
     uHorizonColor: { value: new THREE.Color('#E0F2FE') },
-    uGroundColor: { value: new THREE.Color('#4B3C2F') },
+    uGroundColor: { value: new THREE.Color('#4A853D') },
     uAmbientIntensity: { value: 0.9 },
     uSphereAlbedo: { value: new THREE.Color('#EB5757') },
-    uGroundAlbedo: { value: new THREE.Color('#78726B') }, // Neutral warm gray studio ground
+    uGroundAlbedo: { value: new THREE.Color('#4A853D') }, // Default: Lush Grass Green
     uSphereCenter: { value: new THREE.Vector3(0, 0, 0) },
     uSphereRadius: { value: 1.25 },
   };

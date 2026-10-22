@@ -51,10 +51,15 @@ export class AppShell {
         <!-- In-Panel HSB & Hex Color Controls (Task 1.5) -->
         <div class="section-card" id="color-controls-container"></div>
 
-        <!-- Time-of-Day Lighting Presets & 2-Axis Sun Sliders -->
+        <!-- Time-of-Day Lighting Presets, Light Color & 2-Axis Sun Sliders -->
         <div class="section-card">
           <div class="section-header">
-            <h2>Sun Position & Lighting Presets</h2>
+            <h2>Sun Position & Light Color</h2>
+            <div class="hex-group" title="Key Light (Sun) Color">
+              <input type="color" id="picker-light-color" style="opacity:0; width:0; height:0; position:absolute;" value="#FFFBEB" />
+              <div class="albedo-swatch" id="swatch-light-color" style="background-color: #FFFBEB; cursor: pointer;" title="Click to choose light color"></div>
+              <input type="text" class="ps-input-hex" id="input-light-hex" maxlength="7" spellcheck="false" value="#FFFBEB" />
+            </div>
           </div>
           <div class="preset-segmented-control">
             <button class="preset-btn active" data-preset="daylight" id="btn-preset-daylight">
@@ -89,6 +94,32 @@ export class AppShell {
               <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="54" />
               <span class="slider-unit">°</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Ground Surface & Color (Default: Grass) -->
+        <div class="section-card">
+          <div class="section-header">
+            <h2>Ground Surface & Color</h2>
+            <div class="hex-group" title="Ground Surface Color">
+              <input type="color" id="picker-ground-color" style="opacity:0; width:0; height:0; position:absolute;" value="#4A853D" />
+              <div class="albedo-swatch" id="swatch-ground-color" style="background-color: #4A853D; cursor: pointer;" title="Click to choose ground color"></div>
+              <input type="text" class="ps-input-hex" id="input-ground-hex" maxlength="7" spellcheck="false" value="#4A853D" />
+            </div>
+          </div>
+          <div class="preset-segmented-control" style="margin-top: 6px;">
+            <button class="ground-preset-btn active" data-color="#4A853D" id="btn-ground-grass">
+              <span>🌿</span> Grass
+            </button>
+            <button class="ground-preset-btn" data-color="#78726B" id="btn-ground-neutral">
+              <span>⚪</span> Studio Gray
+            </button>
+            <button class="ground-preset-btn" data-color="#6B4C35" id="btn-ground-dirt">
+              <span>🍂</span> Dirt
+            </button>
+            <button class="ground-preset-btn" data-color="#C2A676" id="btn-ground-sand">
+              <span>🏖️</span> Sand
+            </button>
           </div>
         </div>
 
@@ -142,10 +173,11 @@ export class AppShell {
           <h2>Controls Guide</h2>
           <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ps-text-secondary);">
             <p>• 🎨 <strong>5-Value Swatches</strong>: Click any swatch to paint with that calculated lighting tone.</p>
-            <p>• 🎯 <strong>Color Picker Target</strong>: Drag the circular reticle anywhere on the 3D canvas to sample lit colors.</p>
+            <p>• 🎯 <strong>Color Picker Target</strong>: Drag the circular reticle anywhere on the sphere, ground, or sky to sample lit colors.</p>
             <p>• 🧊 <strong>3D Mesh Drag</strong>: Drag the sphere/cube directly to rotate it on its own local axes.</p>
             <p>• ☀️ <strong>Sun Position Controls</strong>: Drag the 3D sun marker or use the Orbit/Height sliders.</p>
-            <p>• 🌌 <strong>Background Drag</strong>: Drag the dark background to orbit the camera.</p>
+            <p>• 🌿 <strong>Ground Plane</strong>: Grass floor by default; customize color to see bounce light and shadow shift in real time.</p>
+            <p>• 🌌 <strong>Background Drag</strong>: Drag the sky background to orbit the camera.</p>
           </div>
         </div>
       </main>
@@ -215,6 +247,8 @@ export class AppShell {
     this.bindMeshToggleButtons();
     this.bindPresetButtons();
     this.bindSunSliders();
+    this.bindLightColorControls();
+    this.bindGroundColorControls();
     this.bindSurfaceFinishControls();
   }
 
@@ -330,6 +364,110 @@ export class AppShell {
 
       // Update analytical swatches
       this.swatchRamp?.updateParameters({ env });
+    });
+  }
+
+  private bindLightColorControls(): void {
+    if (!this.viewport) return;
+
+    const swatchEl = this.root.querySelector<HTMLElement>('#swatch-light-color')!;
+    const pickerEl = this.root.querySelector<HTMLInputElement>('#picker-light-color')!;
+    const hexInput = this.root.querySelector<HTMLInputElement>('#input-light-hex')!;
+    const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
+
+    swatchEl.addEventListener('click', () => {
+      pickerEl.click();
+    });
+
+    const applyLightColor = (hex: string) => {
+      swatchEl.style.backgroundColor = hex;
+      pickerEl.value = hex;
+      if (hexInput !== document.activeElement) {
+        hexInput.value = hex.toUpperCase();
+      }
+
+      presetBtns.forEach((btn) => btn.classList.remove('active'));
+      this.viewport?.setLightColor(hex);
+      if (this.viewport) {
+        this.swatchRamp?.updateParameters({ env: this.viewport.getLightingEngine().getEnvironment() });
+      }
+    };
+
+    pickerEl.addEventListener('input', () => {
+      applyLightColor(pickerEl.value);
+    });
+
+    hexInput.addEventListener('input', () => {
+      let val = hexInput.value.trim();
+      if (!val.startsWith('#')) val = '#' + val;
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        applyLightColor(val);
+      }
+    });
+
+    // Synchronize preset changes to light color swatch
+    this.viewport.getLightingEngine().onEnvironmentChange((env) => {
+      const hex = '#' + env.keyLight.color.getHexString();
+      swatchEl.style.backgroundColor = hex;
+      pickerEl.value = hex;
+      if (hexInput !== document.activeElement) {
+        hexInput.value = hex.toUpperCase();
+      }
+    });
+  }
+
+  private bindGroundColorControls(): void {
+    if (!this.viewport) return;
+
+    const swatchEl = this.root.querySelector<HTMLElement>('#swatch-ground-color')!;
+    const pickerEl = this.root.querySelector<HTMLInputElement>('#picker-ground-color')!;
+    const hexInput = this.root.querySelector<HTMLInputElement>('#input-ground-hex')!;
+    const groundBtns = this.root.querySelectorAll<HTMLButtonElement>('.ground-preset-btn');
+
+    swatchEl.addEventListener('click', () => {
+      pickerEl.click();
+    });
+
+    const applyGroundColor = (hex: string) => {
+      swatchEl.style.backgroundColor = hex;
+      pickerEl.value = hex;
+      if (hexInput !== document.activeElement) {
+        hexInput.value = hex.toUpperCase();
+      }
+
+      groundBtns.forEach((b) => {
+        if (b.getAttribute('data-color')?.toUpperCase() === hex.toUpperCase()) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+
+      this.viewport?.setGroundColor(hex);
+      if (this.viewport) {
+        this.swatchRamp?.updateParameters({ env: this.viewport.getLightingEngine().getEnvironment() });
+      }
+    };
+
+    pickerEl.addEventListener('input', () => {
+      applyGroundColor(pickerEl.value);
+    });
+
+    hexInput.addEventListener('input', () => {
+      let val = hexInput.value.trim();
+      if (!val.startsWith('#')) val = '#' + val;
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        applyGroundColor(val);
+      }
+    });
+
+    groundBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const color = btn.getAttribute('data-color');
+        if (color) {
+          applyGroundColor(color);
+        }
+      });
     });
   }
 

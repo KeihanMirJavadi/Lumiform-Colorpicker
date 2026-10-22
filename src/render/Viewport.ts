@@ -413,6 +413,20 @@ export class Viewport {
     this.colorPickerTarget.scheduleResample();
   }
 
+  public setLightColor(colorHex: string | number | THREE.Color): void {
+    const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
+    this.lightingEngine.setKeyLightColor(col);
+    this.colorPickerTarget.scheduleResample();
+  }
+
+  public setGroundColor(colorHex: string | number | THREE.Color): void {
+    const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
+    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+    groundUniforms.uGroundAlbedo.value.copy(col);
+    this.lightingEngine.setGroundColor(col);
+    this.colorPickerTarget.scheduleResample();
+  }
+
   public getLightingEngine(): LightingEngine {
     return this.lightingEngine;
   }
