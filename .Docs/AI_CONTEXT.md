@@ -161,13 +161,13 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Implement 3-state surface finish selector modifying roughness and specular power in the shader.
   * **Acceptance Criteria:** Switching finish modes immediately updates highlight sharpness and material response.
 
-* [ ] **Task 1.5: In-Panel HSB & Hex Color Controls**
-  * **State:** `current`
+* [x] **Task 1.5: In-Panel HSB & Hex Color Controls**
+  * **State:** `Done`
   * **Description:** Build compact HSB sliders and hex code input that update the 3D sphere's base diffuse albedo.
   * **Acceptance Criteria:** Changing Hue, Saturation, or Brightness updates the sphere material in real time; hex validation syncs cleanly.
 
 * [ ] **Task 1.6: Viewport Eyedropper Sampling & Throttling**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Implement click-and-drag eyedropper on the sphere canvas using WebGL readPixels, throttled to `requestAnimationFrame`.
   * **Acceptance Criteria:** Clicking/dragging on the sphere samples the lit pixel under pointer and updates the active color with zero lag.
 
