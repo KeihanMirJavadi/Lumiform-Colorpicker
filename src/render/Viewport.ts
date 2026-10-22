@@ -111,7 +111,7 @@ export class Viewport {
 
     // 7. High-Resolution Geometries (Sphere and Cube)
     this.sphereGeometry = new THREE.SphereGeometry(sphereRadius, 96, 96);
-    this.cubeGeometry = new THREE.BoxGeometry(1.8, 1.8, 1.8);
+    this.cubeGeometry = new THREE.BoxGeometry(2.1, 2.1, 2.1);
 
     const material = createLumiformMaterial(options.initialColor ?? 0xEB5757);
 
@@ -159,6 +159,8 @@ export class Viewport {
     this.animate = this.animate.bind(this);
     this.startLoop();
 
+    this.updateCubeShadowMatrix();
+
     // Initial resample once rendered
     requestAnimationFrame(() => {
       this.colorPickerTarget.resampleImmediate();
@@ -167,21 +169,35 @@ export class Viewport {
 
   public setMeshType(type: MeshGeometryType): void {
     this.currentMeshType = type;
-    const uniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
+    const lumiformUniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
+    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+
     if (type === 'cube') {
       this.targetMesh.geometry = this.cubeGeometry;
-      uniforms.uIsSphere.value = 0.0;
+      lumiformUniforms.uIsSphere.value = 0.0;
+      groundUniforms.uMeshType.value = 1.0;
     } else {
       this.targetMesh.geometry = this.sphereGeometry;
-      uniforms.uIsSphere.value = 1.0;
+      lumiformUniforms.uIsSphere.value = 1.0;
+      groundUniforms.uMeshType.value = 0.0;
     }
+
+    this.updateCubeShadowMatrix();
     this.meshTypeListeners.forEach((cb) => cb(type));
     this.colorPickerTarget.scheduleResample();
   }
 
   public resetMeshRotation(): void {
     this.meshGroup.rotation.set(0, 0, 0);
+    this.updateCubeShadowMatrix();
     this.colorPickerTarget.scheduleResample();
+  }
+
+  private updateCubeShadowMatrix(): void {
+    if (!this.groundMesh || !this.meshGroup) return;
+    this.meshGroup.updateMatrixWorld(true);
+    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+    groundUniforms.uCubeInvMatrix.value.copy(this.meshGroup.matrixWorld).invert();
   }
 
   public getMeshType(): MeshGeometryType {
@@ -243,6 +259,7 @@ export class Viewport {
         this.meshGroup.rotation.y += deltaX * 0.008;
         this.meshGroup.rotation.x += deltaY * 0.008;
 
+        this.updateCubeShadowMatrix();
         this.colorPickerTarget.scheduleResample();
         return;
       }
