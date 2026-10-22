@@ -57,24 +57,34 @@ const fragmentShader = /* glsl */ `
     float NdotL = max(0.0, dot(N, L));
     vec3 keyDiffuse = uKeyColor * (NdotL * uKeyIntensity);
 
-    // 2. 3-Tone Ambient Environment (Zenith, Equator, Horizon, Ground)
-    vec3 ambientColor;
-    if (N.y >= 0.0) {
-      if (N.y < 0.45) {
-        float t = N.y / 0.45;
-        ambientColor = mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
-      } else {
-        float t = (N.y - 0.45) / 0.55;
-        ambientColor = mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
-      }
+    // 2. Physical Hemispherical Sky Fill + Ground Bounce GI
+    // Upper hemisphere receives sky dome fill from above (Zenith, Equator, Horizon):
+    vec3 skyLight;
+    if (N.y < 0.45) {
+      float t = max(0.0, N.y) / 0.45;
+      skyLight = mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
     } else {
-      float t = pow(clamp(-N.y, 0.0, 1.0), 0.85);
-      ambientColor = mix(uHorizonColor, uGroundColor, t);
+      float t = (N.y - 0.45) / 0.55;
+      skyLight = mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
     }
-    vec3 totalAmbient = ambientColor * uAmbientIntensity;
+
+    // Lower hemisphere receives secondary ground bounce GI (from key sunlight + ambient hitting ground):
+    vec3 groundBounceGI = uGroundColor * (
+      0.35 * max(0.0, L.y) * uKeyIntensity +
+      0.22 * uAmbientIntensity
+    );
+
+    // Natural hemispherical blend:
+    vec3 ambientLight;
+    if (N.y >= 0.0) {
+      ambientLight = skyLight * uAmbientIntensity;
+    } else {
+      float t = pow(clamp(-N.y, 0.0, 1.0), 0.75);
+      ambientLight = mix(uHorizonColor * uAmbientIntensity, groundBounceGI * uAmbientIntensity, t);
+    }
 
     // 3. Diffuse component applied to Base Albedo
-    vec3 diffuseLight = keyDiffuse + totalAmbient;
+    vec3 diffuseLight = keyDiffuse + ambientLight;
     vec3 diffuse = uAlbedo * diffuseLight;
 
     // 4. Specular Component (Surface Finish Roughness + Specular Intensity)
@@ -90,7 +100,7 @@ const fragmentShader = /* glsl */ `
       specular = uKeyColor * (specFactor * fresnel * uKeyIntensity);
     }
 
-    // 5. Subtle ambient reflection / rim sheen on glossy finishes
+    // 5. Ambient Specular Sheen for Glossy finishes
     if (uSpecularIntensity > 0.05 && uRoughness < 0.7) {
       float VdotN = max(0.0, dot(V, N));
       float edgeFresnel = pow(clamp(1.0 - VdotN, 0.0, 1.0), 4.0);
@@ -101,7 +111,7 @@ const fragmentShader = /* glsl */ `
     // Total Surface Radiance
     vec3 finalColor = diffuse + specular;
 
-    // Tone Mapping (ACES Filmic Curve approximation for clean vibrancy without blowout)
+    // Tone Mapping (ACES Filmic Curve approximation with proper shadow retention)
     vec3 a = finalColor * (finalColor + 0.0245786) - 0.000090537;
     vec3 b = finalColor * (0.983729 * finalColor + 0.4329510) + 0.238081;
     vec3 mapped = clamp(a / b, 0.0, 1.0);
@@ -116,14 +126,14 @@ export function createLumiformMaterial(initialAlbedo: THREE.Color | string | num
   const uniforms: LumiformShaderUniforms = {
     uAlbedo: { value: albedo },
     uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-    uKeyColor: { value: new THREE.Color('#FFF5E6') },
+    uKeyColor: { value: new THREE.Color('#FFFBEB') },
     uKeyIntensity: { value: 2.2 },
-    uZenithColor: { value: new THREE.Color('#1E40AF') },
-    uEquatorColor: { value: new THREE.Color('#60A5FA') },
+    uZenithColor: { value: new THREE.Color('#3B82F6') },
+    uEquatorColor: { value: new THREE.Color('#93C5FD') },
     uHorizonColor: { value: new THREE.Color('#E0F2FE') },
-    uGroundColor: { value: new THREE.Color('#5A4638') },
-    uSkyColor: { value: new THREE.Color('#60A5FA') },
-    uAmbientIntensity: { value: 0.85 },
+    uGroundColor: { value: new THREE.Color('#4B3C2F') },
+    uSkyColor: { value: new THREE.Color('#93C5FD') },
+    uAmbientIntensity: { value: 0.9 },
     uRoughness: { value: 0.45 },
     uSpecularIntensity: { value: 0.4 },
   };

@@ -57,45 +57,50 @@ const fragmentShader = /* glsl */ `
         float dSq = dot(V, V) - tProj * tProj;
         float d = sqrt(max(0.0, dSq));
         // Soft penumbra stretches naturally with distance from sphere contact
-        float penumbra = 0.07 + 0.13 * max(0.0, tProj - uSphereRadius);
+        float penumbra = 0.08 + 0.15 * max(0.0, tProj - uSphereRadius);
         shadowOcclusion = 1.0 - smoothstep(uSphereRadius - penumbra, uSphereRadius + penumbra, d);
       }
     }
 
-    // 2. Contact Ambient Occlusion (darkens crevices directly under the touch point)
+    // 2. Contact Ambient Occlusion (tight radius directly under the touch point)
     float rTouch = length(P.xz - uSphereCenter.xz);
-    float contactAO = clamp(rTouch / 1.25, 0.22, 1.0);
+    float contactAO = clamp(rTouch / 0.65, 0.42, 1.0);
 
-    // 3. Mesh Material Color Bleeding / Reflected Downward Bounce
+    // 3. Global Illumination (GI): Mesh Material Color Bleeding / Reflected Downward Bounce
     float dSphere = length(P - uSphereCenter) - uSphereRadius;
-    float bounceSpread = max(0.0, 1.0 - dSphere / 1.85);
-    vec3 colorBleed = uSphereAlbedo * (
-      0.35 * bounceSpread * uKeyIntensity * max(0.0, L.y) +
-      0.18 * bounceSpread * uAmbientIntensity
+    float bounceSpread = max(0.0, 1.0 - dSphere / 2.2);
+    vec3 indirectBounceGI = uSphereAlbedo * (
+      0.45 * bounceSpread * uKeyIntensity * max(0.15, L.y) +
+      0.25 * bounceSpread * uAmbientIntensity
     );
 
-    // 4. Ambient Illumination from 3-Tone Sky (Zenith, Equator, Horizon)
-    vec3 ambientSky = (
-      uHorizonColor * 0.40 +
-      uEquatorColor * 0.40 +
+    // 4. Global Illumination (GI): Hemispherical Sky Fill illuminating the ground
+    vec3 skyGI = (
+      uHorizonColor * 0.35 +
+      uEquatorColor * 0.45 +
       uZenithColor  * 0.20
-    ) * (uAmbientIntensity * contactAO);
+    ) * uAmbientIntensity;
 
     // 5. Direct Sunlight on Ground
     vec3 directSun = uKeyColor * (max(0.0, L.y) * uKeyIntensity * (1.0 - shadowOcclusion));
 
-    // 6. Total Ground Radiance
-    vec3 totalLight = directSun + ambientSky + colorBleed;
+    // 6. Total Ground Radiance (Direct + Ambient Sky GI + Indirect Material Bounce GI)
+    vec3 totalLight = directSun + (skyGI * contactAO) + indirectBounceGI;
     vec3 groundCol = uGroundAlbedo * totalLight;
 
     // 7. Circular Boundary Edge Fade (blends seamlessly into horizon background)
     float distFromCenter = length(P.xz - uSphereCenter.xz);
     float alpha = 1.0 - smoothstep(5.0, 7.5, distFromCenter);
 
-    // 8. ACES Filmic Tone Mapping
-    vec3 a = groundCol * (groundCol + 0.0245786) - 0.000090537;
-    vec3 b = groundCol * (0.983729 * groundCol + 0.4329510) + 0.238081;
+    // 8. ACES Filmic Tone Mapping with GI Shadow Luminance Preservation
+    vec3 x = groundCol * 1.35;
+    vec3 a = x * (x + 0.0245786) - 0.000090537;
+    vec3 b = x * (0.983729 * x + 0.4329510) + 0.238081;
     vec3 mapped = clamp(a / b, 0.0, 1.0);
+
+    // Ensure shadow retains clear, luminous Global Illumination from sky and bounce
+    vec3 giFloor = (skyGI * contactAO + indirectBounceGI * 0.6) * uGroundAlbedo * 0.55;
+    mapped = max(mapped, giFloor);
 
     gl_FragColor = vec4(mapped, alpha);
   }
@@ -104,15 +109,15 @@ const fragmentShader = /* glsl */ `
 export function createGroundMaterial(): THREE.ShaderMaterial {
   const uniforms: GroundShaderUniforms = {
     uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-    uKeyColor: { value: new THREE.Color('#FFF5E6') },
+    uKeyColor: { value: new THREE.Color('#FFFBEB') },
     uKeyIntensity: { value: 2.2 },
-    uZenithColor: { value: new THREE.Color('#1E40AF') },
-    uEquatorColor: { value: new THREE.Color('#60A5FA') },
+    uZenithColor: { value: new THREE.Color('#3B82F6') },
+    uEquatorColor: { value: new THREE.Color('#93C5FD') },
     uHorizonColor: { value: new THREE.Color('#E0F2FE') },
-    uGroundColor: { value: new THREE.Color('#5A4638') },
-    uAmbientIntensity: { value: 0.85 },
+    uGroundColor: { value: new THREE.Color('#4B3C2F') },
+    uAmbientIntensity: { value: 0.9 },
     uSphereAlbedo: { value: new THREE.Color('#EB5757') },
-    uGroundAlbedo: { value: new THREE.Color('#55504A') },
+    uGroundAlbedo: { value: new THREE.Color('#78726B') }, // Neutral warm gray studio ground
     uSphereCenter: { value: new THREE.Vector3(0, 0, 0) },
     uSphereRadius: { value: 1.25 },
   };

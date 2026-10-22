@@ -35,24 +35,36 @@ export function evaluateLightingAnalytical(
   const NdotL = Math.max(0, normN.dot(normL));
   const keyDiffuse = env.keyLight.color.clone().multiplyScalar(NdotL * env.keyLight.intensity);
 
-  // 2. 3-Tone Ambient (Zenith, Equator, Horizon, Ground)
-  let ambientCol: THREE.Color;
+  // 2. Physical Hemispherical Sky Fill + Ground Bounce GI
   const zenith = env.ambient.zenithColor ?? env.ambient.skyColor;
   const equator = env.ambient.equatorColor ?? env.ambient.skyColor;
 
-  if (normN.y >= 0) {
-    if (normN.y < 0.45) {
-      const t = normN.y / 0.45;
-      ambientCol = new THREE.Color().lerpColors(env.ambient.horizonColor, equator, t);
-    } else {
-      const t = (normN.y - 0.45) / 0.55;
-      ambientCol = new THREE.Color().lerpColors(equator, zenith, t);
-    }
+  let skyLight: THREE.Color;
+  if (normN.y < 0.45) {
+    const t = Math.max(0, normN.y) / 0.45;
+    skyLight = new THREE.Color().lerpColors(env.ambient.horizonColor, equator, t);
   } else {
-    const t = Math.pow(Math.max(0, Math.min(1, -normN.y)), 0.85);
-    ambientCol = new THREE.Color().lerpColors(env.ambient.horizonColor, env.ambient.groundColor, t);
+    const t = (normN.y - 0.45) / 0.55;
+    skyLight = new THREE.Color().lerpColors(equator, zenith, t);
   }
-  const totalAmbient = ambientCol.multiplyScalar(env.ambient.intensity);
+
+  const groundBounceGI = env.ambient.groundColor.clone().multiplyScalar(
+    0.35 * Math.max(0, normL.y) * env.keyLight.intensity +
+    0.22 * env.ambient.intensity
+  );
+
+  let ambientCol: THREE.Color;
+  if (normN.y >= 0) {
+    ambientCol = skyLight.multiplyScalar(env.ambient.intensity);
+  } else {
+    const t = Math.pow(Math.max(0, Math.min(1, -normN.y)), 0.75);
+    ambientCol = new THREE.Color().lerpColors(
+      env.ambient.horizonColor.clone().multiplyScalar(env.ambient.intensity),
+      groundBounceGI.multiplyScalar(env.ambient.intensity),
+      t
+    );
+  }
+  const totalAmbient = ambientCol;
 
   // 3. Diffuse Component
   const totalDiffuseLight = new THREE.Color().addColors(keyDiffuse, totalAmbient);
@@ -100,7 +112,7 @@ export function evaluateLightingAnalytical(
 
 function acesFilmic(x: number): number {
   const a = x * (x + 0.0245786) - 0.000090537;
-  const b = x * (0.983729 * x + 0.432951) + 0.238081;
+  const b = x * (0.983729 * x + 0.4329510) + 0.238081;
   return Math.max(0, Math.min(1, a / b));
 }
 
