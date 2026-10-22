@@ -90,6 +90,78 @@ html, body {
   gap: 10px;
 }
 
+/* Viewport Toolbar & Mesh Toggle */
+.viewport-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 6px 4px;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  color: var(--ps-text-secondary);
+  font-weight: 500;
+}
+
+.mesh-toggle-group {
+  display: flex;
+  gap: 4px;
+}
+
+.mesh-toggle-btn {
+  background-color: var(--ps-bg-elevated);
+  border: 1px solid var(--ps-border);
+  color: var(--ps-text-secondary);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--ps-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mesh-toggle-btn:hover {
+  color: var(--ps-text-primary);
+  background-color: var(--ps-bg-hover);
+}
+
+.mesh-toggle-btn.active {
+  background-color: var(--ps-accent-blue);
+  color: #fff;
+  border-color: var(--ps-accent-hover);
+  font-weight: 600;
+}
+
+.ps-btn-reset-rotation {
+  background: var(--ps-bg-elevated);
+  border: 1px solid var(--ps-border);
+  color: var(--ps-text-secondary);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--ps-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.ps-btn-reset-rotation:hover {
+  color: var(--ps-text-primary);
+  background: var(--ps-bg-hover);
+  border-color: #555;
+}
+
+.ps-btn-reset-rotation:active {
+  transform: translateY(1px);
+}
+
 /* Viewport Area */
 .viewport-card {
   background-color: var(--ps-bg-darkest);
@@ -105,6 +177,90 @@ html, body {
   justify-content: center;
   overflow: hidden;
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Persistent Draggable Color Picker Puck (Decoupled Color Target) */
+.color-picker-puck {
+  position: absolute;
+  top: 44%;
+  left: 44%;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.color-picker-puck.dragging {
+  cursor: grabbing;
+}
+
+.puck-ring {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 3px 10px rgba(0, 0, 0, 0.7);
+  background-color: #EB5757;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease;
+}
+
+.color-picker-puck:hover .puck-ring {
+  transform: scale(1.1);
+}
+
+.color-picker-puck.dragging .puck-ring {
+  transform: scale(1.22);
+}
+
+.puck-crosshair-h {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.puck-crosshair-v {
+  position: absolute;
+  height: 100%;
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.puck-center-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.puck-badge {
+  margin-top: 5px;
+  background: rgba(16, 16, 16, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f8fafc;
+  font-family: Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 /* Section Cards */
@@ -192,6 +348,69 @@ html, body {
   color: #38bdf8;
   font-family: Consolas, monospace;
   font-weight: 600;
+}
+
+/* 3-Axis Sun Sliders (Matching Diagram 1 Green, 2 White, 3 Yellow) */
+.sun-sliders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sun-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sun-axis-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: Consolas, monospace;
+}
+
+.axis-green {
+  border: 1.5px solid #22c55e;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.axis-white {
+  border: 1.5px solid #e2e8f0;
+  color: #f8fafc;
+  background: rgba(226, 232, 240, 0.15);
+}
+
+.axis-yellow {
+  border: 1.5px solid #eab308;
+  color: #facc15;
+  background: rgba(234, 179, 8, 0.15);
+}
+
+.sun-axis-name {
+  width: 38px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ps-text-secondary);
+}
+
+.sun-slider-green {
+  background: linear-gradient(to right, #15803d, #22c55e);
+}
+
+.sun-slider-white {
+  background: linear-gradient(to right, #475569, #cbd5e1);
+}
+
+.sun-slider-yellow {
+  background: linear-gradient(to right, #a16207, #facc15);
 }
 
 /* Color Controls & HSB Sliders (Task 1.5) */

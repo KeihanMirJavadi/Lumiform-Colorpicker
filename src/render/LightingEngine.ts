@@ -1,22 +1,25 @@
 import * as THREE from 'three';
 import { LightingPreset } from '../core/types';
-import { LIGHTING_PRESETS, LightingEnvironment } from '../core/lighting';
-import { LightGizmo } from './LightGizmo';
+import { LIGHTING_PRESETS, LightingEnvironment, sphericalToCartesian } from '../core/lighting';
+import { SunIndicator } from './SunIndicator';
 import { LumiformShaderUniforms } from './shaders/lumiformShader';
 
 export class LightingEngine {
-  private activePreset: LightingPreset = 'daylight';
+  private activePreset: LightingPreset | 'custom' = 'daylight';
   private environment: LightingEnvironment;
-  private gizmo: LightGizmo;
+  private sunIndicator: SunIndicator;
   private shaderUniforms: LumiformShaderUniforms | null = null;
   private changeListeners: Set<(env: LightingEnvironment) => void> = new Set();
 
   constructor() {
-    this.gizmo = new LightGizmo({
+    const presetConfig = LIGHTING_PRESETS['daylight'];
+
+    this.sunIndicator = new SunIndicator({
       radius: 1.85,
+      initialAzimuth: presetConfig.keyLight.azimuth,
+      initialElevation: presetConfig.keyLight.elevation,
     });
 
-    const presetConfig = LIGHTING_PRESETS[this.activePreset];
     this.environment = {
       preset: this.activePreset,
       keyLight: {
@@ -33,11 +36,12 @@ export class LightingEngine {
       },
     };
 
-    this.gizmo.setLightDirection(this.environment.keyLight.azimuth, this.environment.keyLight.elevation, false);
-    this.gizmo.setSunColor(this.environment.keyLight.color);
+    this.sunIndicator.setColor(this.environment.keyLight.color);
 
-    // Synchronize gizmo user drags back to engine
-    this.gizmo.onDirectionChange((dir, azimuth, elevation) => {
+    // Direct sun drag syncs to engine and shaders; switches preset to 'custom' (deselects presets)
+    this.sunIndicator.onDirectionChange((dir, azimuth, elevation) => {
+      this.activePreset = 'custom';
+      this.environment.preset = 'custom';
       this.environment.keyLight.azimuth = azimuth;
       this.environment.keyLight.elevation = elevation;
       if (this.shaderUniforms) {
@@ -52,16 +56,20 @@ export class LightingEngine {
     this.syncShaderUniforms();
   }
 
-  public getGizmo(): LightGizmo {
-    return this.gizmo;
+  public getSunIndicator(): SunIndicator {
+    return this.sunIndicator;
   }
 
   public getEnvironment(): LightingEnvironment {
     return this.environment;
   }
 
-  public getActivePreset(): LightingPreset {
+  public getActivePreset(): LightingPreset | 'custom' {
     return this.activePreset;
+  }
+
+  public getDirection(): THREE.Vector3 {
+    return sphericalToCartesian(this.environment.keyLight.azimuth, this.environment.keyLight.elevation).normalize();
   }
 
   public setPreset(preset: LightingPreset): void {
@@ -79,15 +87,23 @@ export class LightingEngine {
     this.environment.ambient.groundColor.set(config.ambient.groundColor);
     this.environment.ambient.intensity = config.ambient.intensity;
 
-    this.gizmo.setLightDirection(config.keyLight.azimuth, config.keyLight.elevation, false);
-    this.gizmo.setSunColor(this.environment.keyLight.color);
+    this.sunIndicator.setAngles(config.keyLight.azimuth, config.keyLight.elevation, false);
+    this.sunIndicator.setColor(this.environment.keyLight.color);
 
     this.syncShaderUniforms();
     this.notifyChange();
   }
 
   public setLightAngles(azimuth: number, elevation: number): void {
-    this.gizmo.setLightDirection(azimuth, elevation, true);
+    this.activePreset = 'custom';
+    this.environment.preset = 'custom';
+    this.environment.keyLight.azimuth = (azimuth % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    this.environment.keyLight.elevation = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, elevation));
+
+    this.sunIndicator.setAngles(this.environment.keyLight.azimuth, this.environment.keyLight.elevation, false);
+
+    this.syncShaderUniforms();
+    this.notifyChange();
   }
 
   public onEnvironmentChange(callback: (env: LightingEnvironment) => void): () => void {
@@ -101,7 +117,7 @@ export class LightingEngine {
   private syncShaderUniforms(): void {
     if (!this.shaderUniforms) return;
 
-    this.shaderUniforms.uLightDir.value.copy(this.gizmo.getDirection());
+    this.shaderUniforms.uLightDir.value.copy(this.getDirection());
     this.shaderUniforms.uKeyColor.value.copy(this.environment.keyLight.color);
     this.shaderUniforms.uKeyIntensity.value = this.environment.keyLight.intensity;
 
@@ -117,6 +133,6 @@ export class LightingEngine {
 
   public dispose(): void {
     this.changeListeners.clear();
-    this.gizmo.dispose();
+    this.sunIndicator.dispose();
   }
 }

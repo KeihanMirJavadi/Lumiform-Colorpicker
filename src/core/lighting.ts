@@ -11,18 +11,17 @@ export interface Ambient3ZoneConfig {
 export interface KeyLightConfig {
   color: THREE.Color;
   intensity: number;
-  azimuth: number;   // Angle in radians around Y axis (0 to 2*PI)
-  elevation: number; // Angle in radians above horizon (-PI/2 to PI/2)
+  azimuth: number;   // Horizontal orbit around Y axis (0 to 2*PI, in degrees 0° to 360°)
+  elevation: number; // Vertical height above/below horizon (-PI/2 to PI/2, in degrees -89° to +89°)
 }
 
 export interface LightingEnvironment {
-  preset: LightingPreset;
+  preset: LightingPreset | 'custom';
   keyLight: KeyLightConfig;
   ambient: Ambient3ZoneConfig;
 }
 
 export function sphericalToCartesian(azimuth: number, elevation: number, distance = 1.0): THREE.Vector3 {
-  // elevation 0 is horizon, PI/2 is directly overhead (zenith)
   const cosElev = Math.cos(elevation);
   const sinElev = Math.sin(elevation);
   const x = distance * cosElev * Math.sin(azimuth);
