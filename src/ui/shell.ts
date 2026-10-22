@@ -1,6 +1,7 @@
 import { IPhotoshopBridge, ColorChangeEvent } from '../bridge/IPhotoshopBridge';
 import { Viewport } from '../render/Viewport';
-import { LightingPreset } from '../core/types';
+import { LightingPreset, SurfaceFinish } from '../core/types';
+import { SURFACE_FINISHES } from '../core/material';
 import { StatusBar } from './statusBar';
 
 export class AppShell {
@@ -60,6 +61,27 @@ export class AppShell {
           </div>
         </div>
 
+        <!-- Surface Finish Mode (Task 1.4) -->
+        <div class="section-card">
+          <div class="section-header">
+            <h2>Surface Finish Mode</h2>
+          </div>
+          <div class="preset-segmented-control">
+            <button class="finish-btn" data-finish="matte" id="btn-finish-matte">
+              <span>⚪</span> Matte
+            </button>
+            <button class="finish-btn active" data-finish="satin" id="btn-finish-satin">
+              <span>✨</span> Satin
+            </button>
+            <button class="finish-btn" data-finish="glossy" id="btn-finish-glossy">
+              <span>💎</span> Glossy
+            </button>
+          </div>
+          <p id="finish-desc" style="margin-top: 8px; font-size: 11px; color: var(--ps-text-secondary);">
+            Satin: Roughness 0.5, 30% Specular (soft, spread highlight)
+          </p>
+        </div>
+
         <!-- Controls Placeholder & Bridge Tester -->
         <div class="section-card">
           <h2>Controls & Bridge Verification</h2>
@@ -100,8 +122,29 @@ export class AppShell {
     });
 
     this.bindPresetButtons();
+    this.bindSurfaceFinishButtons();
     this.bindVerificationButtons();
     this.bindLightingMetricsSync();
+  }
+
+  private bindSurfaceFinishButtons(): void {
+    const finishBtns = this.root.querySelectorAll<HTMLButtonElement>('.finish-btn');
+    const descEl = this.root.querySelector<HTMLElement>('#finish-desc');
+
+    finishBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const finish = btn.getAttribute('data-finish') as SurfaceFinish;
+        if (finish && this.viewport) {
+          this.viewport.setSurfaceFinish(finish);
+          finishBtns.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          if (descEl) {
+            descEl.textContent = `${SURFACE_FINISHES[finish].name}: ${SURFACE_FINISHES[finish].description}`;
+          }
+        }
+      });
+    });
   }
 
   private bindPresetButtons(): void {

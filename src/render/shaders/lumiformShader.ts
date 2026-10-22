@@ -68,17 +68,20 @@ const fragmentShader = /* glsl */ `
     vec3 diffuseLight = keyDiffuse + totalAmbient;
     vec3 diffuse = uAlbedo * diffuseLight;
 
-    // 4. Specular Component (Roughness-driven Blinn-Phong with Fresnel)
-    // Map roughness (0.0 to 1.0) to specular power/shininess
-    float shininess = mix(256.0, 4.0, uRoughness);
-    float NdotH = max(0.0, dot(N, H));
-    float specFactor = pow(NdotH, shininess);
+    // 4. Specular Component (Surface Finish Roughness + Specular Intensity)
+    vec3 specular = vec3(0.0);
+    if (uSpecularIntensity > 0.001 && NdotL > 0.0) {
+      // Physically scaled shininess exponent: 512.0 for glossy (0.1), 32.0 for satin (0.5)
+      float shininess = exp2(10.0 * (1.0 - clamp(uRoughness, 0.0, 1.0)));
+      float NdotH = max(0.0, dot(N, H));
+      float specFactor = pow(NdotH, shininess);
 
-    // Fresnel Schlick approximation
-    float VdotH = max(0.0, dot(V, H));
-    float fresnel = 0.04 + (1.0 - 0.04) * pow(clamp(1.0 - VdotH, 0.0, 1.0), 5.0);
+      // Schlick Fresnel approximation
+      float VdotH = max(0.0, dot(V, H));
+      float fresnel = 0.04 + (1.0 - 0.04) * pow(clamp(1.0 - VdotH, 0.0, 1.0), 5.0);
 
-    vec3 specular = uKeyColor * (specFactor * fresnel * uSpecularIntensity * uKeyIntensity * (NdotL > 0.0 ? 1.0 : 0.0));
+      specular = uKeyColor * (specFactor * fresnel * uSpecularIntensity * uKeyIntensity);
+    }
 
     // Total Surface Radiance
     vec3 finalColor = diffuse + specular;

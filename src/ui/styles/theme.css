@@ -141,7 +141,7 @@ html, body {
   border: 1px solid var(--ps-border-subtle);
 }
 
-.preset-btn {
+.preset-btn, .finish-btn {
   background: none;
   border: none;
   color: var(--ps-text-secondary);
@@ -157,12 +157,12 @@ html, body {
   transition: all 0.15s ease;
 }
 
-.preset-btn:hover {
+.preset-btn:hover, .finish-btn:hover {
   color: var(--ps-text-primary);
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-.preset-btn.active {
+.preset-btn.active, .finish-btn.active {
   background-color: var(--ps-accent-blue);
   color: #ffffff;
   font-weight: 600;
