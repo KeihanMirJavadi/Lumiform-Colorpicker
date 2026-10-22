@@ -1,4 +1,4 @@
-# AI_CONTEXT.md - Photoshop 3D Color Tool
+# AI_CONTEXT.md - Lumiform Colorpicker
 
 > **AUDIENCE NOTICE**: This file is strictly for **AI Agents** working on this repository. It provides complete onboarding context, architectural specifications, and the exact protocol for step-by-step development.
 
@@ -52,7 +52,7 @@ In traditional digital painting, choosing shadow and highlight colors using 2D f
 * Form volume creates half-tones, terminators, and ambient occlusion.
 
 ### The Solution
-The **Photoshop 3D Color Tool** renders the artist's chosen base color on a real-time lit 3D sphere inside Photoshop. It simulates directional sunlight, 3-zone ambient environment (Sky, Horizon, Ground), and surface finishes. Artists can sample lit hues directly from the 3D form or from an analytical 5-value swatch ramp with a single click, instantly updating Photoshop's active brush.
+The **Lumiform Colorpicker** renders the artist's chosen base color on a real-time lit 3D sphere inside Photoshop. It simulates directional sunlight, 3-zone ambient environment (Sky, Horizon, Ground), and surface finishes. Artists can sample lit hues directly from the 3D form or from an analytical 5-value swatch ramp with a single click, instantly updating Photoshop's active brush.
 
 ---
 
