@@ -1,32 +1,22 @@
 import * as THREE from 'three';
 import { LightingPreset } from '../core/types';
-import { LIGHTING_PRESETS, LightingEnvironment } from '../core/lighting';
-import { LightGizmo } from './LightGizmo';
+import { LIGHTING_PRESETS, LightingEnvironment, sphericalToCartesian } from '../core/lighting';
 import { LumiformShaderUniforms } from './shaders/lumiformShader';
 
 export class LightingEngine {
   private activePreset: LightingPreset = 'daylight';
   private environment: LightingEnvironment;
-  private gizmo: LightGizmo;
   private shaderUniforms: LumiformShaderUniforms | null = null;
   private changeListeners: Set<(env: LightingEnvironment) => void> = new Set();
 
   constructor() {
     const presetConfig = LIGHTING_PRESETS[this.activePreset];
 
-    this.gizmo = new LightGizmo({
-      radius: 1.85,
-      initialRoll: presetConfig.keyLight.roll,
-      initialAzimuth: presetConfig.keyLight.azimuth,
-      initialElevation: presetConfig.keyLight.elevation,
-    });
-
     this.environment = {
       preset: this.activePreset,
       keyLight: {
         color: new THREE.Color(presetConfig.keyLight.color),
         intensity: presetConfig.keyLight.intensity,
-        roll: presetConfig.keyLight.roll,
         azimuth: presetConfig.keyLight.azimuth,
         elevation: presetConfig.keyLight.elevation,
       },
@@ -37,29 +27,11 @@ export class LightingEngine {
         intensity: presetConfig.ambient.intensity,
       },
     };
-
-    this.gizmo.setAngles(this.environment.keyLight.roll, this.environment.keyLight.azimuth, this.environment.keyLight.elevation, false);
-    this.gizmo.setSunColor(this.environment.keyLight.color);
-
-    // Synchronize gizmo direct dragging back to engine
-    this.gizmo.onDirectionChange((dir, roll, azimuth, elevation) => {
-      this.environment.keyLight.roll = roll;
-      this.environment.keyLight.azimuth = azimuth;
-      this.environment.keyLight.elevation = elevation;
-      if (this.shaderUniforms) {
-        this.shaderUniforms.uLightDir.value.copy(dir);
-      }
-      this.notifyChange();
-    });
   }
 
   public bindUniforms(uniforms: LumiformShaderUniforms): void {
     this.shaderUniforms = uniforms;
     this.syncShaderUniforms();
-  }
-
-  public getGizmo(): LightGizmo {
-    return this.gizmo;
   }
 
   public getEnvironment(): LightingEnvironment {
@@ -70,6 +42,10 @@ export class LightingEngine {
     return this.activePreset;
   }
 
+  public getDirection(): THREE.Vector3 {
+    return sphericalToCartesian(this.environment.keyLight.azimuth, this.environment.keyLight.elevation).normalize();
+  }
+
   public setPreset(preset: LightingPreset): void {
     this.activePreset = preset;
     const config = LIGHTING_PRESETS[preset];
@@ -77,7 +53,6 @@ export class LightingEngine {
     this.environment.preset = preset;
     this.environment.keyLight.color.set(config.keyLight.color);
     this.environment.keyLight.intensity = config.keyLight.intensity;
-    this.environment.keyLight.roll = config.keyLight.roll;
     this.environment.keyLight.azimuth = config.keyLight.azimuth;
     this.environment.keyLight.elevation = config.keyLight.elevation;
 
@@ -86,23 +61,17 @@ export class LightingEngine {
     this.environment.ambient.groundColor.set(config.ambient.groundColor);
     this.environment.ambient.intensity = config.ambient.intensity;
 
-    this.gizmo.setAngles(config.keyLight.roll, config.keyLight.azimuth, config.keyLight.elevation, false);
-    this.gizmo.setSunColor(this.environment.keyLight.color);
-
     this.syncShaderUniforms();
     this.notifyChange();
   }
 
-  public setLightAngles(roll: number, azimuth: number, elevation: number): void {
-    this.environment.keyLight.roll = roll;
-    this.environment.keyLight.azimuth = azimuth;
-    this.environment.keyLight.elevation = elevation;
+  public setLightAngles(azimuth: number, elevation: number): void {
+    // Wrap azimuth 0 to 2*PI
+    this.environment.keyLight.azimuth = (azimuth % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    // Clamp elevation -PI/2 to +PI/2
+    this.environment.keyLight.elevation = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, elevation));
 
-    this.gizmo.setAngles(roll, azimuth, elevation, false);
-
-    if (this.shaderUniforms) {
-      this.shaderUniforms.uLightDir.value.copy(this.gizmo.getDirection());
-    }
+    this.syncShaderUniforms();
     this.notifyChange();
   }
 
@@ -117,7 +86,7 @@ export class LightingEngine {
   private syncShaderUniforms(): void {
     if (!this.shaderUniforms) return;
 
-    this.shaderUniforms.uLightDir.value.copy(this.gizmo.getDirection());
+    this.shaderUniforms.uLightDir.value.copy(this.getDirection());
     this.shaderUniforms.uKeyColor.value.copy(this.environment.keyLight.color);
     this.shaderUniforms.uKeyIntensity.value = this.environment.keyLight.intensity;
 
@@ -133,6 +102,5 @@ export class LightingEngine {
 
   public dispose(): void {
     this.changeListeners.clear();
-    this.gizmo.dispose();
   }
 }

@@ -37,8 +37,8 @@ export class Viewport {
   private animationFrameId: number | null = null;
   private isDisposed = false;
 
-  // Interaction tracking
-  private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'rotate-mesh' = 'none';
+  // Interaction tracking (Clean: rotate mesh vs orbit camera)
+  private interactionMode: 'none' | 'orbit-camera' | 'rotate-mesh' = 'none';
   private previousPointerPos = { x: 0, y: 0 };
   private currentFinish: SurfaceFinish = 'satin';
 
@@ -49,9 +49,9 @@ export class Viewport {
   constructor(options: ViewportOptions) {
     this.container = options.container;
 
-    // 1. Three.js Scene Setup
+    // 1. Three.js Scene Setup (clean dark canvas, zero gizmo clutter)
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x181818); // Photoshop canvas dark
+    this.scene.background = new THREE.Color(0x181818);
 
     // 2. Perspective Camera
     const aspect = (this.container.clientWidth || 300) / (this.container.clientHeight || 300);
@@ -62,7 +62,7 @@ export class Viewport {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
-      preserveDrawingBuffer: true, // Needed for WebGL readPixels sampling
+      preserveDrawingBuffer: true,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(this.container.clientWidth || 300, this.container.clientHeight || 300);
@@ -90,18 +90,16 @@ export class Viewport {
 
     const material = createLumiformMaterial(options.initialColor ?? 0xEB5757);
 
-    // Mesh Group allows local rotation independent from light and camera
+    // Mesh Group allows local rotation completely independent from light and camera
     this.meshGroup = new THREE.Group();
     this.targetMesh = new THREE.Mesh(this.sphereGeometry, material);
     this.meshGroup.add(this.targetMesh);
     this.scene.add(this.meshGroup);
 
-    // 6. Lighting Engine & Orbit Gizmo
+    // 6. Lighting Engine (Sliders-driven, no 3D screen gizmos)
     this.lightingEngine = new LightingEngine();
     this.lightingEngine.bindUniforms(material.uniforms as LumiformShaderUniforms);
-    this.scene.add(this.lightingEngine.getGizmo().group);
 
-    // When light moves, resample color at the picker target
     this.lightingEngine.onEnvironmentChange(() => {
       this.colorPickerTarget?.scheduleResample();
     });
@@ -168,18 +166,7 @@ export class Viewport {
 
       this.raycaster.setFromCamera(this.pointer, this.camera);
 
-      // 1. Check Sun Handle hit first
-      const sunObjects = this.lightingEngine.getGizmo().getSunObjects();
-      const sunHits = this.raycaster.intersectObjects(sunObjects, true);
-
-      if (sunHits.length > 0) {
-        this.interactionMode = 'orbit-light';
-        canvas.style.cursor = 'crosshair';
-        this.lightingEngine.getGizmo().onPointerDown(e.clientX, e.clientY);
-        return;
-      }
-
-      // 2. Check 3D Mesh hit (Isolated 3D Object Rotation)
+      // Check 3D Mesh hit (Isolated 3D Object Rotation)
       const meshHits = this.raycaster.intersectObject(this.targetMesh);
       if (meshHits.length > 0 && !e.altKey) {
         this.interactionMode = 'rotate-mesh';
@@ -187,19 +174,13 @@ export class Viewport {
         return;
       }
 
-      // 3. Otherwise: Camera Orbit around the scene
+      // Otherwise: Camera Orbit around the scene
       this.interactionMode = 'orbit-camera';
       canvas.style.cursor = 'grabbing';
       this.orbitCamera.onPointerDown(e.clientX, e.clientY);
     });
 
     canvas.addEventListener('pointermove', (e: PointerEvent) => {
-      if (this.interactionMode === 'orbit-light') {
-        this.lightingEngine.getGizmo().onPointerMove(e.clientX, e.clientY);
-        this.colorPickerTarget.scheduleResample();
-        return;
-      }
-
       if (this.interactionMode === 'rotate-mesh') {
         const deltaX = e.clientX - this.previousPointerPos.x;
         const deltaY = e.clientY - this.previousPointerPos.y;
@@ -223,13 +204,6 @@ export class Viewport {
       this.updatePointerCoordinates(e);
       this.raycaster.setFromCamera(this.pointer, this.camera);
 
-      const sunObjects = this.lightingEngine.getGizmo().getSunObjects();
-      const sunHits = this.raycaster.intersectObjects(sunObjects, true);
-      if (sunHits.length > 0) {
-        canvas.style.cursor = 'pointer';
-        return;
-      }
-
       const meshHits = this.raycaster.intersectObject(this.targetMesh);
       if (meshHits.length > 0) {
         canvas.style.cursor = 'grab';
@@ -243,9 +217,7 @@ export class Viewport {
         canvas.releasePointerCapture(e.pointerId);
       }
 
-      if (this.interactionMode === 'orbit-light') {
-        this.lightingEngine.getGizmo().onPointerUp();
-      } else if (this.interactionMode === 'orbit-camera') {
+      if (this.interactionMode === 'orbit-camera') {
         this.orbitCamera.onPointerUp();
       }
 
@@ -337,8 +309,8 @@ export class Viewport {
     this.colorPickerTarget.scheduleResample();
   }
 
-  public setLightAngles(roll: number, azimuth: number, elevation: number): void {
-    this.lightingEngine.setLightAngles(roll, azimuth, elevation);
+  public setLightAngles(azimuth: number, elevation: number): void {
+    this.lightingEngine.setLightAngles(azimuth, elevation);
     this.colorPickerTarget.scheduleResample();
   }
 
