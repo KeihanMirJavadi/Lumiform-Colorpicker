@@ -428,10 +428,10 @@
 │                                      ▼                                 │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │                    3D Viewport (Three.js WebGL)                  │  │
-│  │  - Smooth 3D Sphere Mesh                                         │  │
+│  │  - Smooth 3D Form Mesh (Sphere / Cube, decoupled local rotation) │  │
 │  │  - Custom Shader (Key Light + Sky/Horizon/Ground Ambient)        │  │
-│  │  - Light Gizmo (360° Azimuth & Elevation Orbit Ring)             │  │
-│  │  - Eyedropper Sampling on Pointer Down/Drag                      │  │
+│  │  - Minimalist 3D Sun Indicator + Orbit & Height Panel Sliders    │  │
+│  │  - Persistent Draggable Color Picker Target                      │  │
 │  └───────────────────────────────────┬──────────────────────────────┘  │
 │                                      ▼                                 │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
@@ -669,22 +669,22 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.6 Viewport Eyedropper Sampling & Throttling</div>
-              <div class="task-desc">Implement click-and-drag eyedropper on the sphere canvas using WebGL readPixels, throttled via <code>requestAnimationFrame</code>.</div>
-              <div class="task-criteria">Criteria: Clicking sphere samples lit color under pointer; updates active color indicator smoothly.</div>
+              <div class="task-desc">Implement persistent draggable color picker target and decoupled 3D mesh rotation with WebGL readPixels sampling.</div>
+              <div class="task-criteria">Criteria: Dragging target samples lit color under reticle; updates active brush color and status bar smoothly.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">1.7 Analytical 5-Value Swatch Ramp</div>
               <div class="task-desc">Compute Highlight, Half-Tone, Terminator, Core Shadow, and Bounce Light swatches from normal vectors. Clicking any swatch applies it.</div>
               <div class="task-criteria">Criteria: 5 swatches update in real time; clicking swatch updates active color and shows tooltip.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
         </div>

@@ -101,9 +101,11 @@ The project follows a **two-phase dual-target architecture**:
 
 ### 4.1 3D Viewport & Pointer Interactions
 * **Scoped Pointer Events:** Viewport events are strictly bounded to the panel canvas. Never capture or interfere with the Photoshop document canvas or global pointer.
-* **Click / Drag on Sphere:** Eyedropper mode. Samples the rendered pixel under the pointer and dispatches it to the active brush color via `requestAnimationFrame` throttling.
-* **Background Drag / `Alt` + Drag:** Orbits the camera around the sphere.
-* **Light Orbit Gizmo:** Circular ring around the sphere allowing direct manipulation of the key light's azimuth and elevation.
+* **Decoupled 3D Object Rotation:** Clicking and dragging directly on the 3D object rotates only the central mesh locally on its axes, independent of camera or lighting. Features a 3D Test Form switcher (`Sphere 🔮` / `Cube 🧊`) and a `↺ Reset Rotation` button.
+* **Persistent Draggable Color Picker Target:** An always-visible circular reticle in the 3D viewport featuring crosshairs, an inner sampled color ring, and a floating Hex pill badge. Can be dragged freely across the canvas to sample any lit surface or bounce light via WebGL `readPixels`, with zero-lag bridge dispatch to Photoshop's active brush. Resamples automatically when the mesh rotates or light position changes.
+* **Minimalist 3D Sun Indicator & 2-Axis Sliders:** The glowing 3D sun marker is rendered directly in the 3D canvas without any visual line or ring clutter. It can be dragged directly or controlled via panel sliders for **Orbit** (Horizontal $0^\circ-360^\circ$) and **Height** (Vertical $-89^\circ-+89^\circ$).
+* **Automatic Preset Deselection:** Manually dragging the 3D sun or moving Orbit/Height sliders immediately deselects active lighting presets.
+* **Background Drag / `Alt` + Drag:** Orbits the camera around the scene.
 
 ### 4.2 Lighting & Environment Engine
 * **Lighting Model:**
@@ -166,13 +168,13 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Build compact HSB sliders and hex code input that update the 3D sphere's base diffuse albedo.
   * **Acceptance Criteria:** Changing Hue, Saturation, or Brightness updates the sphere material in real time; hex validation syncs cleanly.
 
-* [ ] **Task 1.6: Viewport Eyedropper Sampling & Throttling**
-  * **State:** `current`
+* [x] **Task 1.6: Viewport Eyedropper Sampling & Throttling**
+  * **State:** `Done`
   * **Description:** Implement click-and-drag eyedropper on the sphere canvas using WebGL readPixels, throttled to `requestAnimationFrame`.
   * **Acceptance Criteria:** Clicking/dragging on the sphere samples the lit pixel under pointer and updates the active color with zero lag.
 
 * [ ] **Task 1.7: Analytical 5-Value Swatch Ramp**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Compute Highlight, Half-Tone, Terminator, Core Shadow, and Bounce Light swatches from normal vectors. Clicking any swatch applies it.
   * **Acceptance Criteria:** All 5 swatches update in real time as light/base color changes; clicking a swatch sets active color and shows tooltip.
 
