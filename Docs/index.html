@@ -364,6 +364,7 @@
       <button class="nav-btn" onclick="switchTab('lighting')">3. 3D & Lighting Engine</button>
       <button class="nav-btn" onclick="switchTab('color')">4. Color & Swatch Ramp</button>
       <button class="nav-btn" onclick="switchTab('roadmap')">5. Development Roadmap</button>
+      <button class="nav-btn" onclick="switchTab('depth')">6. Depth & Atmosphere</button>
     </nav>
   </header>
 
@@ -428,7 +429,8 @@
 │                                      ▼                                 │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │                    3D Viewport (Three.js WebGL)                  │  │
-│  │  - High-Resolution Sphere (grounded size, wheel zoom)            │  │
+│  │  - Up to 3 Grounded Spheres (near / mid / far)                   │  │
+│  │  - Aerial Perspective (distance haze + horizon tint)             │  │
 │  │  - PBR Shader (GGX + Sky/Horizon/Ground Ambient)                 │  │
 │  │  - Orbit & Height Sun Sliders (no in-canvas marker)              │  │
 │  │  - Persistent Draggable Color Picker Target                      │  │
@@ -678,13 +680,40 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.7 Analytical 5-Value Swatch Ramp</div>
               <div class="task-desc">Compute Highlight, Half-Tone, Terminator, Core Shadow, and Bounce Light swatches from normal vectors. Clicking any swatch applies it.</div>
               <div class="task-criteria">Criteria: 5 swatches update in real time; clicking swatch updates active color and shows tooltip.</div>
             </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="current">
+            <div class="task-info">
+              <div class="task-name">1.8 Multi-Sphere Depth Staging</div>
+              <div class="task-desc">Extend the viewport from one sphere to three fixed composition slots (center/near, right/mid, left/far) with a 1 / 2 / 3 count control, explicit Delete for the selected non-center sphere, nearest-empty refill, grounded placement, independent mesh instances, and a per-selected-sphere size control.</div>
+              <div class="task-criteria">Criteria: Count changes and Delete add/remove the correct spheres without moving the others; refills copy the center's current color at 100% size; every sphere rests on the ground; per-sphere sizes persist while the sphere exists; composition matches the reference at 60fps.</div>
+            </div>
             <span class="status-badge current">current</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">1.9 Aerial Perspective & Atmosphere</div>
+              <div class="task-desc">Add distance-based atmospheric extinction and in-scattering for spheres, ground, and cast shadows, tinted by the horizon sky color and parameterized by a global Haze control.</div>
+              <div class="task-criteria">Criteria: Far sphere is hazier and lower-contrast than mid, mid hazier than near; haze shifts sampled colors consistently; ground and shadows fade into the same atmosphere.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">1.10 Per-Sphere Color, Selection & Link Toggle</div>
+              <div class="task-desc">Give each sphere an independent albedo, add sphere selection (viewport click + panel selector with a transient highlight flash), and add a Link Colors toggle that applies edits to all visible spheres at once.</div>
+              <div class="task-criteria">Criteria: Unlinked edits affect only the selected sphere; linked edits affect all visible spheres; selection falls back to center when deleted; the swatch ramp (including depth haze) and eyedropper follow selection.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
           </div>
 
         </div>
@@ -728,6 +757,121 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- TAB 6: DEPTH & ATMOSPHERE -->
+    <div id="depth" class="tab-content">
+      <h2>Depth, Atmosphere & Multi-Sphere Composition</h2>
+      <p>
+        The preview is being extended from a single sphere into a three-sphere depth study. The goal is for concept artists to compare
+        how the same lighting behaves at near, mid, and far distances, and to sample atmosphere-shifted colors directly from the render.
+        <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span>
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h4>1. Three Depth Slots</h4>
+          <p>Center sphere nearest the camera, right sphere at mid distance, left sphere furthest near the horizon. All spheres start at the same base radius and rest on the ground; perspective creates the initial size difference, and each sphere can then be scaled independently.</p>
+        </div>
+        <div class="card">
+          <h4>2. Aerial Perspective</h4>
+          <p>Distance-based extinction and in-scattering tinted by the horizon sky. Contrast and saturation fall off with distance so the far sphere reads visibly hazier than the mid sphere.</p>
+        </div>
+        <div class="card">
+          <h4>3. Per-Sphere Color</h4>
+          <p>Each sphere has its own albedo. A Link Colors toggle applies one edit to every visible sphere, while unlinked edits affect only the selected sphere.</p>
+        </div>
+      </div>
+
+      <h3>Composition Slots</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Slot</th>
+            <th>Depth</th>
+            <th>On-Screen Role</th>
+            <th>Atmosphere</th>
+            <th>Shadows</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Center</strong></td>
+            <td>Near</td>
+            <td>Largest sphere, primary subject, closest to camera</td>
+            <td>Minimal haze, full contrast</td>
+            <td>Strongest contact AO and drop shadow</td>
+          </tr>
+          <tr>
+            <td><strong>Right</strong></td>
+            <td>Mid</td>
+            <td>Secondary sphere, partially receding</td>
+            <td>Partial haze, softened contrast</td>
+            <td>Softer, shorter-looking shadow</td>
+          </tr>
+          <tr>
+            <td><strong>Left</strong></td>
+            <td>Far</td>
+            <td>Smallest sphere near the horizon line</td>
+            <td>Strong haze, atmospheric color shift</td>
+            <td>Faint shadow, absorbs into ground haze</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Controls</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Control</th>
+            <th>Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Sphere Count</strong></td>
+            <td><code>1 / 2 / 3</code> selector. Lowering removes the far-left first, then the right; the center always remains. Raising fills the nearest empty slot (right before left) with a fresh copy of the center's current color at 100% size. Existing spheres never move, and deleted state is not restored.</td>
+          </tr>
+          <tr>
+            <td><strong>Delete</strong></td>
+            <td>Selecting a non-center sphere enables <strong>Delete</strong>, which removes exactly that sphere. Delete is disabled while the center is selected. Count buttons update to the resulting number of spheres.</td>
+          </tr>
+          <tr>
+            <td><strong>Selected Sphere</strong></td>
+            <td>Click a sphere in the viewport or use the Center / Right / Left selector. The selection persists for editing, while a highlight ring flashes for ~1 second and fades on every selection action. If the selected sphere is deleted, selection falls back to the center.</td>
+          </tr>
+          <tr>
+            <td><strong>Per-Sphere Size</strong></td>
+            <td>Selecting a sphere exposes its own Size slider (20%–100%). Scaling pivots on that sphere's bottom-center so it stays grounded; the camera does not move. Link Colors does not link sizes.</td>
+          </tr>
+          <tr>
+            <td><strong>Link Colors</strong></td>
+            <td>When enabled, the selected sphere's color is applied to every visible sphere and subsequent edits affect them all. Disabling the link keeps the shared color so spheres can diverge from there.</td>
+          </tr>
+          <tr>
+            <td><strong>Color Panel</strong></td>
+            <td>HSB sliders and hex input edit the selected sphere's albedo. The swatch ramp follows the selected sphere.</td>
+          </tr>
+          <tr>
+            <td><strong>Eyedropper</strong></td>
+            <td>Samples the final, atmosphere-affected pixel from any sphere, so haze-shifted colors can be sent directly to Photoshop's brush.</td>
+          </tr>
+          <tr>
+            <td><strong>Atmosphere</strong></td>
+            <td>Distance-based haze applied consistently to spheres, ground, and shadows; stronger on the far sphere.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Implementation Notes</h3>
+      <div class="card">
+        <p style="font-size:13px; color:#cbd5e1;">
+          The ground shader accumulates drop shadows and contact AO across all visible spheres. Each sphere renders with its own material
+          instance so albedo and depth treatment stay independent. Atmosphere is evaluated per fragment from camera distance and blended
+          toward the horizon/sky color; the ground uses the same model so objects and floor share one atmosphere. Picking reads the final
+          framebuffer, which means the sampled color already includes haze. The analytical swatch ramp follows the selected sphere, including its depth haze.
+        </p>
+      </div>
     </div>
 
   </div>

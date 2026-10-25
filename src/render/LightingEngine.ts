@@ -18,7 +18,7 @@ export class LightingEngine {
   private sunIndicator: SunIndicator;
   private groundAlbedo: THREE.Color = new THREE.Color(DEFAULT_GROUND_HEX); // Natural grass green
 
-  private meshUniforms: LumiformShaderUniforms | null = null;
+  private meshUniforms: LumiformShaderUniforms[] = [];
   private skyUniforms: SkyShaderUniforms | null = null;
   private groundUniforms: GroundShaderUniforms | null = null;
 
@@ -67,11 +67,11 @@ export class LightingEngine {
   }
 
   public bindUniforms(
-    mesh: LumiformShaderUniforms,
+    mesh: LumiformShaderUniforms | LumiformShaderUniforms[],
     sky?: SkyShaderUniforms,
     ground?: GroundShaderUniforms
   ): void {
-    this.meshUniforms = mesh;
+    this.meshUniforms = Array.isArray(mesh) ? mesh : [mesh];
     if (sky) this.skyUniforms = sky;
     if (ground) this.groundUniforms = ground;
     this.syncShaderUniforms();
@@ -195,17 +195,17 @@ export class LightingEngine {
     const dir = this.getDirection();
 
     // 1. Mesh Material Uniforms
-    if (this.meshUniforms) {
-      this.meshUniforms.uLightDir.value.copy(dir);
-      this.meshUniforms.uKeyColor.value.copy(this.environment.keyLight.color);
-      this.meshUniforms.uKeyIntensity.value = this.environment.keyLight.intensity;
+    for (const mesh of this.meshUniforms) {
+      mesh.uLightDir.value.copy(dir);
+      mesh.uKeyColor.value.copy(this.environment.keyLight.color);
+      mesh.uKeyIntensity.value = this.environment.keyLight.intensity;
 
-      this.meshUniforms.uZenithColor.value.copy(this.environment.ambient.zenithColor);
-      this.meshUniforms.uEquatorColor.value.copy(this.environment.ambient.equatorColor);
-      this.meshUniforms.uHorizonColor.value.copy(this.environment.ambient.horizonColor);
-      this.meshUniforms.uGroundColor.value.copy(this.environment.ambient.groundColor);
-      this.meshUniforms.uSkyColor.value.copy(this.environment.ambient.skyColor);
-      this.meshUniforms.uAmbientIntensity.value = this.environment.ambient.intensity;
+      mesh.uZenithColor.value.copy(this.environment.ambient.zenithColor);
+      mesh.uEquatorColor.value.copy(this.environment.ambient.equatorColor);
+      mesh.uHorizonColor.value.copy(this.environment.ambient.horizonColor);
+      mesh.uGroundColor.value.copy(this.environment.ambient.groundColor);
+      mesh.uSkyColor.value.copy(this.environment.ambient.skyColor);
+      mesh.uAmbientIntensity.value = this.environment.ambient.intensity;
     }
 
     // 2. Sky Dome Uniforms

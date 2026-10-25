@@ -3,6 +3,8 @@ import { AnalyticalSwatch, calculate5ValueRamp } from '../core/swatchCalculator'
 import { LightingEnvironment } from '../core/lighting';
 import { SurfaceFinish } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
+import { atmosphereAmount } from '../core/atmosphere';
+import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
 
 export interface SwatchRampOptions {
   container: HTMLElement;
@@ -11,6 +13,8 @@ export interface SwatchRampOptions {
   initialFinish?: SurfaceFinish;
   initialRoughness?: number;
   initialSpecular?: number;
+  initialHaze?: number;
+  initialDistance?: number;
   onSelectSwatch?: (swatch: AnalyticalSwatch) => void;
 }
 
@@ -21,15 +25,19 @@ export class SwatchRamp {
   private finish: SurfaceFinish;
   private roughness: number;
   private specular: number;
+  private haze: number;
+  private distance: number;
   private currentSwatches: AnalyticalSwatch[] = [];
   private listeners: Set<(swatch: AnalyticalSwatch) => void> = new Set();
   private flashTimeouts: Map<string, number> = new Map();
 
   constructor(options: SwatchRampOptions) {
     this.container = options.container;
-    this.albedoHex = options.initialAlbedoHex ?? '#EB5757';
+    this.albedoHex = options.initialAlbedoHex ?? DEFAULT_ALBEDO_HEX;
     this.env = options.initialEnv;
-    this.finish = options.initialFinish ?? 'satin';
+    this.finish = options.initialFinish ?? DEFAULT_SURFACE_FINISH;
+    this.haze = options.initialHaze ?? 0.5;
+    this.distance = options.initialDistance ?? 7;
 
     if (options.initialRoughness !== undefined) {
       this.roughness = options.initialRoughness;
@@ -60,12 +68,16 @@ export class SwatchRamp {
     finish?: SurfaceFinish;
     roughness?: number;
     specular?: number;
+    haze?: number;
+    distance?: number;
   }): void {
     if (params.albedoHex !== undefined) this.albedoHex = params.albedoHex;
     if (params.env !== undefined) this.env = params.env;
     if (params.finish !== undefined) this.finish = params.finish;
     if (params.roughness !== undefined) this.roughness = params.roughness;
     if (params.specular !== undefined) this.specular = params.specular;
+    if (params.haze !== undefined) this.haze = params.haze;
+    if (params.distance !== undefined) this.distance = params.distance;
 
     this.recalculateAndRender();
   }
@@ -85,7 +97,11 @@ export class SwatchRamp {
       this.albedoHex,
       this.env,
       this.roughness,
-      this.specular
+      this.specular,
+      {
+        amount: atmosphereAmount(this.haze, this.distance),
+        color: this.env.ambient.horizonColor,
+      }
     );
 
     this.render();

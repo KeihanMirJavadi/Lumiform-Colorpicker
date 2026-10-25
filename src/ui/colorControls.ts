@@ -43,7 +43,7 @@ export class ColorControls {
     this.container.innerHTML = `
       <div class="color-controls-panel">
         <div class="section-header">
-          <h2>Base Color & Sliders (Decoupled Albedo)</h2>
+          <h2>Selected Sphere Color (Decoupled Albedo)</h2>
           <div class="hex-group">
             <div class="albedo-swatch" id="albedo-swatch-preview" title="Current Base Albedo"></div>
             <input type="text" class="ps-input-hex" id="input-hex" maxlength="7" spellcheck="false" value="${DEFAULT_ALBEDO_HEX}" />

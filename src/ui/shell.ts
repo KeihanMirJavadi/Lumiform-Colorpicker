@@ -6,6 +6,7 @@ import { StatusBar } from './statusBar';
 import { ColorControls } from './colorControls';
 import { SwatchRamp } from './swatchRamp';
 import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX } from '../core/defaults';
+import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
 
 export class AppShell {
   private root: HTMLElement;
@@ -28,9 +29,9 @@ export class AppShell {
       </header>
 
       <main class="panel-content">
-        <!-- Sphere Size (uniform scale, bottom stays on the ground) -->
+        <!-- Sphere Size (per selected sphere, bottom stays on the ground) -->
         <div class="sun-slider-row mesh-scale-row">
-          <span class="sun-axis-name" style="width: 58px;">Size</span>
+          <span class="sun-axis-name" style="width: 82px;">Size · <span id="size-target">Center</span></span>
           <div class="slider-track-wrap">
             <input type="range" class="ps-slider" id="slider-mesh-scale" min="20" max="100" value="100" />
           </div>
@@ -38,8 +39,33 @@ export class AppShell {
           <span class="slider-unit">%</span>
         </div>
 
-        <!-- 3D Viewport with Persistent Color Target (No Lines) -->
+        <!-- 3D Viewport -->
         <div class="viewport-card" id="viewport-container"></div>
+
+        <!-- Sphere depth staging -->
+        <div class="section-card">
+          <div class="section-header">
+            <h2>Spheres &amp; Depth</h2>
+            <div class="count-control" id="sphere-count-control">
+              <button class="count-btn" data-count="1">1</button>
+              <button class="count-btn" data-count="2">2</button>
+              <button class="count-btn active" data-count="3">3</button>
+            </div>
+          </div>
+
+          <div class="sphere-selector-row">
+            <button class="sphere-select-btn active" data-sphere="center">Center <span>Near</span></button>
+            <button class="sphere-select-btn" data-sphere="right">Right <span>Mid</span></button>
+            <button class="sphere-select-btn" data-sphere="left">Left <span>Far</span></button>
+            <button class="sphere-delete-btn" id="btn-delete-sphere" title="Delete the selected sphere">Delete</button>
+          </div>
+
+          <label class="link-colors-row">
+            <input type="checkbox" id="toggle-link-colors" />
+            <span>Link colors across all visible spheres</span>
+          </label>
+          <p class="section-note" id="sphere-hint">Select a sphere in the canvas or above to edit its color and size.</p>
+        </div>
 
         <!-- Analytical 5-Value Swatch Ramp (Task 1.7) -->
         <div class="section-card" id="swatch-ramp-container"></div>
@@ -119,6 +145,23 @@ export class AppShell {
           </div>
         </div>
 
+        <!-- Atmosphere -->
+        <div class="section-card">
+          <div class="section-header">
+            <h2>Atmosphere</h2>
+            <span class="section-note">Aerial perspective</span>
+          </div>
+          <div class="sun-slider-row" style="margin-top: 8px;">
+            <span class="sun-axis-name" style="width: 58px;">Haze</span>
+            <div class="slider-track-wrap">
+              <input type="range" class="ps-slider" id="slider-haze" min="0" max="100" value="50" />
+            </div>
+            <input type="number" class="ps-input-num" id="num-haze" min="0" max="100" value="50" />
+            <span class="slider-unit">%</span>
+          </div>
+          <p class="section-note" style="margin-top: 6px;">Distance-based haze affects the spheres, ground, and shadows; the sky stays unchanged.</p>
+        </div>
+
         <!-- Surface Finish Mode & Reflectivity Controls (Task 1.4 & Roughness / Specular Sliders) -->
         <div class="section-card">
           <div class="section-header">
@@ -169,8 +212,11 @@ export class AppShell {
           <h2>Controls Guide</h2>
           <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ps-text-secondary);">
             <p>• 🎨 <strong>5-Value Swatches</strong>: Click any swatch to paint with that calculated lighting tone.</p>
-            <p>• 🎯 <strong>Color Picker Target</strong>: Drag the circular reticle anywhere on the sphere, ground, or sky to sample lit colors.</p>
-            <p>• 📐 <strong>Sphere Size</strong>: Use the Size slider to scale the sphere; it stays grounded.</p>
+            <p>• 🎯 <strong>Color Picker Target</strong>: Drag the circular reticle anywhere on a sphere, ground, or sky to sample lit colors.</p>
+            <p>• 🧭 <strong>Spheres &amp; Depth</strong>: Choose 1/2/3 spheres, then click a sphere (or use Center/Right/Left) to edit it.</p>
+            <p>• 📐 <strong>Sphere Size</strong>: The Size slider edits the selected sphere and keeps it grounded.</p>
+            <p>• 🔗 <strong>Link Colors</strong>: Apply one color change to every visible sphere at once.</p>
+            <p>• 🌫️ <strong>Haze</strong>: Distance-based atmosphere that shifts and softens the farther spheres.</p>
             <p>• ☀️ <strong>Sun Position Controls</strong>: Use the Orbit/Height sliders or the Time-of-Day presets.</p>
             <p>• 🌿 <strong>Ground Plane</strong>: Grass floor by default; customize color to see bounce light and shadow shift in real time.</p>
             <p>• 🔍 <strong>Camera Zoom</strong>: Scroll the mouse wheel over the viewport to zoom in and out.</p>
@@ -199,11 +245,13 @@ export class AppShell {
     if (swatchRampContainer && this.viewport) {
       this.swatchRamp = new SwatchRamp({
         container: swatchRampContainer,
-        initialAlbedoHex: DEFAULT_ALBEDO_HEX,
+        initialAlbedoHex: this.viewport.getSelectedSphereColor(),
         initialEnv: this.viewport.getLightingEngine().getEnvironment(),
         initialFinish: this.viewport.getSurfaceFinish(),
         initialRoughness: this.viewport.getRoughness(),
         initialSpecular: this.viewport.getSpecular(),
+        initialHaze: this.viewport.getHaze(),
+        initialDistance: this.viewport.getSelectedSphereDistance(),
         onSelectSwatch: (swatch) => {
           this.bridge.setForegroundColor(swatch.rgb);
         },
@@ -211,7 +259,21 @@ export class AppShell {
 
       // Synchronize finish changes to swatch ramp
       this.viewport.onSurfaceFinishChange((finish, roughness, specular) => {
-        this.swatchRamp?.updateParameters({ finish, roughness, specular });
+        this.swatchRamp?.updateParameters({
+          finish,
+          roughness,
+          specular,
+          haze: this.viewport?.getHaze(),
+          distance: this.viewport?.getSelectedSphereDistance(),
+        });
+      });
+
+      // Camera zoom changes the selected sphere's distance (and therefore its haze).
+      this.viewport.onCameraChange(() => {
+        this.swatchRamp?.updateParameters({
+          haze: this.viewport?.getHaze(),
+          distance: this.viewport?.getSelectedSphereDistance(),
+        });
       });
     }
 
@@ -220,10 +282,14 @@ export class AppShell {
     if (colorControlsContainer) {
       this.colorControls = new ColorControls({
         container: colorControlsContainer,
-        initialHex: DEFAULT_ALBEDO_HEX,
+        initialHex: this.viewport?.getSelectedSphereColor() ?? DEFAULT_ALBEDO_HEX,
         onChange: (_hsb, _rgb, hex) => {
           this.viewport?.setSphereColor(hex);
-          this.swatchRamp?.updateParameters({ albedoHex: hex });
+          this.swatchRamp?.updateParameters({
+            albedoHex: hex,
+            haze: this.viewport?.getHaze(),
+            distance: this.viewport?.getSelectedSphereDistance(),
+          });
         },
       });
     }
@@ -239,12 +305,135 @@ export class AppShell {
       // Kept in sync
     });
 
+    this.viewport?.onSelectionChange(() => this.syncSphereUI());
+
+    this.bindSphereControls();
+    this.bindHazeControl();
     this.bindMeshScaleControl();
     this.bindPresetButtons();
     this.bindSunSliders();
     this.bindLightColorControls();
     this.bindGroundColorControls();
     this.bindSurfaceFinishControls();
+
+    this.syncSphereUI();
+  }
+
+  private bindSphereControls(): void {
+    if (!this.viewport) return;
+
+    // Count 1 / 2 / 3
+    this.root.querySelectorAll<HTMLButtonElement>('.count-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const count = parseInt(btn.getAttribute('data-count') ?? '3', 10);
+        this.viewport?.setSphereCount(count);
+        this.syncSphereUI();
+      });
+    });
+
+    // Center / Right / Left selection
+    this.root.querySelectorAll<HTMLButtonElement>('.sphere-select-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-sphere') as SphereSlotId | null;
+        if (id) this.viewport?.selectSphere(id);
+      });
+    });
+
+    // Delete selected sphere
+    this.root.querySelector<HTMLButtonElement>('#btn-delete-sphere')?.addEventListener('click', () => {
+      this.viewport?.deleteSelectedSphere();
+      this.syncSphereUI();
+    });
+
+    // Link colors
+    const linkToggle = this.root.querySelector<HTMLInputElement>('#toggle-link-colors');
+    linkToggle?.addEventListener('change', () => {
+      this.viewport?.setLinkedColors(linkToggle.checked);
+      this.syncSphereUI();
+    });
+  }
+
+  private bindHazeControl(): void {
+    if (!this.viewport) return;
+
+    const slider = this.root.querySelector<HTMLInputElement>('#slider-haze')!;
+    const num = this.root.querySelector<HTMLInputElement>('#num-haze')!;
+
+    const applyHaze = (percent: number) => {
+      const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+      this.viewport?.setHaze(clamped / 100);
+      this.swatchRamp?.updateParameters({
+        haze: clamped / 100,
+        distance: this.viewport?.getSelectedSphereDistance(),
+      });
+    };
+
+    slider.addEventListener('input', () => {
+      num.value = slider.value;
+      applyHaze(parseInt(slider.value, 10));
+    });
+
+    num.addEventListener('change', () => {
+      let val = parseInt(num.value, 10);
+      if (isNaN(val)) val = 50;
+      val = Math.max(0, Math.min(100, val));
+      num.value = val.toString();
+      slider.value = val.toString();
+      applyHaze(val);
+    });
+  }
+
+  /** Keeps sphere count, selector, size, color panel, and swatch ramp aligned with the viewport state. */
+  private syncSphereUI(): void {
+    if (!this.viewport) return;
+
+    const activeCount = this.viewport.getActiveCount();
+    const selectedId = this.viewport.getSelectedSphereId();
+
+    this.root.querySelectorAll<HTMLButtonElement>('.count-btn').forEach((btn) => {
+      btn.classList.toggle('active', parseInt(btn.getAttribute('data-count') ?? '0', 10) === activeCount);
+    });
+
+    this.root.querySelectorAll<HTMLButtonElement>('.sphere-select-btn').forEach((btn) => {
+      const id = btn.getAttribute('data-sphere') as SphereSlotId | null;
+      if (!id) return;
+      const active = this.viewport!.isSphereActive(id);
+      btn.disabled = !active;
+      btn.classList.toggle('active', active && id === selectedId);
+    });
+
+    const deleteBtn = this.root.querySelector<HTMLButtonElement>('#btn-delete-sphere');
+    if (deleteBtn) deleteBtn.disabled = selectedId === 'center';
+
+    const sizeLabel = this.root.querySelector<HTMLElement>('#size-target');
+    if (sizeLabel) {
+      const slot = SPHERE_SLOTS.find((s) => s.id === selectedId);
+      sizeLabel.textContent = slot?.label ?? 'Center';
+    }
+
+    const sizePct = Math.round(this.viewport.getSelectedSphereSize() * 100);
+    const sizeSlider = this.root.querySelector<HTMLInputElement>('#slider-mesh-scale');
+    const sizeNum = this.root.querySelector<HTMLInputElement>('#num-mesh-scale');
+    if (sizeSlider && document.activeElement !== sizeSlider) sizeSlider.value = sizePct.toString();
+    if (sizeNum && document.activeElement !== sizeNum) sizeNum.value = sizePct.toString();
+
+    const hazePct = Math.round(this.viewport.getHaze() * 100);
+    const hazeSlider = this.root.querySelector<HTMLInputElement>('#slider-haze');
+    const hazeNum = this.root.querySelector<HTMLInputElement>('#num-haze');
+    if (hazeSlider && document.activeElement !== hazeSlider) hazeSlider.value = hazePct.toString();
+    if (hazeNum && document.activeElement !== hazeNum) hazeNum.value = hazePct.toString();
+
+    if (this.colorControls) {
+      this.colorControls.setHex(this.viewport.getSelectedSphereColor(), false);
+    }
+
+    if (this.swatchRamp) {
+      this.swatchRamp.updateParameters({
+        albedoHex: this.viewport.getSelectedSphereColor(),
+        haze: this.viewport.getHaze(),
+        distance: this.viewport.getSelectedSphereDistance(),
+      });
+    }
   }
 
   private bindMeshScaleControl(): void {
@@ -255,7 +444,10 @@ export class AppShell {
 
     const applyScale = (percent: number) => {
       const clamped = Math.max(20, Math.min(100, Math.round(percent)));
-      this.viewport?.setMeshScale(clamped / 100);
+      this.viewport?.setSelectedSphereSize(clamped / 100);
+      this.swatchRamp?.updateParameters({
+        distance: this.viewport?.getSelectedSphereDistance(),
+      });
     };
 
     slider.addEventListener('input', () => {
@@ -365,7 +557,11 @@ export class AppShell {
       });
 
       // Update analytical swatches
-      this.swatchRamp?.updateParameters({ env });
+      this.swatchRamp?.updateParameters({
+        env,
+        haze: this.viewport?.getHaze(),
+        distance: this.viewport?.getSelectedSphereDistance(),
+      });
     });
   }
 
@@ -391,7 +587,11 @@ export class AppShell {
       presetBtns.forEach((btn) => btn.classList.remove('active'));
       this.viewport?.setLightColor(hex);
       if (this.viewport) {
-        this.swatchRamp?.updateParameters({ env: this.viewport.getLightingEngine().getEnvironment() });
+        this.swatchRamp?.updateParameters({
+          env: this.viewport.getLightingEngine().getEnvironment(),
+          haze: this.viewport.getHaze(),
+          distance: this.viewport.getSelectedSphereDistance(),
+        });
       }
     };
 
@@ -447,7 +647,11 @@ export class AppShell {
 
       this.viewport?.setGroundColor(hex);
       if (this.viewport) {
-        this.swatchRamp?.updateParameters({ env: this.viewport.getLightingEngine().getEnvironment() });
+        this.swatchRamp?.updateParameters({
+          env: this.viewport.getLightingEngine().getEnvironment(),
+          haze: this.viewport.getHaze(),
+          distance: this.viewport.getSelectedSphereDistance(),
+        });
       }
     };
 

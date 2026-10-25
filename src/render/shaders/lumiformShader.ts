@@ -17,6 +17,7 @@ export interface LumiformShaderUniforms {
   uRoughness: { value: number };
   uSpecularIntensity: { value: number };
   uSphereCenter: { value: THREE.Vector3 };
+  uHaze: { value: number };
 }
 
 const vertexShader = /* glsl */ `
@@ -48,6 +49,7 @@ const fragmentShader = /* glsl */ `
   uniform float uRoughness;
   uniform float uSpecularIntensity;
   uniform vec3 uSphereCenter;
+  uniform float uHaze;
 
   varying vec3 vWorldPosition;
 
@@ -85,6 +87,19 @@ const fragmentShader = /* glsl */ `
     }
     float t = (dir.y - 0.45) / 0.55;
     return mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
+  }
+
+  // Sky gradient used for atmospheric in-scattering (matches the sky dome).
+  vec3 atmosphereColor(vec3 dir) {
+    if (dir.y >= 0.0) {
+      if (dir.y < 0.10) {
+        float t = dir.y / 0.10;
+        return mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
+      }
+      float t = (dir.y - 0.10) / 0.28;
+      return mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
+    }
+    return uHorizonColor;
   }
 
   // Display encoding: the shader works in linear light, the canvas expects sRGB.
@@ -172,6 +187,12 @@ const fragmentShader = /* glsl */ `
     // Total radiance.
     vec3 finalColor = specular + ambientDiffuse + ambientSpecular;
 
+    // Aerial perspective: extinction + in-scattering tinted by the sky.
+    vec3 viewDir = normalize(vWorldPosition - cameraPosition);
+    float viewDistance = length(vWorldPosition - cameraPosition);
+    float hazeAmount = 1.0 - exp(-uHaze * 0.04 * max(0.0, viewDistance - 5.0));
+    finalColor = mix(finalColor, atmosphereColor(viewDir), clamp(hazeAmount, 0.0, 0.85));
+
     // Tone map + display encoding.
     vec3 outColor = linearToSRGB(toneMap(finalColor));
     outColor += (ditherNoise(gl_FragCoord.xy) - 0.5) / 255.0;
@@ -197,6 +218,7 @@ export function createLumiformMaterial(initialAlbedo: THREE.Color | string | num
     uRoughness: { value: 1.0 },
     uSpecularIntensity: { value: 0.0 },
     uSphereCenter: { value: new THREE.Vector3(0, 0, 0) },
+    uHaze: { value: 0.5 },
   };
 
   return new THREE.ShaderMaterial({

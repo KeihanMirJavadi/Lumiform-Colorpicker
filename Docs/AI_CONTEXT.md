@@ -141,6 +141,23 @@ The project follows a **two-phase dual-target architecture**:
   * **Bounce Light:** Normal pointing directly down toward ground reflection
 * Clicking any swatch immediately applies it to the active brush color.
 
+### 4.5 Depth, Atmosphere & Multi-Sphere Composition
+
+* **Three composition slots:** The scene supports up to three spheres in fixed depth slots:
+  * **Center** — nearest to the camera, largest on screen.
+  * **Right** — mid ground.
+  * **Left** — furthest, sitting near the horizon.
+  All three rest on the ground plane. Slots are fixed to the reference composition; there are no position controls.
+* **Count control:** A `1 / 2 / 3` selector controls the number of spheres. Lowering the count **deletes** the removed sphere (far-left first, then right; the center is never removed). Raising the count fills the nearest empty slot first (right, then left) with a **fresh copy of the center sphere's current color**, at 100% size. Adding or removing never repositions the remaining spheres, and deleted state is not restored.
+* **Delete action:** Selecting a non-center sphere enables a **Delete** button that removes exactly that sphere. The center is permanent, so Delete is disabled while it is selected. Count buttons update to reflect the resulting number of spheres.
+* **Aerial perspective:** Distance-based atmospheric extinction and in-scattering, tinted by the horizon sky color, applied consistently to spheres, the ground, and cast shadows. A single global **Haze** control (0–100%) scales the effect. The near sphere reads with full contrast and saturation; the mid sphere is partially hazed; the far sphere loses contrast and takes on the atmospheric color.
+* **Per-sphere color state:** Each sphere carries its own base albedo. The color panel edits the selected sphere. A **Link Colors** toggle applies the selected color to every visible sphere when enabled, and keeps applying subsequent edits to all of them; disabling the link keeps the shared color so spheres can diverge from there.
+* **Per-sphere size:** Size is decoupled per sphere. Selecting a sphere exposes its own **Size** slider (20%–100% of the base radius). Scaling pivots on that sphere's bottom-center so it stays grounded; the camera does not move. Link Colors does not link sizes.
+* **Selection:** The active sphere is chosen by clicking it in the viewport or via a Center / Right / Left selector. Selection persists for editing, while a highlight ring flashes for about a second and fades on every selection action; there is no permanent outline. If the selected sphere is deleted, selection falls back to the center sphere.
+* **Picking through atmosphere:** The eyedropper samples the final rendered (atmosphere-affected) color of any sphere, so the same albedo can be compared across near, mid, and far depths.
+* **Swatch ramp:** The analytical 5-value ramp follows the selected sphere and includes that sphere's depth-dependent atmospheric haze, so its swatches match the rendered color at that distance.
+* **Shadows & contact AO:** Ground shading accumulates drop shadows and contact occlusion from every visible sphere, with haze applied to the ground and far shadows.
+
 ---
 
 ## 5. Development Roadmap & Task States
@@ -179,10 +196,25 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Implement the persistent draggable eyedropper puck on the viewport canvas using WebGL `readPixels`, throttled to `requestAnimationFrame`, with zero-lag bridge dispatch.
   * **Acceptance Criteria:** Dragging the puck samples the lit pixel under the reticle and updates the active brush color with zero lag.
 
-* [ ] **Task 1.7: Analytical 5-Value Swatch Ramp**
-  * **State:** `current`
+* [x] **Task 1.7: Analytical 5-Value Swatch Ramp**
+  * **State:** `Done`
   * **Description:** Compute Highlight, Half-Tone, Terminator, Core Shadow, and Bounce Light swatches from normal vectors. Clicking any swatch applies it.
   * **Acceptance Criteria:** All 5 swatches update in real time as light/base color changes; clicking a swatch sets active color and shows tooltip.
+
+* [ ] **Task 1.8: Multi-Sphere Depth Staging**
+  * **State:** `current`
+  * **Description:** Extend the viewport from one sphere to three fixed composition slots (center/near, right/mid, left/far) with a `1 / 2 / 3` count control, explicit Delete for the selected non-center sphere, nearest-empty refill, grounded placement, independent mesh instances, and a per-selected-sphere size control.
+  * **Acceptance Criteria:** Count changes and Delete add/remove the correct spheres without moving the others; refills copy the center's current color at 100% size; every sphere rests on the ground; per-sphere sizes persist while the sphere exists; composition matches the reference framing at 60fps.
+
+* [ ] **Task 1.9: Aerial Perspective & Atmosphere**
+  * **State:** `planned`
+  * **Description:** Add distance-based atmospheric extinction and in-scattering for spheres, ground, and cast shadows, tinted by the horizon sky color and parameterized by a global Haze control.
+  * **Acceptance Criteria:** The far sphere is visibly hazier and lower-contrast than the mid sphere, and the mid sphere hazier than the near sphere; haze shifts sampled colors consistently; the ground and shadows fade into the same atmosphere.
+
+* [ ] **Task 1.10: Per-Sphere Color, Selection & Link Toggle**
+  * **State:** `planned`
+  * **Description:** Give each sphere an independent albedo, add sphere selection (viewport click + panel selector with a transient highlight flash), and add a Link Colors toggle that applies edits to all visible spheres at once.
+  * **Acceptance Criteria:** Unlinked edits affect only the selected sphere; linked edits affect all visible spheres; selection falls back to the center when the selected sphere is deleted; the swatch ramp (including depth haze) and eyedropper follow the selection.
 
 ---
 

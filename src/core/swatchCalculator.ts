@@ -13,6 +13,13 @@ export interface AnalyticalSwatch {
   hex: string;
 }
 
+export interface AtmosphereSample {
+  /** 0 = clear, 1 = fully scattered. */
+  amount: number;
+  /** Linear-light in-scatter color (usually the horizon/sky tint). */
+  color: THREE.Color;
+}
+
 const PI = Math.PI;
 
 function clamp(x: number, min: number, max: number): number {
@@ -67,7 +74,8 @@ export function evaluateLightingAnalytical(
   albedoCol: THREE.Color,
   env: LightingEnvironment,
   roughness: number,
-  specularIntensity: number
+  specularIntensity: number,
+  atmosphere?: AtmosphereSample
 ): { rgb: RGBColor; hex: string } {
   const normN = N.clone().normalize();
   const normL = L.clone().normalize();
@@ -148,6 +156,10 @@ export function evaluateLightingAnalytical(
   // --- Total radiance & ACES filmic tone mapping ----------------------------
   const finalCol = new THREE.Color().addColors(direct, ambientDiffuse).add(ambientSpecular);
 
+  if (atmosphere && atmosphere.amount > 0) {
+    finalCol.lerp(atmosphere.color, clamp(atmosphere.amount, 0, 1));
+  }
+
   const r = linearToSRGB(toneMap(finalCol.r));
   const g = linearToSRGB(toneMap(finalCol.g));
   const b = linearToSRGB(toneMap(finalCol.b));
@@ -182,7 +194,8 @@ export function calculate5ValueRamp(
   albedoHex: string,
   env: LightingEnvironment,
   roughnessOrFinish: number | SurfaceFinish,
-  specularIntensityParam?: number
+  specularIntensityParam?: number,
+  atmosphere?: AtmosphereSample
 ): AnalyticalSwatch[] {
   let roughness: number;
   let specularIntensity: number;
@@ -208,8 +221,19 @@ export function calculate5ValueRamp(
   // 1. Highlight Normal: Half-vector H = normalize(L + V)
   const nHighlight = new THREE.Vector3().addVectors(L, V).normalize();
 
-  // 2. Half-Tone Normal: Normal at 45° toward light vector L
-  const nHalftone = new THREE.Vector3().addVectors(V.clone().multiplyScalar(0.7), L.clone().multiplyScalar(0.7)).normalize();
+  // 2. Half-Tone Normal: normal at 45° from the light, tilted toward the viewer.
+  //    (Using normalize(0.7V + 0.7L) would collapse onto the Highlight half-vector.)
+  const nHalftone = (() => {
+    const vPerp = V.clone().sub(L.clone().multiplyScalar(V.dot(L)));
+    if (vPerp.lengthSq() < 1e-6) {
+      // Degenerate case: view aligned with light. Pick any axis perpendicular to L.
+      vPerp.crossVectors(L, new THREE.Vector3(0, 1, 0));
+      if (vPerp.lengthSq() < 1e-6) vPerp.crossVectors(L, new THREE.Vector3(1, 0, 0));
+    }
+    vPerp.normalize();
+    const cos45 = Math.SQRT1_2;
+    return L.clone().multiplyScalar(cos45).add(vPerp.multiplyScalar(cos45)).normalize();
+  })();
 
   // 3. Terminator Normal: Perpendicular to L (N · L = 0)
   let nTerminator = new THREE.Vector3().crossVectors(L, new THREE.Vector3(0, 1, 0));
@@ -263,7 +287,7 @@ export function calculate5ValueRamp(
   ];
 
   return swatches.map((s) => {
-    const { rgb, hex } = evaluateLightingAnalytical(s.normal, L, V, albedoCol, env, roughness, specularIntensity);
+    const { rgb, hex } = evaluateLightingAnalytical(s.normal, L, V, albedoCol, env, roughness, specularIntensity, atmosphere);
     return {
       role: s.role,
       label: s.label,
