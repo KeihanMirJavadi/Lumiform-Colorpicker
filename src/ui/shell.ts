@@ -1,10 +1,11 @@
 import { IPhotoshopBridge, ColorChangeEvent } from '../bridge/IPhotoshopBridge';
-import { Viewport, MeshGeometryType } from '../render/Viewport';
+import { Viewport } from '../render/Viewport';
 import { LightingPreset, SurfaceFinish } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
 import { StatusBar } from './statusBar';
 import { ColorControls } from './colorControls';
 import { SwatchRamp } from './swatchRamp';
+import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX } from '../core/defaults';
 
 export class AppShell {
   private root: HTMLElement;
@@ -27,19 +28,14 @@ export class AppShell {
       </header>
 
       <main class="panel-content">
-        <!-- 3D Mesh Toggle (Sphere vs Cube) & Reset Rotation -->
-        <div class="mesh-toggle-row">
-          <div class="mesh-toggle-group">
-            <button class="mesh-toggle-btn active" data-mesh="sphere" id="btn-mesh-sphere">
-              <span>🔮</span> Sphere
-            </button>
-            <button class="mesh-toggle-btn" data-mesh="cube" id="btn-mesh-cube">
-              <span>🧊</span> Cube
-            </button>
+        <!-- Sphere Size (uniform scale, bottom stays on the ground) -->
+        <div class="sun-slider-row mesh-scale-row">
+          <span class="sun-axis-name" style="width: 58px;">Size</span>
+          <div class="slider-track-wrap">
+            <input type="range" class="ps-slider" id="slider-mesh-scale" min="20" max="100" value="100" />
           </div>
-          <button class="mesh-reset-btn" id="btn-reset-rotation" title="Reset Mesh Rotation">
-            <span>↺</span> Reset Rotation
-          </button>
+          <input type="number" class="ps-input-num" id="num-mesh-scale" min="20" max="100" value="100" />
+          <span class="slider-unit">%</span>
         </div>
 
         <!-- 3D Viewport with Persistent Color Target (No Lines) -->
@@ -79,9 +75,9 @@ export class AppShell {
             <div class="sun-slider-row">
               <span class="sun-axis-name">Orbit</span>
               <div class="slider-track-wrap">
-                <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="37" />
+                <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="323" />
               </div>
-              <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="37" />
+              <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="323" />
               <span class="slider-unit">°</span>
             </div>
 
@@ -102,13 +98,13 @@ export class AppShell {
           <div class="section-header">
             <h2>Ground Surface & Color</h2>
             <div class="hex-group" title="Ground Surface Color">
-              <input type="color" id="picker-ground-color" style="opacity:0; width:0; height:0; position:absolute;" value="#4A853D" />
-              <div class="albedo-swatch" id="swatch-ground-color" style="background-color: #4A853D; cursor: pointer;" title="Click to choose ground color"></div>
-              <input type="text" class="ps-input-hex" id="input-ground-hex" maxlength="7" spellcheck="false" value="#4A853D" />
+              <input type="color" id="picker-ground-color" style="opacity:0; width:0; height:0; position:absolute;" value="${DEFAULT_GROUND_HEX}" />
+              <div class="albedo-swatch" id="swatch-ground-color" style="background-color: ${DEFAULT_GROUND_HEX}; cursor: pointer;" title="Click to choose ground color"></div>
+              <input type="text" class="ps-input-hex" id="input-ground-hex" maxlength="7" spellcheck="false" value="${DEFAULT_GROUND_HEX}" />
             </div>
           </div>
           <div class="preset-segmented-control" style="margin-top: 6px;">
-            <button class="ground-preset-btn active" data-color="#4A853D" id="btn-ground-grass">
+            <button class="ground-preset-btn active" data-color="${DEFAULT_GROUND_HEX}" id="btn-ground-grass">
               <span>🌿</span> Grass
             </button>
             <button class="ground-preset-btn" data-color="#78726B" id="btn-ground-neutral">
@@ -129,10 +125,10 @@ export class AppShell {
             <h2>Surface Finish & Reflectivity</h2>
           </div>
           <div class="preset-segmented-control">
-            <button class="finish-btn" data-finish="matte" id="btn-finish-matte">
+            <button class="finish-btn active" data-finish="matte" id="btn-finish-matte">
               <span>⚪</span> Matte
             </button>
-            <button class="finish-btn active" data-finish="satin" id="btn-finish-satin">
+            <button class="finish-btn" data-finish="satin" id="btn-finish-satin">
               <span>✨</span> Satin
             </button>
             <button class="finish-btn" data-finish="glossy" id="btn-finish-glossy">
@@ -164,7 +160,7 @@ export class AppShell {
           </div>
 
           <p id="finish-desc" style="margin-top: 8px; font-size: 11px; color: var(--ps-text-secondary);">
-            Satin: 45% Roughness, 40% Specular (soft, spread highlight)
+            Matte: 100% Roughness, 0% Specular (pure diffuse Lambertian)
           </p>
         </div>
 
@@ -174,10 +170,10 @@ export class AppShell {
           <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ps-text-secondary);">
             <p>• 🎨 <strong>5-Value Swatches</strong>: Click any swatch to paint with that calculated lighting tone.</p>
             <p>• 🎯 <strong>Color Picker Target</strong>: Drag the circular reticle anywhere on the sphere, ground, or sky to sample lit colors.</p>
-            <p>• 🧊 <strong>3D Mesh Drag</strong>: Drag the sphere/cube directly to rotate it on its own local axes.</p>
-            <p>• ☀️ <strong>Sun Position Controls</strong>: Drag the 3D sun marker or use the Orbit/Height sliders.</p>
+            <p>• 📐 <strong>Sphere Size</strong>: Use the Size slider to scale the sphere; it stays grounded.</p>
+            <p>• ☀️ <strong>Sun Position Controls</strong>: Use the Orbit/Height sliders or the Time-of-Day presets.</p>
             <p>• 🌿 <strong>Ground Plane</strong>: Grass floor by default; customize color to see bounce light and shadow shift in real time.</p>
-            <p>• 🌌 <strong>Background Drag</strong>: Drag the sky background to orbit the camera.</p>
+            <p>• 🔍 <strong>Camera Zoom</strong>: Scroll the mouse wheel over the viewport to zoom in and out.</p>
           </div>
         </div>
       </main>
@@ -190,8 +186,7 @@ export class AppShell {
     if (viewportContainer) {
       this.viewport = new Viewport({
         container: viewportContainer,
-        initialColor: '#EB5757',
-        initialMeshType: 'sphere',
+        initialColor: DEFAULT_ALBEDO_HEX,
       });
 
       this.viewport.onColorSample((rgb: { r: number; g: number; b: number }) => {
@@ -204,7 +199,7 @@ export class AppShell {
     if (swatchRampContainer && this.viewport) {
       this.swatchRamp = new SwatchRamp({
         container: swatchRampContainer,
-        initialAlbedoHex: '#EB5757',
+        initialAlbedoHex: DEFAULT_ALBEDO_HEX,
         initialEnv: this.viewport.getLightingEngine().getEnvironment(),
         initialFinish: this.viewport.getSurfaceFinish(),
         initialRoughness: this.viewport.getRoughness(),
@@ -225,7 +220,7 @@ export class AppShell {
     if (colorControlsContainer) {
       this.colorControls = new ColorControls({
         container: colorControlsContainer,
-        initialHex: '#EB5757',
+        initialHex: DEFAULT_ALBEDO_HEX,
         onChange: (_hsb, _rgb, hex) => {
           this.viewport?.setSphereColor(hex);
           this.swatchRamp?.updateParameters({ albedoHex: hex });
@@ -244,7 +239,7 @@ export class AppShell {
       // Kept in sync
     });
 
-    this.bindMeshToggleButtons();
+    this.bindMeshScaleControl();
     this.bindPresetButtons();
     this.bindSunSliders();
     this.bindLightColorControls();
@@ -252,22 +247,29 @@ export class AppShell {
     this.bindSurfaceFinishControls();
   }
 
-  private bindMeshToggleButtons(): void {
-    const meshBtns = this.root.querySelectorAll<HTMLButtonElement>('.mesh-toggle-btn');
-    meshBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const meshType = btn.getAttribute('data-mesh') as MeshGeometryType;
-        if (meshType && this.viewport) {
-          this.viewport.setMeshType(meshType);
-          meshBtns.forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
-        }
-      });
+  private bindMeshScaleControl(): void {
+    if (!this.viewport) return;
+
+    const slider = this.root.querySelector<HTMLInputElement>('#slider-mesh-scale')!;
+    const num = this.root.querySelector<HTMLInputElement>('#num-mesh-scale')!;
+
+    const applyScale = (percent: number) => {
+      const clamped = Math.max(20, Math.min(100, Math.round(percent)));
+      this.viewport?.setMeshScale(clamped / 100);
+    };
+
+    slider.addEventListener('input', () => {
+      num.value = slider.value;
+      applyScale(parseInt(slider.value, 10));
     });
 
-    const resetBtn = this.root.querySelector<HTMLButtonElement>('#btn-reset-rotation');
-    resetBtn?.addEventListener('click', () => {
-      this.viewport?.resetMeshRotation();
+    num.addEventListener('change', () => {
+      let val = parseInt(num.value, 10);
+      if (isNaN(val)) val = 100;
+      val = Math.max(20, Math.min(100, val));
+      num.value = val.toString();
+      slider.value = val.toString();
+      applyScale(val);
     });
   }
 
@@ -341,7 +343,7 @@ export class AppShell {
 
     // Synchronize presets and sun angle changes back to the sliders & swatch ramp
     this.viewport.getLightingEngine().onEnvironmentChange((env) => {
-      const azimDeg = Math.round((env.keyLight.azimuth * 180) / Math.PI);
+      const azimDeg = Math.round((((env.keyLight.azimuth * 180) / Math.PI) % 360 + 360) % 360);
       const elevDeg = Math.round((env.keyLight.elevation * 180) / Math.PI);
 
       if (document.activeElement !== azimSlider && document.activeElement !== azimNum) {

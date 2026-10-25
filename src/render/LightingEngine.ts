@@ -10,12 +10,13 @@ import { SunIndicator } from './SunIndicator';
 import { LumiformShaderUniforms } from './shaders/lumiformShader';
 import { SkyShaderUniforms } from './shaders/skyShader';
 import { GroundShaderUniforms } from './shaders/groundShader';
+import { DEFAULT_GROUND_HEX } from '../core/defaults';
 
 export class LightingEngine {
   private activePreset: LightingPreset | 'custom' = 'daylight';
   private environment: LightingEnvironment;
   private sunIndicator: SunIndicator;
-  private groundAlbedo: THREE.Color = new THREE.Color('#4A853D'); // Default Grass Green
+  private groundAlbedo: THREE.Color = new THREE.Color(DEFAULT_GROUND_HEX); // Natural grass green
 
   private meshUniforms: LumiformShaderUniforms | null = null;
   private skyUniforms: SkyShaderUniforms | null = null;

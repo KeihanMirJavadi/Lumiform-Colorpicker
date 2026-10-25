@@ -31,7 +31,7 @@ Every AI Agent executing tasks in this codebase must adhere to the following exe
 │    - Change completed task from `current` -> `Done`    │
 │    - Change next task from `planned` -> `current`      │
 │    - Sync states in both AI_CONTEXT.md and             │
-│      .Docs/index.html                                  │
+│      Docs/index.html                                   │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -39,7 +39,7 @@ Every AI Agent executing tasks in this codebase must adhere to the following exe
 1. **Task States:** Exactly three allowed states: `Done`, `current`, `planned`.
 2. **Single Concurrency:** Exactly **one** task may be in the `current` state at any time.
 3. **Approval Gate:** Never mark a task `Done` or advance to the next task without explicit user approval.
-4. **Documentation Synchronization:** Whenever roadmap states change, update both `AI_CONTEXT.md` and `.Docs/index.html` simultaneously.
+4. **Documentation Synchronization:** Whenever roadmap states change, update both `AI_CONTEXT.md` and `Docs/index.html` simultaneously.
 
 ---
 
@@ -65,13 +65,14 @@ The project follows a **two-phase dual-target architecture**:
 │                       Panel UI (Photoshop Dark #1e1e1e)                │
 │  ├─ Compact HSB Sliders + Hex Input                                    │
 │  ├─ Time-of-Day Presets (Daylight, Golden Hour, Night)                 │
-│  └─ Surface Finish Toggle (Matte / Satin / Glossy)                     │
+│  ├─ Surface Finish Toggle (Matte / Satin / Glossy)                     │
+│  └─ Grounded Sphere Size Slider                                        │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                     3D Viewport (Three.js WebGL)                       │
-│  ├─ High-Resolution Sphere Mesh                                        │
-│  ├─ Directional Key Light + 360° Circular Orbit Gizmo                  │
+│  ├─ High-Resolution Sphere Mesh (grounded, wheel-zoom camera)          │
+│  ├─ Directional Key Light + Orbit/Height Sun Sliders                   │
 │  ├─ 3-Zone Hemispherical Ambient (Sky / Horizon / Ground Bounce)       │
 │  └─ Eyedropper Pointer Controller (WebGL readPixels, throttled to RAF) │
 └───────────────────────────────────┬────────────────────────────────────┘
@@ -101,31 +102,36 @@ The project follows a **two-phase dual-target architecture**:
 
 ### 4.1 3D Viewport & Pointer Interactions
 * **Scoped Pointer Events:** Viewport events are strictly bounded to the panel canvas. Never capture or interfere with the Photoshop document canvas or global pointer.
-* **Decoupled 3D Object Rotation:** Clicking and dragging directly on the 3D object rotates only the central mesh locally on its axes, independent of camera or lighting. Features a 3D Test Form switcher (`Sphere 🔮` / `Cube 🧊`) and a `↺ Reset Rotation` button.
-* **Persistent Draggable Color Picker Target:** An always-visible circular reticle in the 3D viewport featuring crosshairs, an inner sampled color ring, and a floating Hex pill badge. Can be dragged freely across the canvas to sample any lit surface or bounce light via WebGL `readPixels`, with zero-lag bridge dispatch to Photoshop's active brush. Resamples automatically when the mesh rotates or light position changes.
-* **Minimalist 3D Sun Indicator & 2-Axis Sliders:** The glowing 3D sun marker is rendered directly in the 3D canvas without any visual line or ring clutter. It can be dragged directly or controlled via panel sliders for **Orbit** (Horizontal $0^\circ-360^\circ$) and **Height** (Vertical $-89^\circ-+89^\circ$).
-* **Automatic Preset Deselection:** Manually dragging the 3D sun or moving Orbit/Height sliders immediately deselects active lighting presets.
-* **Background Drag / `Alt` + Drag:** Orbits the camera around the scene.
+* **Grounded Sphere Sizing:** A panel **Size** slider uniformly scales the sphere (20%–100%). The transform pivot is the sphere's bottom-center at ground level, so the sphere always rests exactly on the ground plane.
+* **Persistent Draggable Color Picker Target:** An always-visible circular reticle in the 3D viewport featuring crosshairs, an inner sampled color ring, and a floating Hex pill badge. Can be dragged freely across the canvas to sample any lit surface or bounce light via WebGL `readPixels`, with zero-lag bridge dispatch to Photoshop's active brush. Resamples automatically when the light position, sphere size, or ground color changes.
+* **2-Axis Sun Sliders:** Key-light direction is controlled exclusively from the panel via **Orbit** (Horizontal $0^\circ-360^\circ$) and **Height** (Vertical $-89^\circ-+89^\circ$) sliders. No sun marker or light gizmo is drawn in the 3D canvas.
+* **Automatic Preset Deselection:** Moving the Orbit/Height sliders immediately deselects the active lighting preset.
+* **Camera Zoom:** Mouse wheel over the canvas dollies the camera between fixed near/far limits. Dragging the empty canvas never orbits or rotates the camera; there is no canvas-drag camera control.
+* **No Mesh Rotation:** The preview form is a sphere only. There is no alternate-form switcher and no object-rotation mode; sphere shading is rotation-invariant by construction.
 
 ### 4.2 Lighting & Environment Engine
-* **Lighting Model:**
+* **Lighting Model (PBR):** Metallic/roughness Cook-Torrance BRDF — GGX normal distribution, Smith-Schlick geometry masking, Schlick Fresnel, and energy-conserving diffuse (`kd = 1 − F`).
   $$\mathbf{I}_{\text{total}} = \mathbf{I}_{\text{key}} \cdot \max(0, \hat{N} \cdot \hat{L}) + \mathbf{I}_{\text{ambient}}(\hat{N}) + \mathbf{I}_{\text{specular}}$$
 * **Ambient 3-Zone Model:**
-  * **Sky ($\hat{N}_y > 0$):** Fills upper hemisphere.
+  * **Sky ($\hat{N}_y > 0$):** Fills upper hemisphere; chroma partially desaturated before use as fill light.
   * **Horizon ($\hat{N}_y \approx 0$):** Soft lateral transition.
-  * **Ground Bounce ($\hat{N}_y < 0$):** Underside reflection warming the shadow.
+  * **Ground Bounce ($\hat{N}_y < 0$):** Underside reflection, driven only by light that actually reaches the ground (no always-on under-light).
+* **Display Pipeline:** Linear-light shading → neutral tone curve with a soft highlight shoulder → sRGB display encoding → 1/255 dithering to prevent gradient banding.
 * **Curated Presets (Phase 1):**
-  1. **Daylight:** Bright warm sun ($5500\text{K}$) overhead, clear cool sky-blue shadow, warm ground bounce.
+  1. **Daylight:** High warm sun from the upper left, deep blue sky fill, natural green ground bounce.
   2. **Golden Hour:** Low-angle amber sun ($3200\text{K}$), deep violet/blue ambient, warm saturated ground bounce.
   3. **Night:** Cool pale blue moonlight rim, deep dark navy fill.
 
 ### 4.3 Surface Finish Modes
-* **Matte:** Roughness 1.0, 0% Specular (pure diffuse Lambertian).
-* **Satin:** Roughness 0.5, 30% Specular (soft, spread highlight).
-* **Glossy:** Roughness 0.1, 90% Specular (sharp specular point + Fresnel falloff).
+* **Matte (default):** Roughness 1.0, 0% reflectance (pure diffuse Lambertian).
+* **Satin:** Roughness 0.45, 40% reflectance (soft, spread specular lobe).
+* **Glossy:** Roughness 0.08, 95% reflectance (tight GGX highlight + Fresnel edge).
+* **Custom:** Roughness and Specular sliders can be adjusted freely; presets deselect when values leave a preset.
+* **Reflectance (F0):** The Specular slider controls dielectric F0 (0–8%); the BRDF is energy-conserving, so raising specular reduces diffuse accordingly.
 
 ### 4.4 Color Controls & Swatch Ramp
 * **In-Panel Controls:** HSB sliders (Hue 0–360, Saturation 0–100, Brightness 0–100) + Hex input.
+* **Default Surface:** Neutral light-gray albedo (`#E3E3E3`) with Matte finish, so the lighting ramp and ambient color shifts are readable before the artist picks a base hue.
 * **Decoupled Input:** The 3D sphere is driven exclusively by the panel's controls to prevent unwanted canvas feedback loops while painting.
 * **Analytical 5-Value Swatch Ramp:** Calculated directly from surface normal vectors:
   * **Highlight:** Half-vector $\hat{H} = \text{normalize}(\hat{L} + \hat{V})$
@@ -150,18 +156,18 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
 
 * [x] **Task 1.2: 3D Viewport & Sphere Rendering**
   * **State:** `Done`
-  * **Description:** Implement Three.js scene, camera, high-resolution sphere geometry, background camera orbit controls, and resize handling.
-  * **Acceptance Criteria:** Smooth 60fps rendering, responsive canvas resizing, background-drag camera orbit without interfering with UI.
+  * **Description:** Implement Three.js scene, perspective camera with wheel zoom, high-resolution grounded sphere geometry, and resize handling.
+  * **Acceptance Criteria:** Smooth 60fps rendering, responsive canvas resizing, wheel zoom, no background-drag camera orbit.
 
-* [x] **Task 1.3: Lighting Engine & Interactive Orbit Ring**
+* [x] **Task 1.3: Lighting Engine & Sun Sliders**
   * **State:** `Done`
-  * **Description:** Implement directional key light with 360° azimuth/elevation circular gizmo, 3-zone ambient model (Sky/Horizon/Ground), and 3 presets (Daylight, Golden Hour, Night).
-  * **Acceptance Criteria:** Dragging gizmo ring repositions light source smoothly; clicking presets immediately updates lighting atmosphere.
+  * **Description:** Implement directional key light driven by Orbit/Height sliders, 3-zone ambient model (Sky/Horizon/Ground), dynamic atmosphere, and 3 presets (Daylight, Golden Hour, Night). No in-canvas sun marker.
+  * **Acceptance Criteria:** Moving Orbit/Height repositions the light smoothly; clicking presets immediately updates the lighting atmosphere.
 
 * [x] **Task 1.4: Surface Finish (Matte / Satin / Glossy)**
   * **State:** `Done`
-  * **Description:** Implement 3-state surface finish selector modifying roughness and specular power in the shader.
-  * **Acceptance Criteria:** Switching finish modes immediately updates highlight sharpness and material response.
+  * **Description:** Implement a PBR metallic/roughness surface finish selector (GGX + Smith + Schlick) with roughness and reflectance controls.
+  * **Acceptance Criteria:** Switching finish modes immediately updates highlight sharpness and material response with energy-conserving shading.
 
 * [x] **Task 1.5: In-Panel HSB & Hex Color Controls**
   * **State:** `Done`
@@ -170,8 +176,8 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
 
 * [x] **Task 1.6: Viewport Eyedropper Sampling & Throttling**
   * **State:** `Done`
-  * **Description:** Implement click-and-drag eyedropper on the sphere canvas using WebGL readPixels, throttled to `requestAnimationFrame`.
-  * **Acceptance Criteria:** Clicking/dragging on the sphere samples the lit pixel under pointer and updates the active color with zero lag.
+  * **Description:** Implement the persistent draggable eyedropper puck on the viewport canvas using WebGL `readPixels`, throttled to `requestAnimationFrame`, with zero-lag bridge dispatch.
+  * **Acceptance Criteria:** Dragging the puck samples the lit pixel under the reticle and updates the active brush color with zero lag.
 
 * [ ] **Task 1.7: Analytical 5-Value Swatch Ramp**
   * **State:** `current`

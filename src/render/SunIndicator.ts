@@ -28,7 +28,7 @@ export class SunIndicator {
     this.group.name = 'SunIndicator';
 
     // 1. Sun Sphere Marker
-    const sunGeo = new THREE.SphereGeometry(0.14, 20, 20);
+    const sunGeo = new THREE.SphereGeometry(0.10, 20, 20);
     const sunMat = new THREE.MeshBasicMaterial({
       color: 0xffe082,
     });
@@ -65,7 +65,7 @@ export class SunIndicator {
       blending: THREE.AdditiveBlending,
     });
     this.sunGlow = new THREE.Sprite(spriteMat);
-    this.sunGlow.scale.set(0.65, 0.65, 1.0);
+    this.sunGlow.scale.set(0.32, 0.32, 1.0);
     this.group.add(this.sunGlow);
 
     this.updatePosition();
@@ -95,8 +95,8 @@ export class SunIndicator {
   public onPointerDown(clientX: number, clientY: number): void {
     this.isDragging = true;
     this.previousPointer = { x: clientX, y: clientY };
-    this.sunMarker.scale.set(1.3, 1.3, 1.3);
-    this.sunGlow.scale.set(0.85, 0.85, 1.0);
+    this.sunMarker.scale.set(1.15, 1.15, 1.15);
+    this.sunGlow.scale.set(0.60, 0.60, 1.0);
   }
 
   public onPointerMove(clientX: number, clientY: number): boolean {
@@ -117,7 +117,7 @@ export class SunIndicator {
     if (this.isDragging) {
       this.isDragging = false;
       this.sunMarker.scale.set(1.0, 1.0, 1.0);
-      this.sunGlow.scale.set(0.65, 0.65, 1.0);
+      this.sunGlow.scale.set(0.32, 0.32, 1.0);
     }
   }
 

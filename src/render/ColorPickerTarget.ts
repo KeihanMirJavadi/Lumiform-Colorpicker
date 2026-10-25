@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RGBColor } from '../core/types';
-import { rgbToHex } from '../core/color';
+import { rgbToHex, hexToRgb } from '../core/color';
+import { DEFAULT_ALBEDO_HEX } from '../core/defaults';
 
 export interface ColorPickerTargetOptions {
   container: HTMLElement;
@@ -21,8 +22,8 @@ export class ColorPickerTarget {
   private normY: number;
   private isDragging = false;
   private pixelBuffer = new Uint8Array(4);
-  private currentRgb: RGBColor = { r: 235, g: 87, b: 87 };
-  private currentHex = '#EB5757';
+  private currentRgb: RGBColor = hexToRgb(DEFAULT_ALBEDO_HEX) ?? { r: 227, g: 227, b: 227 };
+  private currentHex = DEFAULT_ALBEDO_HEX;
   private listeners: Set<(rgb: RGBColor, hex: string) => void> = new Set();
   private rafId: number | null = null;
 
@@ -47,7 +48,7 @@ export class ColorPickerTarget {
         <div class="puck-crosshair-v"></div>
         <div class="puck-center-dot"></div>
       </div>
-      <div class="puck-badge" id="puck-badge">#EB5757</div>
+      <div class="puck-badge" id="puck-badge">${DEFAULT_ALBEDO_HEX}</div>
     `;
 
     this.ringEl = this.element.querySelector('#puck-ring')!;

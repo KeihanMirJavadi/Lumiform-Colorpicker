@@ -59,11 +59,11 @@ export function computeDynamicAtmosphere(elevationRad: number): {
   const elevDeg = (elevationRad * 180) / Math.PI;
 
   // 1. High Daylight Sun (elevation >= 35°)
-  const dayZenith = new THREE.Color('#3B82F6');   // Bright radiant blue
-  const dayEquator = new THREE.Color('#93C5FD');  // Luminous azure sky
-  const dayHorizon = new THREE.Color('#E0F2FE');  // Pale atmospheric horizon
-  const dayGround = new THREE.Color('#4B3C2F');   // Dark neutral earth
-  const daySun = new THREE.Color('#FFFBEB');      // Warm sunlight
+  const dayZenith = new THREE.Color('#1B4A96');   // Deep clear-sky blue
+  const dayEquator = new THREE.Color('#5C9BD1');  // Hazy cyan mid-sky
+  const dayHorizon = new THREE.Color('#D8ECF3');  // Pale atmospheric horizon
+  const dayGround = new THREE.Color('#5C8F3E');   // Natural grass bounce
+  const daySun = new THREE.Color('#FFE9C9');      // Warm sunlight
 
   // 2. Low Golden Hour Sun (elevation ~ 14°)
   const goldZenith = new THREE.Color('#4338CA');  // Luminous twilight violet (clear sky fill)
@@ -101,8 +101,8 @@ export function computeDynamicAtmosphere(elevationRad: number): {
     horizonColor.copy(dayHorizon);
     groundColor.copy(dayGround);
     sunColor.copy(daySun);
-    sunIntensity = 2.2;
-    ambientIntensity = 0.9;
+    sunIntensity = 2.7;
+    ambientIntensity = 1.2;
   } else if (elevDeg >= 12) {
     // Blend Golden Hour -> Daylight
     const t = (elevDeg - 12) / (35 - 12);
@@ -111,8 +111,8 @@ export function computeDynamicAtmosphere(elevationRad: number): {
     horizonColor.lerpColors(goldHorizon, dayHorizon, t);
     groundColor.lerpColors(goldGround, dayGround, t);
     sunColor.lerpColors(goldSun, daySun, t);
-    sunIntensity = THREE.MathUtils.lerp(2.8, 2.2, t);
-    ambientIntensity = THREE.MathUtils.lerp(0.95, 0.9, t);
+    sunIntensity = THREE.MathUtils.lerp(2.8, 2.8, t);
+    ambientIntensity = THREE.MathUtils.lerp(0.95, 1.2, t);
   } else if (elevDeg >= 0) {
     // Blend Twilight -> Golden Hour
     const t = elevDeg / 12;
@@ -170,20 +170,20 @@ export const LIGHTING_PRESETS: Record<LightingPreset, {
 }> = {
   'daylight': {
     name: 'Daylight',
-    description: 'Crisp 5500K overhead sun, luminous 3-tone sky fill, warm neutral ground bounce',
+    description: 'High warm sun, deep blue sky fill, natural green ground bounce',
     keyLight: {
-      color: '#FFFBEB',
-      intensity: 2.2,
-      azimuth: 0.65, // ~37°
+      color: '#FFE9C9',
+      intensity: 2.7,
+      azimuth: -0.65, // ~-37° upper left
       elevation: 0.95, // ~54° high sun
     },
     ambient: {
-      zenithColor: '#3B82F6',   // Bright blue zenith
-      equatorColor: '#93C5FD',  // Radiant azure equator
-      horizonColor: '#E0F2FE',  // Soft atmospheric haze horizon
-      groundColor: '#4B3C2F',   // Neutral dark earth bounce
-      skyColor: '#60A5FA',      // Legacy alias
-      intensity: 0.9,
+      zenithColor: '#1B4A96',   // Deep clear-sky blue
+      equatorColor: '#5C9BD1',  // Hazy cyan mid-sky
+      horizonColor: '#D8ECF3',  // Pale atmospheric horizon
+      groundColor: '#5C8F3E',   // Natural grass bounce
+      skyColor: '#5C9BD1',      // Legacy alias
+      intensity: 1.2,
     },
   },
   'golden-hour': {
@@ -191,7 +191,7 @@ export const LIGHTING_PRESETS: Record<LightingPreset, {
     description: 'Low-angle 3200K amber sun, luminous dusk violet sky fill, subtle warm bounce',
     keyLight: {
       color: '#FBBF24',
-      intensity: 2.8,
+      intensity: 2.7,
       azimuth: 0.85, // ~48°
       elevation: 0.28, // ~16° low sun
     },
@@ -209,7 +209,7 @@ export const LIGHTING_PRESETS: Record<LightingPreset, {
     description: 'Cool pale moonlight rim, deep navy 3-tone sky, subtle dark ground fill',
     keyLight: {
       color: '#94A3B8',
-      intensity: 1.4,
+      intensity: 1.2,
       azimuth: 2.3, // ~131° rim angle
       elevation: 0.45, // ~25°
     },

@@ -1,12 +1,13 @@
 import { RGBColor } from '../core/types';
 import { rgbToHex, hexToRgb } from '../core/color';
+import { DEFAULT_ALBEDO_HEX } from '../core/defaults';
 import { IPhotoshopBridge, ColorChangeEvent } from './IPhotoshopBridge';
 
 export class MockPhotoshopBridge implements IPhotoshopBridge {
   readonly name = 'MockPhotoshopBridge';
   private _isConnected = true;
   private _status = 'Connected (Browser Dev Mode)';
-  private _currentColor: RGBColor = { r: 235, g: 87, b: 87 }; // Default warm coral
+  private _currentColor: RGBColor = hexToRgb(DEFAULT_ALBEDO_HEX) ?? { r: 227, g: 227, b: 227 };
   private _statusListeners: Set<(status: string) => void> = new Set();
   private _colorListeners: Set<(event: ColorChangeEvent) => void> = new Set();
 

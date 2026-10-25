@@ -13,9 +13,52 @@ export interface AnalyticalSwatch {
   hex: string;
 }
 
+const PI = Math.PI;
+
+function clamp(x: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, x));
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+/** 3-zone sky radiance. Shared with the lumiform shader's `skyBands()`. */
+function skyBands(dir: THREE.Vector3, env: LightingEnvironment): THREE.Color {
+  const zenith = env.ambient.zenithColor;
+  const equator = env.ambient.equatorColor;
+
+  if (dir.y < 0.45) {
+    const t = Math.max(0, dir.y) / 0.45;
+    return new THREE.Color().lerpColors(env.ambient.horizonColor, equator, smoothstep(0, 1, t));
+  }
+  const t = (dir.y - 0.45) / 0.55;
+  return new THREE.Color().lerpColors(equator, zenith, smoothstep(0, 1, t));
+}
+
+/** GGX normal distribution, matching `distributionGGX()` in the shader. */
+function distributionGGX(NoH: number, roughness: number): number {
+  const a = roughness * roughness;
+  const a2 = a * a;
+  const d = NoH * NoH * (a2 - 1) + 1;
+  return a2 / Math.max(PI * d * d, 1e-6);
+}
+
+/** Smith-Schlick geometry masking, matching `geometrySmith()` in the shader. */
+function geometrySchlickGGX(NoX: number, roughness: number): number {
+  const r = roughness + 1;
+  const k = (r * r) / 8;
+  return NoX / (NoX * (1 - k) + k);
+}
+
+function geometrySmith(NoV: number, NoL: number, roughness: number): number {
+  return geometrySchlickGGX(NoV, roughness) * geometrySchlickGGX(NoL, roughness);
+}
+
 /**
- * Mathematically evaluates the physical Lumiform lighting equation for a given normal vector.
- * I_total = I_key * max(0, N·L) + I_ambient(N) + I_specular
+ * Mathematically evaluates the same physically based (GGX Cook-Torrance) lighting
+ * model that the lumiform shader renders, for a given surface normal.
  */
 export function evaluateLightingAnalytical(
   N: THREE.Vector3,
@@ -31,68 +74,83 @@ export function evaluateLightingAnalytical(
   const normV = V.clone().normalize();
   const H = new THREE.Vector3().addVectors(normL, normV).normalize();
 
-  // 1. Key Diffuse
-  const NdotL = Math.max(0, normN.dot(normL));
-  const keyDiffuse = env.keyLight.color.clone().multiplyScalar(NdotL * env.keyLight.intensity);
+  const metalness = 0.0;
+  const rough = clamp(roughness, 0.045, 1.0);
 
-  // 2. Physical Hemispherical Sky Fill + Ground Bounce GI
-  const zenith = env.ambient.zenithColor ?? env.ambient.skyColor;
-  const equator = env.ambient.equatorColor ?? env.ambient.skyColor;
+  const NoL = Math.max(0, normN.dot(normL));
+  const NoV = Math.max(normV.dot(normN), 1e-4);
+  const NoH = Math.max(0, normN.dot(H));
+  const VoH = Math.max(0, normV.dot(H));
 
-  let skyLight: THREE.Color;
-  if (normN.y < 0.45) {
-    const t = Math.max(0, normN.y) / 0.45;
-    skyLight = new THREE.Color().lerpColors(env.ambient.horizonColor, equator, t);
-  } else {
-    const t = (normN.y - 0.45) / 0.55;
-    skyLight = new THREE.Color().lerpColors(equator, zenith, t);
+  // Dielectric F0 from surface reflectance; metals would use albedo.
+  const f0 = 0.08 * specularIntensity;
+  const fresnel = f0 + (1 - f0) * Math.pow(1 - clamp(VoH, 0, 1), 5);
+
+  // --- Direct key light (Cook-Torrance) -------------------------------------
+  const direct = new THREE.Color(0, 0, 0);
+
+  if (NoL > 0) {
+    const D = distributionGGX(NoH, rough);
+    const G = geometrySmith(NoV, NoL, rough);
+    const specBRDF = (D * G * fresnel) / Math.max(4 * NoV * NoL, 1e-4);
+    const kd = (1 - fresnel) * (1 - metalness);
+
+    const diffusePart = albedoCol.clone().multiplyScalar(kd / PI);
+    const specPart = new THREE.Color(1, 1, 1).multiplyScalar(specBRDF);
+    const brdf = diffusePart.add(specPart);
+
+    direct.copy(brdf).multiply(
+      env.keyLight.color.clone().multiplyScalar(env.keyLight.intensity * NoL)
+    );
   }
 
-  const groundBounceGI = env.ambient.groundColor.clone().multiplyScalar(
-    0.35 * Math.max(0, normL.y) * env.keyLight.intensity +
-    0.22 * env.ambient.intensity
+  // --- Ambient: hemispherical sky irradiance + ground bounce ----------------
+  const upWeight = clamp(normN.y * 0.5 + 0.5, 0, 1);
+  const groundBounceRaw = env.ambient.groundColor.clone().multiplyScalar(
+    0.55 * Math.max(0, normL.y) * env.keyLight.intensity
+  );
+  const groundLumaRaw = 0.2126 * groundBounceRaw.r + 0.7152 * groundBounceRaw.g + 0.0722 * groundBounceRaw.b;
+  const groundBounceGI = groundBounceRaw.lerp(new THREE.Color(groundLumaRaw, groundLumaRaw, groundLumaRaw), 0.65);
+
+  const skyIrradiance = skyBands(normN, env);
+  const skyLuma = 0.2126 * skyIrradiance.r + 0.7152 * skyIrradiance.g + 0.0722 * skyIrradiance.b;
+  const skyFill = skyIrradiance.clone().lerp(new THREE.Color(skyLuma, skyLuma, skyLuma), 0.45);
+  skyFill.multiplyScalar(0.70 + 0.30 * clamp(normN.y, 0, 1));
+
+  const irradiance = new THREE.Color()
+    .lerpColors(groundBounceGI, skyFill, smoothstep(0.0, 1.0, upWeight))
+    .multiplyScalar(env.ambient.intensity);
+  irradiance.add(
+    new THREE.Color()
+      .lerpColors(skyFill, groundBounceGI, 0.5)
+      .multiplyScalar(env.ambient.intensity * 0.10)
   );
 
-  const upWeight = Math.max(0, Math.min(1, normN.y * 0.5 + 0.5));
-  let ambientCol = new THREE.Color().lerpColors(groundBounceGI, skyLight, upWeight).multiplyScalar(env.ambient.intensity);
-  const ambientFloor = new THREE.Color().lerpColors(skyLight, groundBounceGI, 0.5).multiplyScalar(env.ambient.intensity * 0.15);
-  ambientCol.add(ambientFloor);
-  const totalAmbient = ambientCol;
+  const kdAmbient = 1 - f0;
+  const ambientDiffuse = albedoCol.clone().multiplyScalar(kdAmbient).multiply(irradiance);
 
-  // 3. Diffuse Component
-  const totalDiffuseLight = new THREE.Color().addColors(keyDiffuse, totalAmbient);
-  const diffuse = albedoCol.clone().multiply(totalDiffuseLight);
-
-  // 4. Specular Component
-  const specular = new THREE.Color(0, 0, 0);
-
-  if (specularIntensity > 0.001 && NdotL > 0) {
-    const shininess = Math.pow(2, 10 * (1 - Math.max(0, Math.min(1, roughness))));
-    const NdotH = Math.max(0, normN.dot(H));
-    const specFactor = Math.pow(NdotH, shininess);
-
-    const VdotH = Math.max(0, normV.dot(H));
-    const fresnel = specularIntensity + (1 - specularIntensity) * Math.pow(Math.max(0, Math.min(1, 1 - VdotH)), 5);
-
-    const specScalar = specFactor * fresnel * env.keyLight.intensity;
-    specular.copy(env.keyLight.color).multiplyScalar(specScalar);
-
-    if (specularIntensity > 0.05 && roughness < 0.7) {
-      const VdotN = Math.max(0, normV.dot(normN));
-      const edgeFresnel = Math.pow(Math.max(0, Math.min(1, 1 - VdotN)), 4);
-      const ambientReflect = (normN.y >= 0 ? zenith : env.ambient.groundColor).clone();
-      ambientReflect.multiplyScalar(edgeFresnel * (1 - roughness) * specularIntensity * 0.45 * env.ambient.intensity);
-      specular.add(ambientReflect);
-    }
+  // Ambient specular probe along the reflection vector.
+  const R = normV.clone().negate().reflect(normN);
+  let envSpecColor = skyBands(R, env);
+  if (R.y < 0) {
+    envSpecColor = new THREE.Color().lerpColors(
+      env.ambient.groundColor,
+      envSpecColor,
+      clamp(R.y + 1, 0, 1)
+    );
   }
 
-  // 5. Total Radiance
-  const finalCol = new THREE.Color().addColors(diffuse, specular);
+  const fEnv = f0 + (Math.max(1 - rough, f0) - f0) * Math.pow(clamp(1 - NoV, 0, 1), 5);
+  const ambientSpecular = envSpecColor.multiplyScalar(
+    fEnv * (1 - 0.6 * rough) * 0.45 * env.ambient.intensity
+  );
 
-  // 6. ACES Filmic Tone Mapping approximation
-  const r = acesFilmic(finalCol.r);
-  const g = acesFilmic(finalCol.g);
-  const b = acesFilmic(finalCol.b);
+  // --- Total radiance & ACES filmic tone mapping ----------------------------
+  const finalCol = new THREE.Color().addColors(direct, ambientDiffuse).add(ambientSpecular);
+
+  const r = linearToSRGB(toneMap(finalCol.r));
+  const g = linearToSRGB(toneMap(finalCol.g));
+  const b = linearToSRGB(toneMap(finalCol.b));
 
   const rgb: RGBColor = {
     r: Math.round(r * 255),
@@ -103,10 +161,15 @@ export function evaluateLightingAnalytical(
   return { rgb, hex: rgbToHex(rgb) };
 }
 
-function acesFilmic(x: number): number {
-  const a = x * (x + 0.0245786) - 0.000090537;
-  const b = x * (0.983729 * x + 0.4329510) + 0.238081;
-  return Math.max(0, Math.min(1, a / b));
+/** Matches the shaders' display encoding (linear → sRGB). */
+function linearToSRGB(c: number): number {
+  const v = clamp(c, 0, 1);
+  return v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 0.41666667) - 0.055;
+}
+
+function toneMap(x: number): number {
+  const c = Math.max(0, x);
+  return c <= 0.8 ? c : 0.8 + 0.2 * (1 - Math.exp(-(c - 0.8) / 0.2));
 }
 
 /**

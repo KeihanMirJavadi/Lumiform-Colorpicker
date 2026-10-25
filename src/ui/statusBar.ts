@@ -1,4 +1,5 @@
 import { IPhotoshopBridge, ColorChangeEvent } from '../bridge/IPhotoshopBridge';
+import { DEFAULT_ALBEDO_HEX } from '../core/defaults';
 
 export class StatusBar {
   private container: HTMLElement;
@@ -24,7 +25,7 @@ export class StatusBar {
       <div class="active-brush-group">
         <span class="active-brush-label">Brush:</span>
         <div class="active-brush-swatch" id="active-brush-swatch" title="Active Foreground Brush Color"></div>
-        <span class="active-brush-hex" id="active-brush-hex">#EB5757</span>
+        <span class="active-brush-hex" id="active-brush-hex">${DEFAULT_ALBEDO_HEX}</span>
       </div>
     `;
 

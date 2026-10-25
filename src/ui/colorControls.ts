@@ -1,5 +1,6 @@
 import { HSBColor, RGBColor } from '../core/types';
 import { hsbToRgb, rgbToHsb, rgbToHex, hexToRgb } from '../core/color';
+import { DEFAULT_ALBEDO_HEX } from '../core/defaults';
 
 export interface ColorControlsOptions {
   container: HTMLElement;
@@ -25,8 +26,8 @@ export class ColorControls {
   constructor(options: ColorControlsOptions) {
     this.container = options.container;
 
-    const initialHex = options.initialHex ?? '#EB5757';
-    const initialRgb = hexToRgb(initialHex) ?? { r: 235, g: 87, b: 87 };
+    const initialHex = options.initialHex ?? DEFAULT_ALBEDO_HEX;
+    const initialRgb = hexToRgb(initialHex) ?? { r: 227, g: 227, b: 227 };
     this.hsb = rgbToHsb(initialRgb);
 
     if (options.onChange) {
@@ -45,7 +46,7 @@ export class ColorControls {
           <h2>Base Color & Sliders (Decoupled Albedo)</h2>
           <div class="hex-group">
             <div class="albedo-swatch" id="albedo-swatch-preview" title="Current Base Albedo"></div>
-            <input type="text" class="ps-input-hex" id="input-hex" maxlength="7" spellcheck="false" value="#EB5757" />
+            <input type="text" class="ps-input-hex" id="input-hex" maxlength="7" spellcheck="false" value="${DEFAULT_ALBEDO_HEX}" />
           </div>
         </div>
 

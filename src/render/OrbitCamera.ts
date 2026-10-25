@@ -4,6 +4,8 @@ export interface OrbitCameraOptions {
   radius?: number;
   minPolarAngle?: number; // radians
   maxPolarAngle?: number; // radians
+  minDistance?: number;
+  maxDistance?: number;
   rotateSpeed?: number;
 }
 
@@ -16,6 +18,8 @@ export class OrbitCamera {
   private rotateSpeed: number;
   private minPolarAngle: number;
   private maxPolarAngle: number;
+  private minDistance: number;
+  private maxDistance: number;
 
   constructor(camera: THREE.PerspectiveCamera, options: OrbitCameraOptions = {}) {
     this.camera = camera;
@@ -23,6 +27,8 @@ export class OrbitCamera {
     this.rotateSpeed = options.rotateSpeed ?? 0.006;
     this.minPolarAngle = options.minPolarAngle ?? 0.1;
     this.maxPolarAngle = options.maxPolarAngle ?? Math.PI - 0.1;
+    this.minDistance = options.minDistance ?? 2.2;
+    this.maxDistance = options.maxDistance ?? 9.0;
 
     // Initialize spherical coordinates from camera's initial position
     const offset = new THREE.Vector3().subVectors(this.camera.position, this.target);
@@ -58,6 +64,26 @@ export class OrbitCamera {
 
   public onPointerUp(): void {
     this.isDragging = false;
+  }
+
+  /** Multiplicative dolly/zoom. Values > 1 pull the camera back. */
+  public zoomBy(factor: number): void {
+    if (!Number.isFinite(factor) || factor <= 0) return;
+    this.spherical.radius = Math.max(
+      this.minDistance,
+      Math.min(this.maxDistance, this.spherical.radius * factor)
+    );
+    this.updateCamera();
+  }
+
+  public getDistance(): number {
+    return this.spherical.radius;
+  }
+
+  /** Moves the orbit target vertically while preserving the camera offset. */
+  public setTargetY(y: number): void {
+    this.target.y = y;
+    this.updateCamera();
   }
 
   public get active(): boolean {

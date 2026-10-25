@@ -32,17 +32,34 @@ const fragmentShader = /* glsl */ `
 
   varying vec3 vWorldPosition;
 
+  // 1/255 triangular-ish dither: removes banding in the smooth sky/form gradients.
+  float ditherNoise(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+
+  vec3 linearToSRGB(vec3 c) {
+    vec3 low = c * 12.92;
+    vec3 high = 1.055 * pow(max(c, vec3(0.0)), vec3(0.41666667)) - 0.055;
+    return mix(low, high, step(vec3(0.0031308), c));
+  }
+
+  vec3 toneMap(vec3 c) {
+    vec3 x = max(c, vec3(0.0));
+    vec3 over = max(x - vec3(0.8), vec3(0.0));
+    return min(x, vec3(0.8)) + 0.2 * (1.0 - exp(-over / 0.2));
+  }
+
   void main() {
     vec3 dir = normalize(vWorldPosition);
 
     // 1. 3-Tone Dynamic Sky Gradient (Zenith, Equator, Horizon)
     vec3 sky;
     if (dir.y >= 0.0) {
-      if (dir.y < 0.38) {
-        float t = dir.y / 0.38;
+      if (dir.y < 0.10) {
+        float t = dir.y / 0.10;
         sky = mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
       } else {
-        float t = (dir.y - 0.38) / 0.62;
+        float t = (dir.y - 0.10) / 0.28;
         sky = mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
       }
     } else {
@@ -50,21 +67,12 @@ const fragmentShader = /* glsl */ `
       sky = mix(uHorizonColor, uGroundColor * 0.45, t);
     }
 
-    // 2. Atmospheric Sun Halo & Bloom
-    vec3 L = normalize(uLightDir);
-    float sunDot = max(0.0, dot(dir, L));
-    if (sunDot > 0.0) {
-      float halo = pow(sunDot, 10.0) * 0.35 + pow(sunDot, 48.0) * 0.85;
-      float sunVisibility = clamp(L.y * 1.5 + 0.3, 0.0, 1.0);
-      sky += uSunColor * (halo * sunVisibility * (uSunIntensity * 0.4));
-    }
+    // 2. Clean sky: no sun disc or halo is drawn in the preview canvas.
 
     // 3. ACES Filmic Tone Mapping
-    vec3 a = sky * (sky + 0.0245786) - 0.000090537;
-    vec3 b = sky * (0.983729 * sky + 0.4329510) + 0.238081;
-    vec3 mapped = clamp(a / b, 0.0, 1.0);
-
-    gl_FragColor = vec4(mapped, 1.0);
+    vec3 outColor = linearToSRGB(toneMap(sky));
+    outColor += (ditherNoise(gl_FragCoord.xy) - 0.5) / 255.0;
+    gl_FragColor = vec4(outColor, 1.0);
   }
 `;
 

@@ -7,14 +7,12 @@ import { createSkyDomeMaterial, SkyShaderUniforms } from './shaders/skyShader';
 import { createGroundMaterial, GroundShaderUniforms } from './shaders/groundShader';
 import { LightingPreset, SurfaceFinish, RGBColor } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
-
-export type MeshGeometryType = 'sphere' | 'cube';
+import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
 
 export interface ViewportOptions {
   container: HTMLElement;
   sphereRadius?: number;
   initialColor?: string | number;
-  initialMeshType?: MeshGeometryType;
 }
 
 export class Viewport {
@@ -26,12 +24,12 @@ export class Viewport {
   private lightingEngine: LightingEngine;
   private colorPickerTarget: ColorPickerTarget;
 
-  // 3D Object Mesh & Group (allows isolated local object rotation)
-  private meshGroup: THREE.Group;
+  // Sphere with a ground-level scale pivot
+  private meshScaleGroup: THREE.Group;
   private targetMesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
   private sphereGeometry: THREE.SphereGeometry;
-  private cubeGeometry: THREE.BoxGeometry;
-  private currentMeshType: MeshGeometryType = 'sphere';
+  private sphereRadius: number;
+  private meshScale = 1.0;
 
   // Environment: Dynamic 3-Tone Sky Dome & Ground Plane with Drop Shadow
   private skyGeometry: THREE.SphereGeometry;
@@ -39,25 +37,20 @@ export class Viewport {
   private groundGeometry: THREE.PlaneGeometry;
   private groundMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
 
-  private raycaster: THREE.Raycaster;
-  private pointer: THREE.Vector2;
   private resizeObserver: ResizeObserver;
   private animationFrameId: number | null = null;
   private isDisposed = false;
 
-  // Interaction tracking (Sun drag, Mesh rotation, Camera orbit)
-  private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'rotate-mesh' = 'none';
-  private previousPointerPos = { x: 0, y: 0 };
-  private currentFinish: SurfaceFinish = 'satin';
-  private currentRoughness = 0.45;
-  private currentSpecular = 0.4;
+  private currentFinish: SurfaceFinish = DEFAULT_SURFACE_FINISH;
+  private currentRoughness = 1.0;
+  private currentSpecular = 0.0;
 
   private finishListeners: Set<(finish: SurfaceFinish, roughness: number, specular: number) => void> = new Set();
   private sampleListeners: Set<(rgb: RGBColor, hex: string) => void> = new Set();
-  private meshTypeListeners: Set<(type: MeshGeometryType) => void> = new Set();
 
   constructor(options: ViewportOptions) {
     this.container = options.container;
+    this.sphereRadius = options.sphereRadius ?? 1.25;
 
     // 1. Three.js Scene Setup
     this.scene = new THREE.Scene();
@@ -65,8 +58,8 @@ export class Viewport {
 
     // 2. Perspective Camera
     const aspect = (this.container.clientWidth || 300) / (this.container.clientHeight || 300);
-    this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-    this.camera.position.set(0, 0.4, 4.3);
+    this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 200);
+    this.camera.position.set(0, 0.15, 7.0);
 
     // 3. WebGL Renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -87,9 +80,11 @@ export class Viewport {
     this.container.innerHTML = '';
     this.container.appendChild(canvas);
 
-    // 4. Camera Orbit Controls (for background dragging)
+    // 4. Camera Orbit Controls (zoom only — canvas dragging never orbits the scene)
     this.orbitCamera = new OrbitCamera(this.camera, {
-      radius: 4.3,
+      radius: 7.0,
+      minDistance: 2.2,
+      maxDistance: 9.0,
       rotateSpeed: 0.006,
     });
 
@@ -101,25 +96,27 @@ export class Viewport {
     this.scene.add(this.skyMesh);
 
     // 6. Ground Plane with Physical Sphere Drop Shadow & Ambient Color Bleed
-    const sphereRadius = options.sphereRadius ?? 1.25;
-    this.groundGeometry = new THREE.PlaneGeometry(18, 18, 32, 32);
+    const sphereRadius = this.sphereRadius;
+    this.groundGeometry = new THREE.PlaneGeometry(400, 400, 1, 1);
     const groundMaterial = createGroundMaterial();
     this.groundMesh = new THREE.Mesh(this.groundGeometry, groundMaterial);
     this.groundMesh.position.set(0, -sphereRadius, 0);
     this.groundMesh.rotation.x = -Math.PI / 2;
     this.scene.add(this.groundMesh);
 
-    // 7. High-Resolution Geometries (Sphere and Cube)
+    // 7. High-Resolution Sphere Geometry
     this.sphereGeometry = new THREE.SphereGeometry(sphereRadius, 96, 96);
-    this.cubeGeometry = new THREE.BoxGeometry(2.5, 2.5, 2.5);
 
-    const material = createLumiformMaterial(options.initialColor ?? 0xEB5757);
+    const material = createLumiformMaterial(options.initialColor ?? DEFAULT_ALBEDO_HEX);
 
-    // Mesh Group allows local rotation completely independent from light and camera
-    this.meshGroup = new THREE.Group();
+    // Sphere hierarchy: meshScaleGroup sits with its origin at ground level
+    // (bottom-center of the sphere), so uniform scaling keeps the sphere grounded.
+    this.meshScaleGroup = new THREE.Group();
+    this.meshScaleGroup.position.y = -sphereRadius;
     this.targetMesh = new THREE.Mesh(this.sphereGeometry, material);
-    this.meshGroup.add(this.targetMesh);
-    this.scene.add(this.meshGroup);
+    this.targetMesh.position.y = sphereRadius;
+    this.meshScaleGroup.add(this.targetMesh);
+    this.scene.add(this.meshScaleGroup);
 
     // 8. Lighting Engine & Sun Indicator (Only the glowing sun itself, NO lines/rings)
     this.lightingEngine = new LightingEngine();
@@ -128,7 +125,8 @@ export class Viewport {
       skyMaterial.uniforms as SkyShaderUniforms,
       groundMaterial.uniforms as GroundShaderUniforms
     );
-    this.scene.add(this.lightingEngine.getSunIndicator().group);
+    // The sun marker is intentionally not added to the scene: light direction is
+    // controlled from the panel sliders/presets only.
 
     this.lightingEngine.onEnvironmentChange(() => {
       this.colorPickerTarget?.scheduleResample();
@@ -145,11 +143,8 @@ export class Viewport {
       },
     });
 
-    // 10. Raycasting & Pointer Events
-    this.raycaster = new THREE.Raycaster();
-    this.pointer = new THREE.Vector2();
-
-    this.bindPointerEvents(canvas);
+    // 10. Camera zoom (wheel only; canvas dragging never orbits or rotates anything)
+    this.bindZoom(canvas);
 
     // 11. Resize Handling
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
@@ -159,11 +154,7 @@ export class Viewport {
     this.animate = this.animate.bind(this);
     this.startLoop();
 
-    if (options.initialMeshType) {
-      this.setMeshType(options.initialMeshType);
-    } else {
-      this.updateCubeShadowMatrix();
-    }
+    this.updateMeshGroundUniforms();
 
     // Initial resample once rendered
     requestAnimationFrame(() => {
@@ -171,150 +162,48 @@ export class Viewport {
     });
   }
 
-  public setMeshType(type: MeshGeometryType): void {
-    this.currentMeshType = type;
-    const lumiformUniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
-    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+  /** Uniformly scales the sphere while keeping its bottom centered on the ground. */
+  public setMeshScale(scale: number): void {
+    this.meshScale = Math.max(0.2, Math.min(1.0, scale));
+    this.meshScaleGroup.scale.setScalar(this.meshScale);
+    this.updateMeshGroundUniforms();
 
-    if (type === 'cube') {
-      this.targetMesh.geometry = this.cubeGeometry;
-      lumiformUniforms.uIsSphere.value = 0.0;
-      groundUniforms.uMeshType.value = 1.0;
-    } else {
-      this.targetMesh.geometry = this.sphereGeometry;
-      lumiformUniforms.uIsSphere.value = 1.0;
-      groundUniforms.uMeshType.value = 0.0;
-    }
-
-    this.updateCubeShadowMatrix();
-    this.meshTypeListeners.forEach((cb) => cb(type));
+    // Keep the shrunken object framed instead of letting it sink to the bottom of the canvas.
+    this.orbitCamera.setTargetY(this.meshScaleGroup.position.y + this.sphereRadius * this.meshScale);
     this.colorPickerTarget.scheduleResample();
   }
 
-  public resetMeshRotation(): void {
-    this.meshGroup.rotation.set(0, 0, 0);
-    this.updateCubeShadowMatrix();
-    this.colorPickerTarget.scheduleResample();
+  public getMeshScale(): number {
+    return this.meshScale;
   }
 
-  private updateCubeShadowMatrix(): void {
-    if (!this.groundMesh || !this.meshGroup) return;
-    this.meshGroup.updateMatrixWorld(true);
+  /** Keeps shader bounds (radial normal origin, shadows, contact AO) aligned with the scaled sphere. */
+  private updateMeshGroundUniforms(): void {
+    if (!this.groundMesh || !this.targetMesh) return;
     const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
-    groundUniforms.uCubeInvMatrix.value.copy(this.meshGroup.matrixWorld).invert();
+    const meshUniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
+    const center = this.targetMesh.getWorldPosition(new THREE.Vector3());
+
+    // The sphere's radial normal must be measured from the actual (moved) sphere center.
+    meshUniforms.uSphereCenter.value.copy(center);
+
+    groundUniforms.uSphereCenter.value.copy(center);
+    groundUniforms.uSphereRadius.value = this.sphereRadius * this.meshScale;
+    groundUniforms.uMeshScale.value = this.meshScale;
   }
 
-  public getMeshType(): MeshGeometryType {
-    return this.currentMeshType;
-  }
-
-  public onMeshTypeChange(callback: (type: MeshGeometryType) => void): () => void {
-    this.meshTypeListeners.add(callback);
-    callback(this.currentMeshType);
-    return () => {
-      this.meshTypeListeners.delete(callback);
-    };
-  }
-
-  private bindPointerEvents(canvas: HTMLCanvasElement): void {
-    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
-      canvas.setPointerCapture(e.pointerId);
-      this.updatePointerCoordinates(e);
-      this.previousPointerPos = { x: e.clientX, y: e.clientY };
-
-      this.raycaster.setFromCamera(this.pointer, this.camera);
-
-      // 1. Check Sun Handle hit (direct drag on the 3D Sun)
-      const sunHits = this.raycaster.intersectObjects(this.lightingEngine.getSunIndicator().getHitObjects(), true);
-      if (sunHits.length > 0) {
-        this.interactionMode = 'orbit-light';
-        canvas.style.cursor = 'crosshair';
-        this.lightingEngine.getSunIndicator().onPointerDown(e.clientX, e.clientY);
-        return;
-      }
-
-      // 2. Check 3D Mesh hit (Isolated 3D Object Rotation)
-      const meshHits = this.raycaster.intersectObject(this.targetMesh);
-      if (meshHits.length > 0 && !e.altKey) {
-        this.interactionMode = 'rotate-mesh';
-        canvas.style.cursor = 'grabbing';
-        return;
-      }
-
-      // 3. Otherwise: Camera Orbit around the scene
-      this.interactionMode = 'orbit-camera';
-      canvas.style.cursor = 'grabbing';
-      this.orbitCamera.onPointerDown(e.clientX, e.clientY);
-    });
-
-    canvas.addEventListener('pointermove', (e: PointerEvent) => {
-      if (this.interactionMode === 'orbit-light') {
-        this.lightingEngine.getSunIndicator().onPointerMove(e.clientX, e.clientY);
+  private bindZoom(canvas: HTMLCanvasElement): void {
+    // Wheel zoom (the only camera control; dragging never orbits the scene).
+    canvas.addEventListener(
+      'wheel',
+      (e: WheelEvent) => {
+        e.preventDefault();
+        const factor = Math.exp(e.deltaY * 0.0012);
+        this.orbitCamera.zoomBy(factor);
         this.colorPickerTarget.scheduleResample();
-        return;
-      }
-
-      if (this.interactionMode === 'rotate-mesh') {
-        const deltaX = e.clientX - this.previousPointerPos.x;
-        const deltaY = e.clientY - this.previousPointerPos.y;
-        this.previousPointerPos = { x: e.clientX, y: e.clientY };
-
-        // Rotate only the 3D mesh locally (decoupled from scene and camera)
-        this.meshGroup.rotation.y += deltaX * 0.008;
-        this.meshGroup.rotation.x += deltaY * 0.008;
-
-        this.updateCubeShadowMatrix();
-        this.colorPickerTarget.scheduleResample();
-        return;
-      }
-
-      if (this.interactionMode === 'orbit-camera') {
-        this.orbitCamera.onPointerMove(e.clientX, e.clientY);
-        this.colorPickerTarget.scheduleResample();
-        return;
-      }
-
-      // Hover feedback when not dragging
-      this.updatePointerCoordinates(e);
-      this.raycaster.setFromCamera(this.pointer, this.camera);
-
-      const sunHits = this.raycaster.intersectObjects(this.lightingEngine.getSunIndicator().getHitObjects(), true);
-      if (sunHits.length > 0) {
-        canvas.style.cursor = 'pointer';
-        return;
-      }
-
-      const meshHits = this.raycaster.intersectObject(this.targetMesh);
-      if (meshHits.length > 0) {
-        canvas.style.cursor = 'grab';
-      } else {
-        canvas.style.cursor = 'default';
-      }
-    });
-
-    const endPointerAction = (e: PointerEvent) => {
-      if (canvas.hasPointerCapture(e.pointerId)) {
-        canvas.releasePointerCapture(e.pointerId);
-      }
-
-      if (this.interactionMode === 'orbit-light') {
-        this.lightingEngine.getSunIndicator().onPointerUp();
-      } else if (this.interactionMode === 'orbit-camera') {
-        this.orbitCamera.onPointerUp();
-      }
-
-      this.interactionMode = 'none';
-      canvas.style.cursor = 'grab';
-    };
-
-    canvas.addEventListener('pointerup', endPointerAction);
-    canvas.addEventListener('pointercancel', endPointerAction);
-  }
-
-  private updatePointerCoordinates(e: PointerEvent): void {
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      },
+      { passive: false }
+    );
   }
 
   private handleResize(): void {
@@ -342,9 +231,6 @@ export class Viewport {
 
   private animate(): void {
     if (this.isDisposed) return;
-    if (this.currentMeshType === 'cube') {
-      this.updateCubeShadowMatrix();
-    }
     this.renderer.render(this.scene, this.camera);
     this.animationFrameId = requestAnimationFrame(this.animate);
   }
@@ -474,7 +360,6 @@ export class Viewport {
     this.groundGeometry.dispose();
     this.groundMesh.material.dispose();
     this.sphereGeometry.dispose();
-    this.cubeGeometry.dispose();
     this.targetMesh.material.dispose();
     this.lightingEngine.dispose();
     this.colorPickerTarget.dispose();

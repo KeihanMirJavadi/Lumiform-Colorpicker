@@ -398,7 +398,7 @@
       <div class="grid-3">
         <div class="card">
           <h4>1. In-Panel 3D Viewport</h4>
-          <p>Three.js WebGL viewport rendering a smooth 3D sphere with orbital view controls and direct light-direction manipulation.</p>
+          <p>Three.js WebGL viewport rendering a smooth, grounded 3D sphere with wheel zoom, a size slider, and Orbit/Height light-direction sliders.</p>
         </div>
         <div class="card">
           <h4>2. Physical Light Simulation</h4>
@@ -428,9 +428,9 @@
 │                                      ▼                                 │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │                    3D Viewport (Three.js WebGL)                  │  │
-│  │  - Smooth 3D Form Mesh (Sphere / Cube, decoupled local rotation) │  │
-│  │  - Custom Shader (Key Light + Sky/Horizon/Ground Ambient)        │  │
-│  │  - Minimalist 3D Sun Indicator + Orbit & Height Panel Sliders    │  │
+│  │  - High-Resolution Sphere (grounded size, wheel zoom)            │  │
+│  │  - PBR Shader (GGX + Sky/Horizon/Ground Ambient)                 │  │
+│  │  - Orbit & Height Sun Sliders (no in-canvas marker)              │  │
 │  │  - Persistent Draggable Color Picker Target                      │  │
 │  └───────────────────────────────────┬──────────────────────────────┘  │
 │                                      ▼                                 │
@@ -505,9 +505,9 @@
           <h4>Surface Finish Modes</h4>
           <p>The sphere material dynamically switches between three physical finishes:</p>
           <ul style="font-size:13px; margin-left:16px; margin-top:8px;">
-            <li><strong>Matte:</strong> Roughness 1.0, 0% Specular. Pure Lambertian diffuse (skin, chalk, matte fabric).</li>
-            <li><strong>Satin:</strong> Roughness 0.5, 30% Specular. Broad, soft highlight (leather, smooth plastic).</li>
-            <li><strong>Glossy:</strong> Roughness 0.1, 90% Specular. Sharp specular highlight with Fresnel edge (metal, wet surfaces).</li>
+            <li><strong>Matte (default):</strong> Roughness 1.0, 0% Reflectance. Pure Lambertian diffuse (skin, chalk, matte fabric).</li>
+            <li><strong>Satin:</strong> Roughness 0.45, 40% Reflectance. Broad, soft GGX highlight (leather, smooth plastic).</li>
+            <li><strong>Glossy:</strong> Roughness 0.08, 95% Reflectance. Tight GGX highlight with Fresnel edge (metal, wet surfaces).</li>
           </ul>
         </div>
       </div>
@@ -636,17 +636,17 @@
           <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.2 3D Viewport & Sphere Rendering</div>
-              <div class="task-desc">Implement Three.js scene, perspective camera, smooth sphere geometry, and background orbit controls.</div>
-              <div class="task-criteria">Criteria: 60fps rendering, smooth background-drag camera orbit, resize observer.</div>
+              <div class="task-desc">Implement Three.js scene, perspective camera with wheel zoom, grounded sphere geometry, and resize handling.</div>
+              <div class="task-criteria">Criteria: 60fps rendering, wheel zoom, no background-drag camera orbit, resize observer.</div>
             </div>
             <span class="status-badge done">Done</span>
           </div>
 
           <div class="task-item" data-status="done">
             <div class="task-info">
-              <div class="task-name">1.3 Lighting Engine & Interactive Orbit Ring</div>
-              <div class="task-desc">Implement directional key light with interactive circular orbit ring, 3-zone ambient (Sky/Horizon/Ground), and 3 presets (Daylight, Golden Hour, Night).</div>
-              <div class="task-criteria">Criteria: Dragging ring rotates sun azimuth/elevation; presets update ambient and key parameters.</div>
+              <div class="task-name">1.3 Lighting Engine & Sun Sliders</div>
+              <div class="task-desc">Implement directional key light driven by Orbit/Height sliders, dynamic 3-zone ambient (Sky/Horizon/Ground), and 3 presets (Daylight, Golden Hour, Night). No in-canvas sun marker.</div>
+              <div class="task-criteria">Criteria: Orbit/Height sliders reposition the light smoothly; presets update ambient and key parameters.</div>
             </div>
             <span class="status-badge done">Done</span>
           </div>
@@ -654,8 +654,8 @@
           <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.4 Surface Finish (Matte / Satin / Glossy)</div>
-              <div class="task-desc">Implement 3-state surface roughness/gloss toggle modifying shader specular power and roughness.</div>
-              <div class="task-criteria">Criteria: Switching states updates highlight sharpness immediately.</div>
+              <div class="task-desc">Implement a PBR metallic/roughness finish selector with GGX specular, Smith geometry, and Schlick Fresnel.</div>
+              <div class="task-criteria">Criteria: Switching states updates highlight sharpness and energy-conserving response immediately.</div>
             </div>
             <span class="status-badge done">Done</span>
           </div>
@@ -672,7 +672,7 @@
           <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.6 Viewport Eyedropper Sampling & Throttling</div>
-              <div class="task-desc">Implement persistent draggable color picker target and decoupled 3D mesh rotation with WebGL readPixels sampling.</div>
+              <div class="task-desc">Implement the persistent draggable eyedropper puck with WebGL readPixels sampling, throttled to requestAnimationFrame.</div>
               <div class="task-criteria">Criteria: Dragging target samples lit color under reticle; updates active brush color and status bar smoothly.</div>
             </div>
             <span class="status-badge done">Done</span>

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX } from '../../core/defaults';
 
 export interface GroundShaderUniforms {
   [key: string]: THREE.IUniform;
@@ -14,9 +15,7 @@ export interface GroundShaderUniforms {
   uGroundAlbedo: { value: THREE.Color };
   uSphereCenter: { value: THREE.Vector3 };
   uSphereRadius: { value: number };
-  uMeshType: { value: number };
-  uCubeInvMatrix: { value: THREE.Matrix4 };
-  uCubeHalfSize: { value: THREE.Vector3 };
+  uMeshScale: { value: number };
 }
 
 const vertexShader = /* glsl */ `
@@ -44,40 +43,25 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uGroundAlbedo;
   uniform vec3 uSphereCenter;
   uniform float uSphereRadius;
-
-  uniform float uMeshType; // 0.0 = Sphere, 1.0 = Cube
-  uniform mat4 uCubeInvMatrix;
-  uniform vec3 uCubeHalfSize;
+  uniform float uMeshScale;
 
   varying vec3 vWorldPosition;
 
-  // Calculates soft drop shadow for a 3D box centered at origin in local space
-  float calcCubeSoftShadow(vec3 ro, vec3 rd, vec3 halfSize) {
-    // 1. Exact Branchless Kay-Kajiya Ray-AABB intersection test for direct umbra
-    vec3 m = 1.0 / (rd + vec3(equal(rd, vec3(0.0))) * 1e-6);
-    vec3 n = m * ro;
-    vec3 k = abs(m) * halfSize;
-    vec3 t1 = -n - k;
-    vec3 t2 = -n + k;
-    float tNear = max(max(t1.x, t1.y), t1.z);
-    float tFar  = min(min(t2.x, t2.y), t2.z);
+  // 1/255 triangular-ish dither: removes banding in the smooth sky/form gradients.
+  float ditherNoise(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
 
-    if (tNear <= tFar && tFar > 0.0) {
-      return 0.0; // Ray directly intersects the 3D cube body (full umbra)
-    }
+  vec3 linearToSRGB(vec3 c) {
+    vec3 low = c * 12.92;
+    vec3 high = 1.055 * pow(max(c, vec3(0.0)), vec3(0.41666667)) - 0.055;
+    return mix(low, high, step(vec3(0.0031308), c));
+  }
 
-    // 2. Inigo Quilez SDF soft penumbra for rays that graze past the box
-    float res = 1.0;
-    float t = 0.04;
-    for (int i = 0; i < 20; i++) {
-      vec3 p = ro + rd * t;
-      vec3 q = abs(p) - halfSize;
-      float h = length(max(q, 0.0));
-      res = min(res, 14.0 * h / t);
-      t += max(0.04, h * 0.7);
-      if (t > 6.0) break;
-    }
-    return clamp(res, 0.0, 1.0);
+  vec3 toneMap(vec3 c) {
+    vec3 x = max(c, vec3(0.0));
+    vec3 over = max(x - vec3(0.8), vec3(0.0));
+    return min(x, vec3(0.8)) + 0.2 * (1.0 - exp(-over / 0.2));
   }
 
   void main() {
@@ -88,91 +72,71 @@ const fragmentShader = /* glsl */ `
     float contactAO = 1.0;
     float distToMeshSurface = 0.0;
 
-    if (uMeshType < 0.5) {
-      // --- 1A. SPHERE DROP SHADOW & CONTACT AO ---
-      if (L.y > 0.005) {
-        vec3 W = uSphereCenter - P;
-        float tProj = dot(W, L);
-        if (tProj > 0.0) {
-          float dSq = dot(W, W) - tProj * tProj;
-          float d = sqrt(max(0.0, dSq));
-          float penumbra = 0.035 + 0.08 * clamp(tProj / uSphereRadius - 1.0, 0.0, 4.0);
-          float occlusion = 1.0 - smoothstep(uSphereRadius - penumbra, uSphereRadius + penumbra, d);
-          shadowFactor = 1.0 - occlusion;
-        }
+    // --- Sphere drop shadow & contact AO ---
+    if (L.y > 0.005) {
+      vec3 W = uSphereCenter - P;
+      float tProj = dot(W, L);
+      if (tProj > 0.0) {
+        float dSq = dot(W, W) - tProj * tProj;
+        float d = sqrt(max(0.0, dSq));
+        float penumbra = 0.18 + 0.10 * clamp(tProj / uSphereRadius - 1.0, 0.0, 4.0);
+        float occlusion = 1.0 - smoothstep(uSphereRadius - penumbra, uSphereRadius + penumbra, d);
+        shadowFactor = 1.0 - occlusion;
       }
-
-      // Circular contact AO & distance
-      float rTouch = length(P.xz - uSphereCenter.xz);
-      contactAO = clamp(rTouch / 0.55, 0.22, 1.0);
-      distToMeshSurface = length(P - uSphereCenter) - uSphereRadius;
-    } else {
-      // --- 1B. CUBE DROP SHADOW & CONTACT AO (Exact Ray-Box Slab + IQ SDF Penumbra) ---
-      vec3 P_local = (uCubeInvMatrix * vec4(P, 1.0)).xyz;
-      vec3 L_local = normalize((uCubeInvMatrix * vec4(L, 0.0)).xyz);
-
-      if (L.y > 0.005) {
-        shadowFactor = calcCubeSoftShadow(P_local, L_local, uCubeHalfSize);
-      }
-
-      // Contact AO: 3D Euclidean distance from ground point to the oriented cube
-      vec3 qContact = max(abs(P_local) - uCubeHalfSize, vec3(0.0));
-      distToMeshSurface = length(qContact);
-      contactAO = clamp(distToMeshSurface / 0.45, 0.22, 1.0);
     }
 
-    // 2. Ground Ambient GI from 3-Tone Sky Dome
+    // Circular contact AO & distance to the sphere surface
+    float rTouch = length(P.xz - uSphereCenter.xz);
+    contactAO = clamp(rTouch / (0.50 * uSphereRadius), 0.30, 1.0);
+    distToMeshSurface = length(P - uSphereCenter) - uSphereRadius;
+
+    // Ground ambient GI from the 3-tone sky dome (ground sees less sky than the sphere)
     vec3 skyGI = (
       uHorizonColor * 0.35 +
       uEquatorColor * 0.45 +
       uZenithColor  * 0.20
-    ) * uAmbientIntensity;
+    ) * uAmbientIntensity * 0.5;
 
-    // 3. Mesh Material Color Bleeding / Reflected Downward Bounce into shadow
-    float bounceSpread = max(0.0, 1.0 - distToMeshSurface / 1.75);
+    // Sphere color bleeding / reflected downward bounce into its own shadow
+    float bounceSpread = max(0.0, 1.0 - distToMeshSurface / (1.75 * max(uMeshScale, 0.2)));
     vec3 colorBleed = uSphereAlbedo * (
-      0.30 * bounceSpread * uKeyIntensity * max(0.1, L.y) +
-      0.15 * bounceSpread * uAmbientIntensity
+      0.15 * bounceSpread * uKeyIntensity * max(0.0, L.y)
     );
 
-    // 4. Direct Sunlight (Occluded by sphere/cube shadow)
+    // Direct sunlight (occluded by the sphere's shadow)
     float sunLambert = max(0.0, L.y);
-    vec3 directSun = uKeyColor * (sunLambert * uKeyIntensity * shadowFactor);
+    vec3 directSun = uKeyColor * (sunLambert * uKeyIntensity * shadowFactor) / 3.14159265;
 
-    // 5. Total Ground Illumination (Direct sunlight + Sky GI + Contact AO + Color Bleed)
+    // Total ground illumination
     vec3 totalLight = directSun + (skyGI * contactAO) + colorBleed;
-    vec3 groundCol = uGroundAlbedo * totalLight;
+    vec3 groundCol = uGroundAlbedo * totalLight * 0.90;
 
-    // 6. Circular boundary edge fade (blends seamlessly into horizon background)
+    // Distant boundary fade (blends seamlessly into the horizon sky)
     float distFromCenter = length(P.xz - uSphereCenter.xz);
-    float alpha = 1.0 - smoothstep(5.2, 7.8, distFromCenter);
+    float alpha = 1.0 - smoothstep(120.0, 190.0, distFromCenter);
 
-    // 7. ACES Filmic Tone Mapping
-    vec3 a = groundCol * (groundCol + 0.0245786) - 0.000090537;
-    vec3 b = groundCol * (0.983729 * groundCol + 0.4329510) + 0.238081;
-    vec3 mapped = clamp(a / b, 0.0, 1.0);
-
-    gl_FragColor = vec4(mapped, alpha);
+    // Tone map + display encoding
+    vec3 outColor = linearToSRGB(toneMap(groundCol));
+    outColor += (ditherNoise(gl_FragCoord.xy) - 0.5) / 255.0;
+    gl_FragColor = vec4(outColor, alpha);
   }
 `;
 
 export function createGroundMaterial(): THREE.ShaderMaterial {
   const uniforms: GroundShaderUniforms = {
     uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-    uKeyColor: { value: new THREE.Color('#FFFBEB') },
-    uKeyIntensity: { value: 2.2 },
-    uZenithColor: { value: new THREE.Color('#3B82F6') },
-    uEquatorColor: { value: new THREE.Color('#93C5FD') },
-    uHorizonColor: { value: new THREE.Color('#E0F2FE') },
-    uGroundColor: { value: new THREE.Color('#4A853D') },
-    uAmbientIntensity: { value: 0.9 },
-    uSphereAlbedo: { value: new THREE.Color('#EB5757') },
-    uGroundAlbedo: { value: new THREE.Color('#4A853D') }, // Default: Lush Grass Green
+    uKeyColor: { value: new THREE.Color('#FFE9C9') },
+    uKeyIntensity: { value: 2.7 },
+    uZenithColor: { value: new THREE.Color('#1B4A96') },
+    uEquatorColor: { value: new THREE.Color('#5C9BD1') },
+    uHorizonColor: { value: new THREE.Color('#D8ECF3') },
+    uGroundColor: { value: new THREE.Color(DEFAULT_GROUND_HEX) },
+    uAmbientIntensity: { value: 1.2 },
+    uSphereAlbedo: { value: new THREE.Color(DEFAULT_ALBEDO_HEX) },
+    uGroundAlbedo: { value: new THREE.Color(DEFAULT_GROUND_HEX) },
     uSphereCenter: { value: new THREE.Vector3(0, 0, 0) },
     uSphereRadius: { value: 1.25 },
-    uMeshType: { value: 0.0 }, // 0.0 = Sphere, 1.0 = Cube
-    uCubeInvMatrix: { value: new THREE.Matrix4() },
-    uCubeHalfSize: { value: new THREE.Vector3(1.25, 1.25, 1.25) },
+    uMeshScale: { value: 1.0 },
   };
 
   return new THREE.ShaderMaterial({
