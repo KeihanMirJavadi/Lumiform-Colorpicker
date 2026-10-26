@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BASE_SPHERE_RADIUS, FRAMING } from './framing';
 
 export type SphereSlotId = 'center' | 'right' | 'left';
 
@@ -10,14 +11,20 @@ export interface SphereSlotConfig {
   position: THREE.Vector3;
 }
 
-/** Fixed reference composition: center near, right mid, left far. */
+/**
+ * Fixed reference composition: center near, right mid, left far.
+ *
+ * The positions are solved from the measured reference projection in
+ * `core/framing.ts` (near/mid/far diameters and centre X fractions) rather
+ * than hand-placed, so they follow the camera contract automatically.
+ */
 export const SPHERE_SLOTS: SphereSlotConfig[] = [
-  { id: 'center', label: 'Center', depthLabel: 'Near', position: new THREE.Vector3(0, 0, 0) },
-  { id: 'right', label: 'Right', depthLabel: 'Mid', position: new THREE.Vector3(3.4, 0, -5.8) },
-  { id: 'left', label: 'Left', depthLabel: 'Far', position: new THREE.Vector3(-6.4, 0, -16.8) },
+  { id: 'center', label: 'Center', depthLabel: 'Near', position: FRAMING.slots.near.clone() },
+  { id: 'right', label: 'Right', depthLabel: 'Mid', position: FRAMING.slots.mid.clone() },
+  { id: 'left', label: 'Left', depthLabel: 'Far', position: FRAMING.slots.far.clone() },
 ];
 
-export const BASE_SPHERE_RADIUS = 1.25;
+export { BASE_SPHERE_RADIUS };
 export const GROUND_Y = -BASE_SPHERE_RADIUS;
 
 export function getSlot(id: SphereSlotId): SphereSlotConfig {

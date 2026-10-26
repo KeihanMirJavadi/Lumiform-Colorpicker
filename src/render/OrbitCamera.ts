@@ -7,6 +7,8 @@ export interface OrbitCameraOptions {
   minDistance?: number;
   maxDistance?: number;
   rotateSpeed?: number;
+  /** Fixed upward pitch applied after looking at the target (radians). */
+  lookPitchRad?: number;
 }
 
 export class OrbitCamera {
@@ -20,6 +22,7 @@ export class OrbitCamera {
   private maxPolarAngle: number;
   private minDistance: number;
   private maxDistance: number;
+  private lookPitchRad: number;
 
   constructor(camera: THREE.PerspectiveCamera, options: OrbitCameraOptions = {}) {
     this.camera = camera;
@@ -29,6 +32,7 @@ export class OrbitCamera {
     this.maxPolarAngle = options.maxPolarAngle ?? Math.PI - 0.1;
     this.minDistance = options.minDistance ?? 2.2;
     this.maxDistance = options.maxDistance ?? 9.0;
+    this.lookPitchRad = options.lookPitchRad ?? 0;
 
     // Initialize spherical coordinates from camera's initial position
     const offset = new THREE.Vector3().subVectors(this.camera.position, this.target);
@@ -95,5 +99,10 @@ export class OrbitCamera {
     const offset = new THREE.Vector3().setFromSpherical(this.spherical);
     this.camera.position.copy(this.target).add(offset);
     this.camera.lookAt(this.target);
+    if (this.lookPitchRad !== 0) {
+      // The horizon is the eye line. Tilt up so that line lands on the
+      // reference's 55.1% instead of dead centre.
+      this.camera.rotateX(this.lookPitchRad);
+    }
   }
 }

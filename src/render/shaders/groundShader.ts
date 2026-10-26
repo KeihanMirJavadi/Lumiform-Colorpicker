@@ -134,9 +134,12 @@ const fragmentShader = /* glsl */ `
     float hazeAmount = 1.0 - exp(-uHaze * 0.04 * max(0.0, viewDistance - 5.0));
     groundCol = mix(groundCol, atmosphereColor(viewDir), clamp(hazeAmount, 0.0, 0.85));
 
-    // Distant boundary fade (blends seamlessly into the horizon sky)
+    // Distant boundary fade (blends seamlessly into the horizon sky).
+    // The plane is large enough that its far edge reaches the eye line, and the
+    // fade completes before the far clip plane, so the ground meets the horizon
+    // at the correct height instead of ending a few pixels below it.
     float distFromCenter = length(P.xz);
-    float alpha = 1.0 - smoothstep(120.0, 190.0, distFromCenter);
+    float alpha = 1.0 - smoothstep(380.0, 560.0, distFromCenter);
 
     // Tone map + display encoding
     vec3 outColor = linearToSRGB(toneMap(groundCol));

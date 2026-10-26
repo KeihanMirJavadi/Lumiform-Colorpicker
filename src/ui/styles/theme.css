@@ -118,7 +118,12 @@ html, body {
   position: relative;
   width: 100%;
   max-width: 300px;
-  height: 300px;
+  /* Reference framing: every time-of-day panel is a wide landscape
+     (412 x 227). The camera, horizon and sphere spacing in
+     src/core/framing.ts are derived from that aspect, so this must stay
+     in sync with REFERENCE_ASPECT. */
+  aspect-ratio: 412 / 227;
+  height: auto;
   flex: 0 0 auto;
   margin: 0 auto;
   display: flex;

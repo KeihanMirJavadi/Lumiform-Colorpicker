@@ -8,6 +8,7 @@ import { createGroundMaterial, GroundShaderUniforms } from './shaders/groundShad
 import { LightingPreset, SurfaceFinish, RGBColor } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
 import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
+import { FRAMING, REFERENCE_ASPECT, verticalFovRad } from '../core/framing';
 import {
   BASE_SPHERE_RADIUS,
   GROUND_Y,
@@ -76,10 +77,19 @@ export class Viewport {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x181818);
 
-    // 2. Camera — fixed composition framing; zoom is the only camera control.
-    const aspect = (this.container.clientWidth || 300) / (this.container.clientHeight || 300);
-    this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 200);
-    this.camera.position.set(0, 0.15, 7.0);
+    // 2. Camera — fixed reference framing (see core/framing.ts). Zoom is the
+    //    only camera control; time-of-day and material never move the camera.
+    const aspect =
+      this.container.clientWidth > 0 && this.container.clientHeight > 0
+        ? this.container.clientWidth / this.container.clientHeight
+        : REFERENCE_ASPECT;
+    this.camera = new THREE.PerspectiveCamera(
+      THREE.MathUtils.radToDeg(verticalFovRad(aspect)),
+      aspect,
+      0.1,
+      600
+    );
+    this.camera.position.set(0, FRAMING.cameraY, FRAMING.cameraZ);
 
     // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -88,7 +98,7 @@ export class Viewport {
       preserveDrawingBuffer: true,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(this.container.clientWidth || 300, this.container.clientHeight || 300);
+    this.renderer.setSize(this.container.clientWidth || 300, this.container.clientHeight || 165);
 
     const canvas = this.renderer.domElement;
     canvas.style.display = 'block';
@@ -100,22 +110,26 @@ export class Viewport {
     this.container.innerHTML = '';
     this.container.appendChild(canvas);
 
-    // 4. Camera zoom only
+    // 4. Camera zoom only. The framing contract fixes the resting distance and
+    //    the horizon pitch; zoom is a symmetric dolly around that distance.
     this.orbitCamera = new OrbitCamera(this.camera, {
-      radius: 7.0,
-      minDistance: 2.2,
-      maxDistance: 9.0,
+      radius: FRAMING.cameraZ,
+      minDistance: FRAMING.cameraZ * 0.4,
+      maxDistance: FRAMING.cameraZ * 1.5,
+      lookPitchRad: FRAMING.pitchRad,
     });
 
-    // 5. Sky dome
-    this.skyGeometry = new THREE.SphereGeometry(45, 36, 24);
+    // 5. Sky dome. It must enclose the far sphere slot (the farthest geometry
+    //    in the scene), otherwise the sky would be occluded by its own shell.
+    this.skyGeometry = new THREE.SphereGeometry(300, 36, 24);
     const skyMaterial = createSkyDomeMaterial();
     this.skyMesh = new THREE.Mesh(this.skyGeometry, skyMaterial);
     this.skyMesh.renderOrder = -1;
     this.scene.add(this.skyMesh);
 
-    // 6. Ground plane
-    this.groundGeometry = new THREE.PlaneGeometry(400, 400, 1, 1);
+    // 6. Ground plane. Its far edge must reach the eye line (see framing.ts),
+    //    otherwise the visible horizon sits below the true horizon.
+    this.groundGeometry = new THREE.PlaneGeometry(1600, 1600, 1, 1);
     const groundMaterial = createGroundMaterial();
     this.groundMesh = new THREE.Mesh(this.groundGeometry, groundMaterial);
     this.groundMesh.position.set(0, GROUND_Y, 0);
@@ -554,6 +568,8 @@ export class Viewport {
     if (width === 0 || height === 0) return;
 
     this.camera.aspect = width / height;
+    // Keep the horizontal FOV fixed (the reference lens) instead of the vertical.
+    this.camera.fov = THREE.MathUtils.radToDeg(verticalFovRad(this.camera.aspect));
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
