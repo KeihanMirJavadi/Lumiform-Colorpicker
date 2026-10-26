@@ -13,7 +13,11 @@ export interface LumiformShaderUniforms {
   uHorizonColor: { value: THREE.Color };
   uGroundColor: { value: THREE.Color };
   uSkyColor: { value: THREE.Color };
-  uAmbientIntensity: { value: number };
+  uSkyLightColor: { value: THREE.Color };
+  uSkyLightIntensity: { value: number };
+  uGroundLightColor: { value: THREE.Color };
+  uGroundLightIntensity: { value: number };
+  uSkyHemiPower: { value: number };
   uRoughness: { value: number };
   uSpecularIntensity: { value: number };
   uSphereCenter: { value: THREE.Vector3 };
@@ -44,7 +48,11 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uHorizonColor;
   uniform vec3 uGroundColor;
   uniform vec3 uSkyColor;
-  uniform float uAmbientIntensity;
+  uniform vec3 uSkyLightColor;
+  uniform float uSkyLightIntensity;
+  uniform vec3 uGroundLightColor;
+  uniform float uGroundLightIntensity;
+  uniform float uSkyHemiPower;
 
   uniform float uRoughness;
   uniform float uSpecularIntensity;
@@ -92,11 +100,11 @@ const fragmentShader = /* glsl */ `
   // Sky gradient used for atmospheric in-scattering (matches the sky dome).
   vec3 atmosphereColor(vec3 dir) {
     if (dir.y >= 0.0) {
-      if (dir.y < 0.10) {
-        float t = dir.y / 0.10;
+      if (dir.y < 0.07) {
+        float t = dir.y / 0.07;
         return mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
       }
-      float t = (dir.y - 0.10) / 0.28;
+      float t = (dir.y - 0.07) / 0.095;
       return mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
     }
     return uHorizonColor;
@@ -149,40 +157,28 @@ const fragmentShader = /* glsl */ `
       specular = (kdDirect * uAlbedo / PI + specBRDF) * uKeyColor * uKeyIntensity * NoL;
     }
 
-    // --- Ambient: hemispherical sky irradiance + ground bounce + contact fill.
-    float upWeight = clamp(N.y * 0.5 + 0.5, 0.0, 1.0);
-    vec3 groundBounceGI = uGroundColor * (
-      0.55 * max(0.0, L.y) * uKeyIntensity
-    );
-
-    float groundLuma = dot(groundBounceGI, vec3(0.2126, 0.7152, 0.0722));
-    groundBounceGI = mix(groundBounceGI, vec3(groundLuma), 0.65);
-
-    vec3 skyIrradiance = skyBands(N);
-
-    // Most of the sky's chroma is removed before it is used as fill light;
-    // single-bounce sky light is far less saturated than the sky dome itself.
-    float skyLuma = dot(skyIrradiance, vec3(0.2126, 0.7152, 0.0722));
-    vec3 skyFill = mix(skyIrradiance, vec3(skyLuma), 0.45);
-
-    // Vertical sky-fill weighting: side-facing normals see less of the bright
-    // horizon band than up-facing ones, which restores form on the shadow side.
-    skyFill *= mix(0.70, 1.0, clamp(N.y, 0.0, 1.0));
-
-    vec3 irradiance = mix(groundBounceGI, skyFill, smoothstep(0.0, 1.0, upWeight)) * uAmbientIntensity;
-    irradiance += mix(skyFill, groundBounceGI, 0.5) * (uAmbientIntensity * 0.10);
+    // --- Ambient: two-hemisphere (L1 spherical harmonics) model.
+    //     E(N) = skyE * (0.5 + 0.5 N.y) + groundE * (0.5 - 0.5 N.y)
+    //     This is the exact form fitted to the reference sphere, so no
+    //     per-preset hand tuning lives in this shader.
+    float hemi = pow(clamp(N.y * 0.5 + 0.5, 0.0, 1.0), uSkyHemiPower);
+    vec3 skyE = uSkyLightColor * uSkyLightIntensity;
+    vec3 groundE = uGroundLightColor * uGroundLightIntensity;
+    vec3 ambientE = mix(groundE, skyE, hemi);
 
     vec3 kdAmbient = (1.0 - F0) * (1.0 - uMetalness);
-    vec3 ambientDiffuse = kdAmbient * uAlbedo * irradiance;
+    vec3 ambientDiffuse = kdAmbient * uAlbedo * ambientE / PI;
 
-    // Ambient specular: probe the sky along the reflection vector (roughness-weighted).
+    // Ambient specular: band-limited probe of the visible dome, lifted toward
+    // the sky-light colour (the satin sheen the reference shows at the top).
     vec3 R = reflect(-V, N);
     vec3 envSpecColor = skyBands(R);
     if (R.y < 0.0) {
       envSpecColor = mix(uGroundColor, envSpecColor, clamp(R.y + 1.0, 0.0, 1.0));
     }
+    envSpecColor = mix(envSpecColor, uSkyLightColor, 0.55);
     vec3 Fenv = F0 + (max(vec3(1.0 - rough), F0) - F0) * pow(clamp(1.0 - NoV, 0.0, 1.0), 5.0);
-    vec3 ambientSpecular = envSpecColor * Fenv * (1.0 - 0.6 * rough) * 0.45 * uAmbientIntensity;
+    vec3 ambientSpecular = envSpecColor * Fenv * (1.0 - 0.5 * rough) * 0.35;
 
     // Total radiance.
     vec3 finalColor = specular + ambientDiffuse + ambientSpecular;
@@ -190,7 +186,7 @@ const fragmentShader = /* glsl */ `
     // Aerial perspective: extinction + in-scattering tinted by the sky.
     vec3 viewDir = normalize(vWorldPosition - cameraPosition);
     float viewDistance = length(vWorldPosition - cameraPosition);
-    float hazeAmount = 1.0 - exp(-uHaze * 0.04 * max(0.0, viewDistance - 5.0));
+    float hazeAmount = 1.0 - exp(-uHaze * 0.006 * max(0.0, viewDistance - 20.0));
     finalColor = mix(finalColor, atmosphereColor(viewDir), clamp(hazeAmount, 0.0, 0.85));
 
     // Tone map + display encoding.
@@ -207,16 +203,20 @@ export function createLumiformMaterial(initialAlbedo: THREE.Color | string | num
     uAlbedo: { value: albedo },
     uMetalness: { value: 0.0 },
     uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-    uKeyColor: { value: new THREE.Color('#FFE9C9') },
-    uKeyIntensity: { value: 2.7 },
-    uZenithColor: { value: new THREE.Color('#3B82F6') },
-    uEquatorColor: { value: new THREE.Color('#93C5FD') },
-    uHorizonColor: { value: new THREE.Color('#E0F2FE') },
-    uGroundColor: { value: new THREE.Color('#4A853D') },
-    uSkyColor: { value: new THREE.Color('#93C5FD') },
-    uAmbientIntensity: { value: 1.2 },
-    uRoughness: { value: 1.0 },
-    uSpecularIntensity: { value: 0.0 },
+    uKeyColor: { value: new THREE.Color('#FFEFE8') },
+    uKeyIntensity: { value: 3.506 },
+    uZenithColor: { value: new THREE.Color('#0055B0') },
+    uEquatorColor: { value: new THREE.Color('#2F8CD1') },
+    uHorizonColor: { value: new THREE.Color('#90BAC6') },
+    uGroundColor: { value: new THREE.Color('#478503') },
+    uSkyColor: { value: new THREE.Color('#2F8CD1') },
+    uSkyLightColor: { value: new THREE.Color('#00DCFF') },
+    uSkyLightIntensity: { value: 0.422 },
+    uGroundLightColor: { value: new THREE.Color('#85FF00') },
+    uGroundLightIntensity: { value: 0.178 },
+    uSkyHemiPower: { value: 1.3 },
+    uRoughness: { value: 0.45 },
+    uSpecularIntensity: { value: 0.4 },
     uSphereCenter: { value: new THREE.Vector3(0, 0, 0) },
     uHaze: { value: 0.5 },
   };

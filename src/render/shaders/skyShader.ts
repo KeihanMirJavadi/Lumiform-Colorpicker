@@ -50,16 +50,19 @@ const fragmentShader = /* glsl */ `
   }
 
   void main() {
-    vec3 dir = normalize(vWorldPosition);
+    // Direction from the eye, not from the dome centre: the camera sits inside
+    // the dome and the horizon must stay exactly on the eye line.
+    vec3 dir = normalize(vWorldPosition - cameraPosition);
 
-    // 1. 3-Tone Dynamic Sky Gradient (Zenith, Equator, Horizon)
+    // 3-stop gradient. Thresholds fitted to the reference's measured sky
+    // profile over the ~14 deg of sky the landscape framing shows.
     vec3 sky;
     if (dir.y >= 0.0) {
-      if (dir.y < 0.10) {
-        float t = dir.y / 0.10;
+      if (dir.y < 0.07) {
+        float t = dir.y / 0.07;
         sky = mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
       } else {
-        float t = (dir.y - 0.10) / 0.28;
+        float t = (dir.y - 0.07) / 0.095;
         sky = mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
       }
     } else {
@@ -78,13 +81,13 @@ const fragmentShader = /* glsl */ `
 
 export function createSkyDomeMaterial(): THREE.ShaderMaterial {
   const uniforms: SkyShaderUniforms = {
-    uZenithColor: { value: new THREE.Color('#1E40AF') },
-    uEquatorColor: { value: new THREE.Color('#60A5FA') },
-    uHorizonColor: { value: new THREE.Color('#E0F2FE') },
-    uGroundColor: { value: new THREE.Color('#5A4638') },
+    uZenithColor: { value: new THREE.Color('#0055B0') },
+    uEquatorColor: { value: new THREE.Color('#2F8CD1') },
+    uHorizonColor: { value: new THREE.Color('#90BAC6') },
+    uGroundColor: { value: new THREE.Color('#478503') },
     uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-    uSunColor: { value: new THREE.Color('#FFF5E6') },
-    uSunIntensity: { value: 2.2 },
+    uSunColor: { value: new THREE.Color('#FFEFE8') },
+    uSunIntensity: { value: 3.506 },
   };
 
   return new THREE.ShaderMaterial({

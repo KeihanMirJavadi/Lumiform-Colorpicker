@@ -62,8 +62,16 @@ export class Viewport {
   private isDisposed = false;
 
   private currentFinish: SurfaceFinish = DEFAULT_SURFACE_FINISH;
-  private currentRoughness = 1.0;
-  private currentSpecular = 0.0;
+  // Seed roughness/specular from the default finish so the first frame already
+  // matches the selected material instead of falling back to matte.
+  private currentRoughness =
+    DEFAULT_SURFACE_FINISH === 'custom'
+      ? 1.0
+      : SURFACE_FINISHES[DEFAULT_SURFACE_FINISH].roughness;
+  private currentSpecular =
+    DEFAULT_SURFACE_FINISH === 'custom'
+      ? 0.0
+      : SURFACE_FINISHES[DEFAULT_SURFACE_FINISH].specularIntensity;
 
   private finishListeners: Set<(finish: SurfaceFinish, roughness: number, specular: number) => void> = new Set();
   private sampleListeners: Set<(rgb: RGBColor, hex: string) => void> = new Set();

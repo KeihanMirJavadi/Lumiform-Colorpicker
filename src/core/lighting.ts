@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { LightingPreset } from './types';
 
+/**
+ * Visible sky dome colours. These paint the background only; they are not the
+ * light source. The engine separates what the sky *looks like* from how much
+ * light it *emits*, because the reference panels are studio-style renders whose
+ * sphere is lit far harder than the visible sky alone could explain.
+ */
 export interface Ambient3ZoneConfig {
   zenithColor: THREE.Color;
   equatorColor: THREE.Color;
@@ -12,15 +18,28 @@ export interface Ambient3ZoneConfig {
 
 export interface KeyLightConfig {
   color: THREE.Color;
+  /** Sun irradiance E. Diffuse radiance = albedo * E * NoL / PI. */
   intensity: number;
-  azimuth: number;   // Horizontal orbit around Y axis (0 to 2*PI, in degrees 0° to 360°)
-  elevation: number; // Vertical height above/below horizon (-PI/2 to PI/2, in degrees -89° to +89°)
+  azimuth: number;   // Horizontal orbit around Y (radians)
+  elevation: number; // Height above the horizon (radians)
+}
+
+/** A uniform hemisphere light, expressed as irradiance E. */
+export interface HemisphereLightConfig {
+  color: THREE.Color;
+  /** Irradiance E. Diffuse radiance = albedo * E * weight / PI. */
+  intensity: number;
 }
 
 export interface LightingEnvironment {
   preset: LightingPreset | 'custom';
   keyLight: KeyLightConfig;
+  /** Visible dome colours (background only). */
   ambient: Ambient3ZoneConfig;
+  /** Sky hemisphere lighting. */
+  skyLight: HemisphereLightConfig;
+  /** Ground bounce lighting. */
+  groundLight: HemisphereLightConfig;
 }
 
 export function sphericalToCartesian(azimuth: number, elevation: number, distance = 1.0): THREE.Vector3 {
@@ -43,183 +62,206 @@ export function cartesianToSpherical(v: THREE.Vector3): { azimuth: number; eleva
 }
 
 /**
- * Dynamically evaluates natural 3-tone sky colors (Zenith, Equator, Horizon),
- * Ground bounce, and Key sun properties based on sun elevation angle.
- * Ensures the sky dome is always more luminous than the secondary ground bounce.
+ * One keyframe of the environment curve.
+ *
+ * The curve is keyed by SUN ELEVATION, not by preset identity, so a preset is
+ * just a named point on it. Clicking "Midday" and typing Midday's Height by
+ * hand therefore produce identical images by construction.
  */
-export function computeDynamicAtmosphere(elevationRad: number): {
+export interface AtmosphereKey {
+  id: LightingPreset;
+  /** Key elevation in radians; also the curve parameter. */
+  elevation: number;
+  keyColor: string;
+  keyIntensity: number;
+  zenith: string;
+  equator: string;
+  horizon: string;
+  groundDome: string;
+  skyLightColor: string;
+  skyLightIntensity: number;
+  groundLightColor: string;
+  groundLightIntensity: number;
+}
+
+/**
+ * Measured from the Midday reference panel (412 x 227) with a constrained
+ * diffuse fit over the near sphere:
+ *
+ *   key          az 291 deg, el 62 deg, E = 3.09, warm-neutral white
+ *   sky fill     E = 0.50, pale cyan  (the sphere's shadow side reads teal)
+ *   ground       E = 0.15, saturated green bounce
+ *
+ * The fit reproduces the measured sphere probes to within ~0.01 linear
+ * radiance (top .70, upper-left .73, left .57, centre .15, right .04).
+ *
+ * Midday's cast shadow in the reference is ~1.6 sphere radii long, which would
+ * need a ~31 deg sun. Its sphere requires 62 deg. The sphere is what is being
+ * matched (shadows stay physically derived), so the rendered shadow is the
+ * shorter one that 62 deg actually produces.
+ */
+export const ATMOSPHERE_KEYS: AtmosphereKey[] = [
+  {
+    id: 'golden-hour',
+    elevation: 0.28,
+    keyColor: '#FBBF24',
+    keyIntensity: 2.8,
+    zenith: '#4338CA',
+    equator: '#D97706',
+    horizon: '#F97316',
+    groundDome: '#3B1D0E',
+    skyLightColor: '#D08A50',
+    skyLightIntensity: 0.75,
+    groundLightColor: '#3B1D0E',
+    groundLightIntensity: 0.22,
+  },
+  {
+    id: 'night',
+    elevation: 0.45,
+    keyColor: '#94A3B8',
+    keyIntensity: 1.0,
+    zenith: '#0F172A',
+    equator: '#1E293B',
+    horizon: '#334155',
+    groundDome: '#0A0E17',
+    skyLightColor: '#31456B',
+    skyLightIntensity: 0.30,
+    groundLightColor: '#0A0E17',
+    groundLightIntensity: 0.05,
+  },
+  {
+    id: 'midday',
+    elevation: (58 * Math.PI) / 180,
+    keyColor: '#FFEFE8',
+    keyIntensity: 3.506,
+    zenith: '#0055B0',
+    equator: '#2F8CD1',
+    horizon: '#90BAC6',
+    groundDome: '#478503',
+    skyLightColor: '#00DCFF',
+    skyLightIntensity: 0.422,
+    groundLightColor: '#85FF00',
+    groundLightIntensity: 0.178,
+  },
+];
+
+ATMOSPHERE_KEYS.sort((a, b) => a.elevation - b.elevation);
+
+/**
+ * How top-weighted the sky hemisphere is.
+ *
+ * 1.0 would be a uniform hemisphere. The reference sphere's underside is darker
+ * than that allows (it shows almost no sky blue), and the probe fit selects a
+ * slightly top-weighted lobe. This is a property of the environment model, not
+ * a per-preset magic number.
+ */
+export const SKY_HEMISPHERE_POWER = 1.3;
+
+export interface AtmosphereSample {
+  keyColor: THREE.Color;
+  keyIntensity: number;
   zenithColor: THREE.Color;
   equatorColor: THREE.Color;
   horizonColor: THREE.Color;
-  groundColor: THREE.Color;
-  sunColor: THREE.Color;
-  sunIntensity: number;
-  ambientIntensity: number;
-} {
-  const elevDeg = (elevationRad * 180) / Math.PI;
+  groundDomeColor: THREE.Color;
+  skyLightColor: THREE.Color;
+  skyLightIntensity: number;
+  groundLightColor: THREE.Color;
+  groundLightIntensity: number;
+}
 
-  // 1. High Daylight Sun (elevation >= 35°)
-  const dayZenith = new THREE.Color('#1B4A96');   // Deep clear-sky blue
-  const dayEquator = new THREE.Color('#5C9BD1');  // Hazy cyan mid-sky
-  const dayHorizon = new THREE.Color('#D8ECF3');  // Pale atmospheric horizon
-  const dayGround = new THREE.Color('#5C8F3E');   // Natural grass bounce
-  const daySun = new THREE.Color('#FFE9C9');      // Warm sunlight
+const KEY_COLORS = ATMOSPHERE_KEYS.map((k) => ({
+  keyColor: new THREE.Color(k.keyColor),
+  zenithColor: new THREE.Color(k.zenith),
+  equatorColor: new THREE.Color(k.equator),
+  horizonColor: new THREE.Color(k.horizon),
+  groundDomeColor: new THREE.Color(k.groundDome),
+  skyLightColor: new THREE.Color(k.skyLightColor),
+  groundLightColor: new THREE.Color(k.groundLightColor),
+}));
 
-  // 2. Low Golden Hour Sun (elevation ~ 14°)
-  const goldZenith = new THREE.Color('#4338CA');  // Luminous twilight violet (clear sky fill)
-  const goldEquator = new THREE.Color('#D97706'); // Warm glowing amber
-  const goldHorizon = new THREE.Color('#F97316'); // Radiant sunset glow
-  const goldGround = new THREE.Color('#3B1D0E');  // Dark warm earth bounce (subtle, secondary)
-  const goldSun = new THREE.Color('#FBBF24');     // Rich golden sun
+function smoothstep(x: number): number {
+  const t = Math.max(0, Math.min(1, x));
+  return t * t * (3 - 2 * t);
+}
 
-  // 3. Twilight Sun (elevation ~ 1°)
-  const twiZenith = new THREE.Color('#312E81');   // Deep indigo sky
-  const twiEquator = new THREE.Color('#9333EA');  // Purple dusk
-  const twiHorizon = new THREE.Color('#F43F5E');  // Crimson/pink horizon
-  const twiGround = new THREE.Color('#1F102E');   // Dark twilight ground
-  const twiSun = new THREE.Color('#FB7185');
+/**
+ * Continuous environment evaluation. At a keyframe elevation the keyframe is
+ * returned exactly, so presets and manual angles cannot drift apart.
+ */
+export function evaluateAtmosphere(elevation: number): AtmosphereSample {
+  let lower = 0;
+  let upper = 0;
+  let t = 0;
 
-  // 4. Night / Below Horizon (elevation <= -10°)
-  const nightZenith = new THREE.Color('#0F172A'); // Deep night sky
-  const nightEquator = new THREE.Color('#1E293B');// Indigo night
-  const nightHorizon = new THREE.Color('#334155');// Faint horizon haze
-  const nightGround = new THREE.Color('#0A0E17'); // Very dark ground
-  const nightSun = new THREE.Color('#94A3B8');    // Moonlight
-
-  const zenithColor = new THREE.Color();
-  const equatorColor = new THREE.Color();
-  const horizonColor = new THREE.Color();
-  const groundColor = new THREE.Color();
-  const sunColor = new THREE.Color();
-  let sunIntensity: number;
-  let ambientIntensity: number;
-
-  if (elevDeg >= 35) {
-    // Full daylight
-    zenithColor.copy(dayZenith);
-    equatorColor.copy(dayEquator);
-    horizonColor.copy(dayHorizon);
-    groundColor.copy(dayGround);
-    sunColor.copy(daySun);
-    sunIntensity = 2.7;
-    ambientIntensity = 1.2;
-  } else if (elevDeg >= 12) {
-    // Blend Golden Hour -> Daylight
-    const t = (elevDeg - 12) / (35 - 12);
-    zenithColor.lerpColors(goldZenith, dayZenith, t);
-    equatorColor.lerpColors(goldEquator, dayEquator, t);
-    horizonColor.lerpColors(goldHorizon, dayHorizon, t);
-    groundColor.lerpColors(goldGround, dayGround, t);
-    sunColor.lerpColors(goldSun, daySun, t);
-    sunIntensity = THREE.MathUtils.lerp(2.8, 2.8, t);
-    ambientIntensity = THREE.MathUtils.lerp(0.95, 1.2, t);
-  } else if (elevDeg >= 0) {
-    // Blend Twilight -> Golden Hour
-    const t = elevDeg / 12;
-    zenithColor.lerpColors(twiZenith, goldZenith, t);
-    equatorColor.lerpColors(twiEquator, goldEquator, t);
-    horizonColor.lerpColors(twiHorizon, goldHorizon, t);
-    groundColor.lerpColors(twiGround, goldGround, t);
-    sunColor.lerpColors(twiSun, goldSun, t);
-    sunIntensity = THREE.MathUtils.lerp(1.8, 2.8, t);
-    ambientIntensity = THREE.MathUtils.lerp(0.8, 0.95, t);
-  } else if (elevDeg >= -15) {
-    // Blend Night -> Twilight
-    const t = (elevDeg + 15) / 15;
-    zenithColor.lerpColors(nightZenith, twiZenith, t);
-    equatorColor.lerpColors(nightEquator, twiEquator, t);
-    horizonColor.lerpColors(nightHorizon, twiHorizon, t);
-    groundColor.lerpColors(nightGround, twiGround, t);
-    sunColor.lerpColors(nightSun, twiSun, t);
-    sunIntensity = THREE.MathUtils.lerp(0.8, 1.8, t);
-    ambientIntensity = THREE.MathUtils.lerp(0.65, 0.8, t);
+  if (elevation <= ATMOSPHERE_KEYS[0].elevation) {
+    lower = upper = 0;
+  } else if (elevation >= ATMOSPHERE_KEYS[ATMOSPHERE_KEYS.length - 1].elevation) {
+    lower = upper = ATMOSPHERE_KEYS.length - 1;
   } else {
-    // Full night
-    zenithColor.copy(nightZenith);
-    equatorColor.copy(nightEquator);
-    horizonColor.copy(nightHorizon);
-    groundColor.copy(nightGround);
-    sunColor.copy(nightSun);
-    sunIntensity = 0.8;
-    ambientIntensity = 0.65;
+    for (let i = 0; i < ATMOSPHERE_KEYS.length - 1; i += 1) {
+      const a = ATMOSPHERE_KEYS[i];
+      const b = ATMOSPHERE_KEYS[i + 1];
+      if (elevation >= a.elevation && elevation <= b.elevation) {
+        lower = i;
+        upper = i + 1;
+        const span = b.elevation - a.elevation;
+        t = span > 0 ? (elevation - a.elevation) / span : 1;
+        break;
+      }
+    }
   }
 
+  const s = smoothstep(t);
+  const a = keyColorsOf(lower);
+  const b = keyColorsOf(upper);
+  const ka = ATMOSPHERE_KEYS[lower];
+  const kb = ATMOSPHERE_KEYS[upper];
+  const lerp = (x: number, y: number) => THREE.MathUtils.lerp(x, y, s);
+
   return {
-    zenithColor,
-    equatorColor,
-    horizonColor,
-    groundColor,
-    sunColor,
-    sunIntensity,
-    ambientIntensity,
+    keyColor: a.keyColor.clone().lerp(b.keyColor, s),
+    keyIntensity: lerp(ka.keyIntensity, kb.keyIntensity),
+    zenithColor: a.zenithColor.clone().lerp(b.zenithColor, s),
+    equatorColor: a.equatorColor.clone().lerp(b.equatorColor, s),
+    horizonColor: a.horizonColor.clone().lerp(b.horizonColor, s),
+    groundDomeColor: a.groundDomeColor.clone().lerp(b.groundDomeColor, s),
+    skyLightColor: a.skyLightColor.clone().lerp(b.skyLightColor, s),
+    skyLightIntensity: lerp(ka.skyLightIntensity, kb.skyLightIntensity),
+    groundLightColor: a.groundLightColor.clone().lerp(b.groundLightColor, s),
+    groundLightIntensity: lerp(ka.groundLightIntensity, kb.groundLightIntensity),
   };
 }
 
+function keyColorsOf(index: number) {
+  return KEY_COLORS[index];
+}
+
+/** Preset table: azimuth plus the elevation that selects its keyframe. */
 export const LIGHTING_PRESETS: Record<LightingPreset, {
   name: string;
   description: string;
-  keyLight: { color: string; intensity: number; azimuth: number; elevation: number };
-  ambient: {
-    zenithColor: string;
-    equatorColor: string;
-    horizonColor: string;
-    groundColor: string;
-    skyColor: string;
-    intensity: number;
-  };
+  azimuth: number;
+  elevation: number;
 }> = {
-  'daylight': {
-    name: 'Daylight',
-    description: 'High warm sun, deep blue sky fill, natural green ground bounce',
-    keyLight: {
-      color: '#FFE9C9',
-      intensity: 2.7,
-      azimuth: -0.65, // ~-37° upper left
-      elevation: 0.95, // ~54° high sun
-    },
-    ambient: {
-      zenithColor: '#1B4A96',   // Deep clear-sky blue
-      equatorColor: '#5C9BD1',  // Hazy cyan mid-sky
-      horizonColor: '#D8ECF3',  // Pale atmospheric horizon
-      groundColor: '#5C8F3E',   // Natural grass bounce
-      skyColor: '#5C9BD1',      // Legacy alias
-      intensity: 1.2,
-    },
+  midday: {
+    name: 'Midday',
+    description: 'Measured reference: high side sun, pale cyan sky fill, saturated green bounce',
+    azimuth: (284 * Math.PI) / 180,
+    elevation: (58 * Math.PI) / 180,
   },
   'golden-hour': {
     name: 'Golden Hour',
-    description: 'Low-angle 3200K amber sun, luminous dusk violet sky fill, subtle warm bounce',
-    keyLight: {
-      color: '#FBBF24',
-      intensity: 2.7,
-      azimuth: 0.85, // ~48°
-      elevation: 0.28, // ~16° low sun
-    },
-    ambient: {
-      zenithColor: '#4338CA',   // Luminous twilight violet zenith
-      equatorColor: '#D97706',  // Warm amber equator
-      horizonColor: '#F97316',  // Saturated flame horizon
-      groundColor: '#3B1D0E',   // Dark terracotta bounce
-      skyColor: '#4338CA',      // Legacy alias
-      intensity: 0.95,
-    },
+    description: 'Low amber sun, warm dusk sky, dark earth bounce (not yet calibrated)',
+    azimuth: 0.85,
+    elevation: 0.28,
   },
-  'night': {
+  night: {
     name: 'Night',
-    description: 'Cool pale moonlight rim, deep navy 3-tone sky, subtle dark ground fill',
-    keyLight: {
-      color: '#94A3B8',
-      intensity: 1.2,
-      azimuth: 2.3, // ~131° rim angle
-      elevation: 0.45, // ~25°
-    },
-    ambient: {
-      zenithColor: '#0F172A',   // Deep night sky
-      equatorColor: '#1E293B',  // Midnight blue equator
-      horizonColor: '#334155',  // Indigo horizon
-      groundColor: '#0A0E17',   // Dark ground
-      skyColor: '#1E293B',      // Legacy alias
-      intensity: 0.65,
-    },
+    description: 'Cool moonlight, deep navy sky, faint bounce (not yet calibrated)',
+    azimuth: 2.3,
+    elevation: 0.45,
   },
 };
+
+export const LIGHTING_PRESET_ORDER: LightingPreset[] = ['midday', 'golden-hour', 'night'];

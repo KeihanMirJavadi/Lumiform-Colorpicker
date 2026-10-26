@@ -10,8 +10,11 @@ export interface GroundShaderUniforms {
   uEquatorColor: { value: THREE.Color };
   uHorizonColor: { value: THREE.Color };
   uGroundColor: { value: THREE.Color };
-  uAmbientIntensity: { value: number };
   uGroundAlbedo: { value: THREE.Color };
+  uSkyLightColor: { value: THREE.Color };
+  uSkyLightIntensity: { value: number };
+  uGroundLightColor: { value: THREE.Color };
+  uGroundLightIntensity: { value: number };
   uSphereCenters: { value: THREE.Vector3[] };
   uSphereRadii: { value: number[] };
   uSphereAlbedos: { value: THREE.Color[] };
@@ -29,6 +32,8 @@ const vertexShader = /* glsl */ `
 `;
 
 const fragmentShader = /* glsl */ `
+  const float PI = 3.14159265359;
+
   uniform vec3 uLightDir;
   uniform vec3 uKeyColor;
   uniform float uKeyIntensity;
@@ -37,9 +42,13 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uEquatorColor;
   uniform vec3 uHorizonColor;
   uniform vec3 uGroundColor;
-  uniform float uAmbientIntensity;
 
   uniform vec3 uGroundAlbedo;
+  uniform vec3 uSkyLightColor;
+  uniform float uSkyLightIntensity;
+  uniform vec3 uGroundLightColor;
+  uniform float uGroundLightIntensity;
+
   uniform vec3 uSphereCenters[3];
   uniform float uSphereRadii[3];
   uniform vec3 uSphereAlbedos[3];
@@ -47,7 +56,7 @@ const fragmentShader = /* glsl */ `
 
   varying vec3 vWorldPosition;
 
-  // 1/255 triangular-ish dither: removes banding in the smooth sky/form gradients.
+  // 1/255 triangular-ish dither: removes banding in the smooth gradients.
   float ditherNoise(vec2 p) {
     return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
   }
@@ -64,14 +73,13 @@ const fragmentShader = /* glsl */ `
     return min(x, vec3(0.8)) + 0.2 * (1.0 - exp(-over / 0.2));
   }
 
-  // Sky gradient used for atmospheric in-scattering (matches the sky dome).
   vec3 atmosphereColor(vec3 dir) {
     if (dir.y >= 0.0) {
-      if (dir.y < 0.10) {
-        float t = dir.y / 0.10;
+      if (dir.y < 0.07) {
+        float t = dir.y / 0.07;
         return mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
       }
-      float t = (dir.y - 0.10) / 0.28;
+      float t = (dir.y - 0.07) / 0.095;
       return mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
     }
     return uHorizonColor;
@@ -85,7 +93,8 @@ const fragmentShader = /* glsl */ `
     float contactAO = 1.0;
     vec3 colorBleed = vec3(0.0);
 
-    // Accumulate drop shadow, contact AO, and color bleed from all visible spheres.
+    // The cast shadow is the exact cylinder projection along the light
+    // direction, so its length is whatever the sun elevation physically gives.
     for (int i = 0; i < 3; i++) {
       float r = uSphereRadii[i];
       if (r < 0.001) continue;
@@ -98,50 +107,42 @@ const fragmentShader = /* glsl */ `
         if (tProj > 0.0) {
           float dSq = dot(W, W) - tProj * tProj;
           float d = sqrt(max(0.0, dSq));
-          float penumbra = 0.18 + 0.10 * clamp(tProj / r - 1.0, 0.0, 4.0);
+          float penumbra = 0.10 + 0.06 * clamp(tProj / r - 1.0, 0.0, 4.0);
           float occlusion = 1.0 - smoothstep(r - penumbra, r + penumbra, d);
           shadowFactor = min(shadowFactor, 1.0 - occlusion);
         }
       }
 
       float rTouch = length(P.xz - center.xz);
-      contactAO = min(contactAO, clamp(rTouch / (0.50 * r), 0.30, 1.0));
+      contactAO = min(contactAO, clamp(rTouch / (0.60 * r), 0.35, 1.0));
 
       float distSurf = max(0.0, length(P - center) - r);
       float localScale = max(r / 1.25, 0.2);
-      float bounceSpread = max(0.0, 1.0 - distSurf / (1.75 * localScale));
-      colorBleed += uSphereAlbedos[i] * (0.15 * bounceSpread * uKeyIntensity * max(0.0, L.y));
+      float bounceSpread = max(0.0, 1.0 - distSurf / (1.4 * localScale));
+      colorBleed += uSphereAlbedos[i] * (0.06 * bounceSpread * uKeyIntensity * max(0.0, L.y));
     }
 
-    // Ground ambient GI from the 3-tone sky dome (ground sees less sky than the sphere)
-    vec3 skyGI = (
-      uHorizonColor * 0.35 +
-      uEquatorColor * 0.45 +
-      uZenithColor  * 0.20
-    ) * uAmbientIntensity * 0.5;
-
-    // Direct sunlight (occluded by every sphere shadow)
+    // Physical ground illumination. A horizontal surface receives the whole sky
+    // hemisphere plus the sun; inside a cast shadow the sun term disappears and
+    // what is left is genuine sky light, not a painted-in darkening.
+    vec3 ambientE = uSkyLightColor * uSkyLightIntensity * contactAO;
     float sunLambert = max(0.0, L.y);
-    vec3 directSun = uKeyColor * (sunLambert * uKeyIntensity * shadowFactor) / 3.14159265;
+    vec3 lightE = ambientE + uKeyColor * uKeyIntensity * sunLambert * shadowFactor + colorBleed;
 
-    // Total ground illumination
-    vec3 totalLight = directSun + (skyGI * contactAO) + colorBleed;
-    vec3 groundCol = uGroundAlbedo * totalLight * 0.90;
+    vec3 groundCol = uGroundAlbedo * lightE / PI;
 
-    // Aerial perspective
+    // Aerial perspective, anchored to the new camera scale.
     vec3 viewDir = normalize(P - cameraPosition);
     float viewDistance = length(P - cameraPosition);
-    float hazeAmount = 1.0 - exp(-uHaze * 0.04 * max(0.0, viewDistance - 5.0));
+    float hazeAmount = 1.0 - exp(-uHaze * 0.0004 * max(0.0, viewDistance - 30.0));
     groundCol = mix(groundCol, atmosphereColor(viewDir), clamp(hazeAmount, 0.0, 0.85));
 
-    // Distant boundary fade (blends seamlessly into the horizon sky).
-    // The plane is large enough that its far edge reaches the eye line, and the
+    // Distant boundary fade: the plane's far edge reaches the eye line and the
     // fade completes before the far clip plane, so the ground meets the horizon
     // at the correct height instead of ending a few pixels below it.
     float distFromCenter = length(P.xz);
     float alpha = 1.0 - smoothstep(380.0, 560.0, distFromCenter);
 
-    // Tone map + display encoding
     vec3 outColor = linearToSRGB(toneMap(groundCol));
     outColor += (ditherNoise(gl_FragCoord.xy) - 0.5) / 255.0;
     gl_FragColor = vec4(outColor, alpha);
@@ -151,14 +152,17 @@ const fragmentShader = /* glsl */ `
 export function createGroundMaterial(): THREE.ShaderMaterial {
   const uniforms: GroundShaderUniforms = {
     uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-    uKeyColor: { value: new THREE.Color('#FFE9C9') },
-    uKeyIntensity: { value: 2.7 },
-    uZenithColor: { value: new THREE.Color('#1B4A96') },
-    uEquatorColor: { value: new THREE.Color('#5C9BD1') },
-    uHorizonColor: { value: new THREE.Color('#D8ECF3') },
-    uGroundColor: { value: new THREE.Color(DEFAULT_GROUND_HEX) },
-    uAmbientIntensity: { value: 1.2 },
+    uKeyColor: { value: new THREE.Color('#FFEFE8') },
+    uKeyIntensity: { value: 3.506 },
+    uZenithColor: { value: new THREE.Color('#0055B0') },
+    uEquatorColor: { value: new THREE.Color('#2F8CD1') },
+    uHorizonColor: { value: new THREE.Color('#90BAC6') },
+    uGroundColor: { value: new THREE.Color('#478503') },
     uGroundAlbedo: { value: new THREE.Color(DEFAULT_GROUND_HEX) },
+    uSkyLightColor: { value: new THREE.Color('#00DCFF') },
+    uSkyLightIntensity: { value: 0.422 },
+    uGroundLightColor: { value: new THREE.Color('#85FF00') },
+    uGroundLightIntensity: { value: 0.178 },
     uSphereCenters: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
     uSphereRadii: { value: [0, 0, 0] },
     uSphereAlbedos: {

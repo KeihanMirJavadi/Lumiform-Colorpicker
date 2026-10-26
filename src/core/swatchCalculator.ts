@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RGBColor, SurfaceFinish, SwatchRole } from './types';
-import { LightingEnvironment } from './lighting';
+import { LightingEnvironment, SKY_HEMISPHERE_POWER } from './lighting';
 import { SURFACE_FINISHES } from './material';
 import { rgbToHex } from './color';
 
@@ -112,30 +112,18 @@ export function evaluateLightingAnalytical(
     );
   }
 
-  // --- Ambient: hemispherical sky irradiance + ground bounce ----------------
-  const upWeight = clamp(normN.y * 0.5 + 0.5, 0, 1);
-  const groundBounceRaw = env.ambient.groundColor.clone().multiplyScalar(
-    0.55 * Math.max(0, normL.y) * env.keyLight.intensity
-  );
-  const groundLumaRaw = 0.2126 * groundBounceRaw.r + 0.7152 * groundBounceRaw.g + 0.0722 * groundBounceRaw.b;
-  const groundBounceGI = groundBounceRaw.lerp(new THREE.Color(groundLumaRaw, groundLumaRaw, groundLumaRaw), 0.65);
-
-  const skyIrradiance = skyBands(normN, env);
-  const skyLuma = 0.2126 * skyIrradiance.r + 0.7152 * skyIrradiance.g + 0.0722 * skyIrradiance.b;
-  const skyFill = skyIrradiance.clone().lerp(new THREE.Color(skyLuma, skyLuma, skyLuma), 0.45);
-  skyFill.multiplyScalar(0.70 + 0.30 * clamp(normN.y, 0, 1));
-
-  const irradiance = new THREE.Color()
-    .lerpColors(groundBounceGI, skyFill, smoothstep(0.0, 1.0, upWeight))
-    .multiplyScalar(env.ambient.intensity);
-  irradiance.add(
-    new THREE.Color()
-      .lerpColors(skyFill, groundBounceGI, 0.5)
-      .multiplyScalar(env.ambient.intensity * 0.10)
-  );
+  // --- Ambient: two-hemisphere (L1) model, identical to the sphere shader ---
+  const hemi = Math.pow(clamp(normN.y * 0.5 + 0.5, 0, 1), SKY_HEMISPHERE_POWER);
+  const skyE = env.skyLight.color.clone().multiplyScalar(env.skyLight.intensity);
+  const groundE = env.groundLight.color.clone().multiplyScalar(env.groundLight.intensity);
+  const ambientE = new THREE.Color().lerpColors(groundE, skyE, hemi);
 
   const kdAmbient = 1 - f0;
-  const ambientDiffuse = albedoCol.clone().multiplyScalar(kdAmbient).multiply(irradiance);
+  const ambientDiffuse = albedoCol
+    .clone()
+    .multiplyScalar(kdAmbient)
+    .multiply(ambientE)
+    .multiplyScalar(1 / Math.PI);
 
   // Ambient specular probe along the reflection vector.
   const R = normV.clone().negate().reflect(normN);
@@ -147,11 +135,10 @@ export function evaluateLightingAnalytical(
       clamp(R.y + 1, 0, 1)
     );
   }
+  envSpecColor = new THREE.Color().lerpColors(envSpecColor, env.skyLight.color, 0.55);
 
   const fEnv = f0 + (Math.max(1 - rough, f0) - f0) * Math.pow(clamp(1 - NoV, 0, 1), 5);
-  const ambientSpecular = envSpecColor.multiplyScalar(
-    fEnv * (1 - 0.6 * rough) * 0.45 * env.ambient.intensity
-  );
+  const ambientSpecular = envSpecColor.multiplyScalar(fEnv * (1 - 0.5 * rough) * 0.35);
 
   // --- Total radiance & ACES filmic tone mapping ----------------------------
   const finalCol = new THREE.Color().addColors(direct, ambientDiffuse).add(ambientSpecular);

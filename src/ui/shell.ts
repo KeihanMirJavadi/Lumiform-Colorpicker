@@ -78,14 +78,14 @@ export class AppShell {
           <div class="section-header">
             <h2>Sun Position & Light Color</h2>
             <div class="hex-group" title="Key Light (Sun) Color">
-              <input type="color" id="picker-light-color" style="opacity:0; width:0; height:0; position:absolute;" value="#FFFBEB" />
-              <div class="albedo-swatch" id="swatch-light-color" style="background-color: #FFFBEB; cursor: pointer;" title="Click to choose light color"></div>
-              <input type="text" class="ps-input-hex" id="input-light-hex" maxlength="7" spellcheck="false" value="#FFFBEB" />
+              <input type="color" id="picker-light-color" style="opacity:0; width:0; height:0; position:absolute;" value="#FFF2EF" />
+              <div class="albedo-swatch" id="swatch-light-color" style="background-color: #FFF2EF; cursor: pointer;" title="Click to choose light color"></div>
+              <input type="text" class="ps-input-hex" id="input-light-hex" maxlength="7" spellcheck="false" value="#FFF2EF" />
             </div>
           </div>
           <div class="preset-segmented-control">
-            <button class="preset-btn active" data-preset="daylight" id="btn-preset-daylight">
-              <span>☀️</span> Daylight
+            <button class="preset-btn active" data-preset="midday" id="btn-preset-midday">
+              <span>☀️</span> Midday
             </button>
             <button class="preset-btn" data-preset="golden-hour" id="btn-preset-golden">
               <span>🌅</span> Golden Hour
@@ -101,9 +101,9 @@ export class AppShell {
             <div class="sun-slider-row">
               <span class="sun-axis-name">Orbit</span>
               <div class="slider-track-wrap">
-                <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="323" />
+                <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="284" />
               </div>
-              <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="323" />
+              <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="284" />
               <span class="slider-unit">°</span>
             </div>
 
@@ -111,9 +111,9 @@ export class AppShell {
             <div class="sun-slider-row">
               <span class="sun-axis-name">Height</span>
               <div class="slider-track-wrap">
-                <input type="range" class="ps-slider sun-slider-yellow" id="slider-sun-elev" min="-89" max="89" value="54" />
+                <input type="range" class="ps-slider sun-slider-yellow" id="slider-sun-elev" min="-89" max="89" value="58" />
               </div>
-              <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="54" />
+              <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="58" />
               <span class="slider-unit">°</span>
             </div>
           </div>
