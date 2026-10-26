@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RGBColor, SurfaceFinish, SwatchRole } from './types';
-import { LightingEnvironment, SKY_HEMISPHERE_POWER } from './lighting';
+import { LightingEnvironment, SKY_HEMISPHERE_POWER, softKeyNoL } from './lighting';
 import { SURFACE_FINISHES } from './material';
 import { rgbToHex } from './color';
 
@@ -85,7 +85,8 @@ export function evaluateLightingAnalytical(
   const metalness = 0.0;
   const rough = clamp(roughness, 0.045, 1.0);
 
-  const NoL = Math.max(0, normN.dot(normL));
+  const geoNoL = Math.max(0, normN.dot(normL));
+  const NoL = softKeyNoL(normN, normL, env.keyLight.angularRadius);
   const NoV = Math.max(normV.dot(normN), 1e-4);
   const NoH = Math.max(0, normN.dot(H));
   const VoH = Math.max(0, normV.dot(H));
@@ -95,21 +96,19 @@ export function evaluateLightingAnalytical(
   const fresnel = f0 + (1 - f0) * Math.pow(1 - clamp(VoH, 0, 1), 5);
 
   // --- Direct key light (Cook-Torrance) -------------------------------------
-  const direct = new THREE.Color(0, 0, 0);
+  const kd = (1 - fresnel) * (1 - metalness);
+  const keyE = env.keyLight.color.clone().multiplyScalar(env.keyLight.intensity);
 
-  if (NoL > 0) {
+  const direct = albedoCol
+    .clone()
+    .multiplyScalar((kd * NoL) / PI)
+    .multiply(keyE);
+
+  if (geoNoL > 0) {
     const D = distributionGGX(NoH, rough);
-    const G = geometrySmith(NoV, NoL, rough);
-    const specBRDF = (D * G * fresnel) / Math.max(4 * NoV * NoL, 1e-4);
-    const kd = (1 - fresnel) * (1 - metalness);
-
-    const diffusePart = albedoCol.clone().multiplyScalar(kd / PI);
-    const specPart = new THREE.Color(1, 1, 1).multiplyScalar(specBRDF);
-    const brdf = diffusePart.add(specPart);
-
-    direct.copy(brdf).multiply(
-      env.keyLight.color.clone().multiplyScalar(env.keyLight.intensity * NoL)
-    );
+    const G = geometrySmith(NoV, geoNoL, rough);
+    const specBRDF = (D * G * fresnel) / Math.max(4 * NoV * geoNoL, 1e-4);
+    direct.add(keyE.clone().multiplyScalar(specBRDF * geoNoL));
   }
 
   // --- Ambient: two-hemisphere (L1) model, identical to the sphere shader ---

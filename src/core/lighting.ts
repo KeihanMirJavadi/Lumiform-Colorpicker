@@ -22,6 +22,12 @@ export interface KeyLightConfig {
   intensity: number;
   azimuth: number;   // Horizontal orbit around Y (radians)
   elevation: number; // Height above the horizon (radians)
+  /**
+   * Angular radius of the key light (radians). 0 is a point sun with a cosine
+   * terminator; larger values behave like a softbox and spread the lit-to-shadow
+   * transition over roughly +/- this angle.
+   */
+  angularRadius: number;
 }
 
 /** A uniform hemisphere light, expressed as irradiance E. */
@@ -74,6 +80,7 @@ export interface AtmosphereKey {
   elevation: number;
   keyColor: string;
   keyIntensity: number;
+  keyAngularRadiusDeg: number;
   zenith: string;
   equator: string;
   horizon: string;
@@ -106,6 +113,7 @@ export const ATMOSPHERE_KEYS: AtmosphereKey[] = [
     elevation: 0.28,
     keyColor: '#FBBF24',
     keyIntensity: 2.8,
+    keyAngularRadiusDeg: 8,
     zenith: '#4338CA',
     equator: '#D97706',
     horizon: '#F97316',
@@ -120,6 +128,7 @@ export const ATMOSPHERE_KEYS: AtmosphereKey[] = [
     elevation: 0.45,
     keyColor: '#94A3B8',
     keyIntensity: 1.0,
+    keyAngularRadiusDeg: 8,
     zenith: '#0F172A',
     equator: '#1E293B',
     horizon: '#334155',
@@ -134,6 +143,7 @@ export const ATMOSPHERE_KEYS: AtmosphereKey[] = [
     elevation: (58 * Math.PI) / 180,
     keyColor: '#FFEFE8',
     keyIntensity: 3.506,
+    keyAngularRadiusDeg: 14,
     zenith: '#0055B0',
     equator: '#2F8CD1',
     horizon: '#90BAC6',
@@ -160,6 +170,7 @@ export const SKY_HEMISPHERE_POWER = 1.3;
 export interface AtmosphereSample {
   keyColor: THREE.Color;
   keyIntensity: number;
+  keyAngularRadius: number;
   zenithColor: THREE.Color;
   equatorColor: THREE.Color;
   horizonColor: THREE.Color;
@@ -222,6 +233,7 @@ export function evaluateAtmosphere(elevation: number): AtmosphereSample {
   return {
     keyColor: a.keyColor.clone().lerp(b.keyColor, s),
     keyIntensity: lerp(ka.keyIntensity, kb.keyIntensity),
+    keyAngularRadius: THREE.MathUtils.degToRad(lerp(ka.keyAngularRadiusDeg, kb.keyAngularRadiusDeg)),
     zenithColor: a.zenithColor.clone().lerp(b.zenithColor, s),
     equatorColor: a.equatorColor.clone().lerp(b.equatorColor, s),
     horizonColor: a.horizonColor.clone().lerp(b.horizonColor, s),
@@ -265,3 +277,65 @@ export const LIGHTING_PRESETS: Record<LightingPreset, {
 };
 
 export const LIGHTING_PRESET_ORDER: LightingPreset[] = ['midday', 'golden-hour', 'night'];
+
+/**
+ * Soft-key sample set. A key light with an angular radius behaves like a small
+ * area light: the diffuse response is the average of the cosine over a cone,
+ * which spreads the terminator over roughly +/- the angular radius instead of
+ * ending at a hard cosine zero.
+ *
+ * The shader mirrors these constants exactly.
+ */
+export const SOFT_KEY_CENTER_WEIGHT = 0.28;
+export const SOFT_KEY_RING_WEIGHT = 0.12;  // 4 samples at the full radius
+export const SOFT_KEY_INNER_WEIGHT = 0.06; // 4 samples at half the radius
+
+/** Average cos between L and the sample directions, so N = L still returns 1. */
+export function keySoftNormalisation(angularRadius: number): number {
+  return (
+    SOFT_KEY_CENTER_WEIGHT +
+    4 * SOFT_KEY_RING_WEIGHT * Math.cos(angularRadius) +
+    4 * SOFT_KEY_INNER_WEIGHT * Math.cos(angularRadius * 0.5)
+  );
+}
+
+/** CPU twin of the shader's `softKeyNoL`. */
+export function softKeyNoL(
+  n: THREE.Vector3,
+  l: THREE.Vector3,
+  angularRadius: number
+): number {
+  const cosine = n.dot(l);
+  if (angularRadius <= 1e-4) return Math.max(0, cosine);
+
+  const up = Math.abs(l.y) < 0.99
+    ? new THREE.Vector3(0, 1, 0)
+    : new THREE.Vector3(1, 0, 0);
+  const t = new THREE.Vector3().crossVectors(up, l).normalize();
+  const b = new THREE.Vector3().crossVectors(l, t);
+  const tanR = Math.tan(angularRadius);
+
+  let sum = SOFT_KEY_CENTER_WEIGHT * Math.max(0, cosine);
+
+  for (let i = 0; i < 4; i += 1) {
+    const a = (i * Math.PI) / 2;
+    const dir = l
+      .clone()
+      .addScaledVector(t, Math.cos(a) * tanR)
+      .addScaledVector(b, Math.sin(a) * tanR)
+      .normalize();
+    sum += SOFT_KEY_RING_WEIGHT * Math.max(0, n.dot(dir));
+  }
+
+  for (let i = 0; i < 4; i += 1) {
+    const a = (i * Math.PI) / 2 + Math.PI / 4;
+    const dir = l
+      .clone()
+      .addScaledVector(t, Math.cos(a) * tanR * 0.5)
+      .addScaledVector(b, Math.sin(a) * tanR * 0.5)
+      .normalize();
+    sum += SOFT_KEY_INNER_WEIGHT * Math.max(0, n.dot(dir));
+  }
+
+  return sum / keySoftNormalisation(angularRadius);
+}

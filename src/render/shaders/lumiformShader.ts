@@ -18,6 +18,8 @@ export interface LumiformShaderUniforms {
   uGroundLightColor: { value: THREE.Color };
   uGroundLightIntensity: { value: number };
   uSkyHemiPower: { value: number };
+  uKeyAngularRadius: { value: number };
+  uKeySoftNorm: { value: number };
   uRoughness: { value: number };
   uSpecularIntensity: { value: number };
   uSphereCenter: { value: THREE.Vector3 };
@@ -53,6 +55,8 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uGroundLightColor;
   uniform float uGroundLightIntensity;
   uniform float uSkyHemiPower;
+  uniform float uKeyAngularRadius;
+  uniform float uKeySoftNorm;
 
   uniform float uRoughness;
   uniform float uSpecularIntensity;
@@ -63,7 +67,34 @@ const fragmentShader = /* glsl */ `
 
   // --- PBR BRDF (metallic / roughness workflow) -----------------------------
 
-  // Trowbridge-Reitz (GGX) normal distribution.
+  // Soft key: average the cosine over a small cone around L, so the terminator
+  // spreads over roughly +/- the light's angular radius instead of ending at a
+  // hard cosine zero. Mirrors core/lighting.ts (same weights, same order).
+  float softKeyNoL(vec3 N, vec3 L, float radius, float norm) {
+    if (radius <= 1e-4) return max(dot(N, L), 0.0);
+
+    vec3 up = abs(L.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 T = normalize(cross(up, L));
+    vec3 B = cross(L, T);
+    float tanR = tan(radius);
+
+    float sum = 0.28 * max(dot(N, L), 0.0);
+
+    for (int i = 0; i < 4; i++) {
+      float a = float(i) * 1.5707963;
+      vec3 dir = normalize(L + T * cos(a) * tanR + B * sin(a) * tanR);
+      sum += 0.12 * max(dot(N, dir), 0.0);
+    }
+
+    for (int i = 0; i < 4; i++) {
+      float a = float(i) * 1.5707963 + 0.7853982;
+      vec3 dir = normalize(L + T * cos(a) * tanR * 0.5 + B * sin(a) * tanR * 0.5);
+      sum += 0.06 * max(dot(N, dir), 0.0);
+    }
+
+    return sum / norm;
+  }
+
   float distributionGGX(float NoH, float roughness) {
     float a = roughness * roughness;
     float a2 = a * a;
@@ -138,7 +169,9 @@ const fragmentShader = /* glsl */ `
     vec3 H = normalize(L + V);
 
     float rough = clamp(uRoughness, 0.045, 1.0);
-    float NoL = max(dot(N, L), 0.0);
+    // Geometric cosine for the specular lobe; the softened cosine for diffuse.
+    float geoNoL = max(dot(N, L), 0.0);
+    float NoL = softKeyNoL(N, L, uKeyAngularRadius, uKeySoftNorm);
     float NoV = max(dot(N, V), 1e-4);
     float NoH = max(dot(N, H), 0.0);
     float VoH = max(dot(V, H), 0.0);
@@ -146,15 +179,19 @@ const fragmentShader = /* glsl */ `
     // Dielectric F0 is derived from the surface finish reflectance; metals use albedo.
     vec3 F0 = mix(vec3(0.08 * uSpecularIntensity), uAlbedo, uMetalness);
     vec3 F = fresnelSchlick(VoH, F0);
+    vec3 kdDirect = (1.0 - F) * (1.0 - uMetalness);
 
-    // --- Direct key light: Cook-Torrance specular + energy-conserving diffuse.
+    // --- Direct key light -----------------------------------------------------
+    // Diffuse uses the area-light cosine so the terminator is soft; the specular
+    // lobe stays a GGX response around the key direction.
+    vec3 directDiffuse = kdDirect * uAlbedo / PI * uKeyColor * uKeyIntensity * NoL;
+
     vec3 specular = vec3(0.0);
-    if (NoL > 0.0) {
+    if (geoNoL > 0.0) {
       float D = distributionGGX(NoH, rough);
-      float G = geometrySmith(NoV, NoL, rough);
-      vec3 kdDirect = (1.0 - F) * (1.0 - uMetalness);
-      vec3 specBRDF = (D * G * F) / max(4.0 * NoV * NoL, 1e-4);
-      specular = (kdDirect * uAlbedo / PI + specBRDF) * uKeyColor * uKeyIntensity * NoL;
+      float G = geometrySmith(NoV, geoNoL, rough);
+      vec3 specBRDF = (D * G * F) / max(4.0 * NoV * geoNoL, 1e-4);
+      specular = specBRDF * uKeyColor * uKeyIntensity * geoNoL;
     }
 
     // --- Ambient: two-hemisphere (L1 spherical harmonics) model.
@@ -181,7 +218,7 @@ const fragmentShader = /* glsl */ `
     vec3 ambientSpecular = envSpecColor * Fenv * (1.0 - 0.5 * rough) * 0.35;
 
     // Total radiance.
-    vec3 finalColor = specular + ambientDiffuse + ambientSpecular;
+    vec3 finalColor = directDiffuse + specular + ambientDiffuse + ambientSpecular;
 
     // Aerial perspective: extinction + in-scattering tinted by the sky.
     vec3 viewDir = normalize(vWorldPosition - cameraPosition);
@@ -215,6 +252,8 @@ export function createLumiformMaterial(initialAlbedo: THREE.Color | string | num
     uGroundLightColor: { value: new THREE.Color('#85FF00') },
     uGroundLightIntensity: { value: 0.178 },
     uSkyHemiPower: { value: 1.3 },
+    uKeyAngularRadius: { value: (14 * Math.PI) / 180 },
+    uKeySoftNorm: { value: 1.0 },
     uRoughness: { value: 0.45 },
     uSpecularIntensity: { value: 0.4 },
     uSphereCenter: { value: new THREE.Vector3(0, 0, 0) },

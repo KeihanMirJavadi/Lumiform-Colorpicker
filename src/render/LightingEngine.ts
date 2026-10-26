@@ -6,6 +6,7 @@ import {
   sphericalToCartesian,
   evaluateAtmosphere,
   SKY_HEMISPHERE_POWER,
+  keySoftNormalisation,
 } from '../core/lighting';
 import { SunIndicator } from './SunIndicator';
 import { LumiformShaderUniforms } from './shaders/lumiformShader';
@@ -43,6 +44,7 @@ export class LightingEngine {
         intensity: atmos.keyIntensity,
         azimuth: presetConfig.azimuth,
         elevation: presetConfig.elevation,
+        angularRadius: atmos.keyAngularRadius,
       },
       ambient: {
         zenithColor: atmos.zenithColor.clone(),
@@ -179,6 +181,7 @@ export class LightingEngine {
     const atmos = evaluateAtmosphere(elevation);
 
     this.environment.keyLight.elevation = elevation;
+    this.environment.keyLight.angularRadius = atmos.keyAngularRadius;
     this.environment.keyLight.color.copy(atmos.keyColor);
     this.environment.keyLight.intensity = atmos.keyIntensity;
 
@@ -212,6 +215,8 @@ export class LightingEngine {
       mesh.uLightDir.value.copy(keyDir);
       mesh.uKeyColor.value.copy(this.environment.keyLight.color);
       mesh.uKeyIntensity.value = this.environment.keyLight.intensity;
+      mesh.uKeyAngularRadius.value = this.environment.keyLight.angularRadius;
+      mesh.uKeySoftNorm.value = keySoftNormalisation(this.environment.keyLight.angularRadius);
 
       mesh.uZenithColor.value.copy(this.environment.ambient.zenithColor);
       mesh.uEquatorColor.value.copy(this.environment.ambient.equatorColor);

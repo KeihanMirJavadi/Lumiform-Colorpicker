@@ -19,9 +19,9 @@ export const SURFACE_FINISHES: Record<Exclude<SurfaceFinish, 'custom'>, SurfaceF
   satin: {
     finish: 'satin',
     name: 'Satin',
-    roughness: 0.45,
-    specularIntensity: 0.4,
-    description: '45% Roughness, 40% Specular (soft, spread highlight)',
+    roughness: 0.75,
+    specularIntensity: 0.35,
+    description: '75% Roughness, 35% Specular (broad, diffused sheen)',
   },
   glossy: {
     finish: 'glossy',
