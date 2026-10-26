@@ -500,6 +500,11 @@ html, body {
   background: linear-gradient(to right, #475569, #cbd5e1);
 }
 
+/* Terminator control: dark = hard edge, light = broad soft shadow. */
+.terminator-slider {
+  background: linear-gradient(to right, #0f172a, #cbd5e1);
+}
+
 .sun-slider-yellow {
   background: linear-gradient(to right, #a16207, #facc15);
 }

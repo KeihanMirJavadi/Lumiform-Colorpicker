@@ -290,6 +290,15 @@ export const SOFT_KEY_CENTER_WEIGHT = 0.28;
 export const SOFT_KEY_RING_WEIGHT = 0.12;  // 4 samples at the full radius
 export const SOFT_KEY_INNER_WEIGHT = 0.06; // 4 samples at half the radius
 
+/**
+ * User-facing range for the terminator control, in degrees.
+ *
+ * 0 is a point sun: the diffuse terminator is the plain cosine edge. 45 is a
+ * broad softbox that spreads the lit-to-shadow transition over +/-45 degrees.
+ * Midday's measured value (14) sits inside this range.
+ */
+export const MAX_KEY_ANGULAR_RADIUS_DEG = 45;
+
 /** Average cos between L and the sample directions, so N = L still returns 1. */
 export function keySoftNormalisation(angularRadius: number): number {
   return (

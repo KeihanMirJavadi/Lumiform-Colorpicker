@@ -6,6 +6,7 @@ import {
   sphericalToCartesian,
   evaluateAtmosphere,
   SKY_HEMISPHERE_POWER,
+  MAX_KEY_ANGULAR_RADIUS_DEG,
   keySoftNormalisation,
 } from '../core/lighting';
 import { SunIndicator } from './SunIndicator';
@@ -16,6 +17,12 @@ import { DEFAULT_GROUND_HEX } from '../core/defaults';
 
 export class LightingEngine {
   private activePreset: LightingPreset | 'custom' = 'midday';
+  /**
+   * Manual terminator softness, in radians. `null` means "follow the
+   * atmosphere curve for the current elevation", so presets and the sun
+   * sliders keep their calibrated values until the user takes over.
+   */
+  private angularRadiusOverride: number | null = null;
   private environment: LightingEnvironment;
   private sunIndicator: SunIndicator;
   private groundAlbedo: THREE.Color = new THREE.Color(DEFAULT_GROUND_HEX);
@@ -123,6 +130,10 @@ export class LightingEngine {
     this.environment.preset = preset;
     this.environment.keyLight.azimuth = config.azimuth;
 
+    // A preset owns its calibrated terminator softness. Clicking it is the way
+    // back from a manual override.
+    this.angularRadiusOverride = null;
+
     // A preset is only a named elevation. Both this path and the manual slider
     // path call applyElevation(), so they cannot produce different images.
     this.applyElevation(config.elevation);
@@ -161,6 +172,24 @@ export class LightingEngine {
     this.notifyChange();
   }
 
+  /**
+   * Manually sets how large the key light is, which is what controls how hard
+   * or soft the sphere's terminator reads. Stays in effect across orbit/height
+   * changes; clicking a preset restores that preset's calibrated value.
+   */
+  public setKeyAngularRadius(radians: number): void {
+    const max = (MAX_KEY_ANGULAR_RADIUS_DEG * Math.PI) / 180;
+    this.angularRadiusOverride = Math.max(0, Math.min(max, radians));
+    this.environment.keyLight.angularRadius = this.angularRadiusOverride;
+
+    this.syncShaderUniforms();
+    this.notifyChange();
+  }
+
+  public getKeyAngularRadius(): number {
+    return this.environment.keyLight.angularRadius;
+  }
+
   public setGroundColor(colorHex: string | THREE.Color): void {
     const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
     this.groundAlbedo.copy(col);
@@ -181,7 +210,8 @@ export class LightingEngine {
     const atmos = evaluateAtmosphere(elevation);
 
     this.environment.keyLight.elevation = elevation;
-    this.environment.keyLight.angularRadius = atmos.keyAngularRadius;
+    this.environment.keyLight.angularRadius =
+      this.angularRadiusOverride ?? atmos.keyAngularRadius;
     this.environment.keyLight.color.copy(atmos.keyColor);
     this.environment.keyLight.intensity = atmos.keyIntensity;
 

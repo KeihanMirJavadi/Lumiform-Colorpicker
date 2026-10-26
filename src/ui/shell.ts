@@ -6,6 +6,7 @@ import { StatusBar } from './statusBar';
 import { ColorControls } from './colorControls';
 import { SwatchRamp } from './swatchRamp';
 import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX } from '../core/defaults';
+import { MAX_KEY_ANGULAR_RADIUS_DEG } from '../core/lighting';
 import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
 
 export class AppShell {
@@ -116,7 +117,20 @@ export class AppShell {
               <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="58" />
               <span class="slider-unit">°</span>
             </div>
+
+            <!-- Axis 3: Terminator / shadow edge hardness (key light angular size) -->
+            <div class="sun-slider-row">
+              <span class="sun-axis-name" style="width: 70px;" title="How sharply the lit side falls into shadow">Terminator</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider terminator-slider" id="slider-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
+              <span class="slider-unit">°</span>
+            </div>
           </div>
+          <p class="section-note" id="terminator-note">
+            0° gives a hard terminator, ${MAX_KEY_ANGULAR_RADIUS_DEG}° a broad softbox shadow. Choosing a preset restores its calibrated softness.
+          </p>
         </div>
 
         <!-- Ground Surface & Color (Default: Grass) -->
@@ -218,6 +232,7 @@ export class AppShell {
             <p>• 🔗 <strong>Link Colors</strong>: Apply one color change to every visible sphere at once.</p>
             <p>• 🌫️ <strong>Haze</strong>: Distance-based atmosphere that shifts and softens the farther spheres.</p>
             <p>• ☀️ <strong>Sun Position Controls</strong>: Use the Orbit/Height sliders or the Time-of-Day presets.</p>
+            <p>• 🌗 <strong>Terminator</strong>: 0° gives a hard lit-to-shadow edge, 45° a soft one. Presets restore their calibrated value.</p>
             <p>• 🌿 <strong>Ground Plane</strong>: Grass floor by default; customize color to see bounce light and shadow shift in real time.</p>
             <p>• 🔍 <strong>Camera Zoom</strong>: Scroll the mouse wheel over the viewport to zoom in and out.</p>
           </div>
@@ -312,6 +327,7 @@ export class AppShell {
     this.bindMeshScaleControl();
     this.bindPresetButtons();
     this.bindSunSliders();
+    this.bindTerminatorControl();
     this.bindLightColorControls();
     this.bindGroundColorControls();
     this.bindSurfaceFinishControls();
@@ -562,6 +578,44 @@ export class AppShell {
         haze: this.viewport?.getHaze(),
         distance: this.viewport?.getSelectedSphereDistance(),
       });
+    });
+  }
+
+  private bindTerminatorControl(): void {
+    if (!this.viewport) return;
+
+    const slider = this.root.querySelector<HTMLInputElement>('#slider-terminator')!;
+    const num = this.root.querySelector<HTMLInputElement>('#num-terminator')!;
+
+    const applyDegrees = (deg: number) => {
+      const clamped = Math.max(0, Math.min(MAX_KEY_ANGULAR_RADIUS_DEG, Math.round(deg)));
+      this.viewport?.setKeyAngularRadius((clamped * Math.PI) / 180);
+    };
+
+    slider.addEventListener('input', () => {
+      num.value = slider.value;
+      applyDegrees(parseInt(slider.value, 10));
+    });
+
+    num.addEventListener('change', () => {
+      let val = parseInt(num.value, 10);
+      if (isNaN(val)) {
+        val = Math.round((this.viewport!.getLightingEngine().getKeyAngularRadius() * 180) / Math.PI);
+      }
+      val = Math.max(0, Math.min(MAX_KEY_ANGULAR_RADIUS_DEG, val));
+      num.value = val.toString();
+      slider.value = val.toString();
+      applyDegrees(val);
+    });
+
+    // Presets and elevation changes move the calibrated softness; mirror that
+    // into the control unless the user is actively editing it.
+    this.viewport.getLightingEngine().onEnvironmentChange((env) => {
+      const deg = Math.round((env.keyLight.angularRadius * 180) / Math.PI);
+      if (document.activeElement !== slider && document.activeElement !== num) {
+        slider.value = deg.toString();
+        num.value = deg.toString();
+      }
     });
   }
 

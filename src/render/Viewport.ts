@@ -372,6 +372,12 @@ export class Viewport {
     this.colorPickerTarget.scheduleResample();
   }
 
+  /** Hardens or softens the terminator by changing the key light's angular size. */
+  public setKeyAngularRadius(radians: number): void {
+    this.lightingEngine.setKeyAngularRadius(radians);
+    this.colorPickerTarget.scheduleResample();
+  }
+
   public setGroundColor(colorHex: string | number | THREE.Color): void {
     const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
     const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
