@@ -399,7 +399,7 @@
       <div class="grid-3">
         <div class="card">
           <h4>1. In-Panel 3D Viewport</h4>
-          <p>Three.js WebGL viewport rendering a smooth, grounded 3D sphere with wheel zoom, a size slider, and Orbit/Height light-direction sliders.</p>
+          <p>Three.js WebGL viewport rendering a smooth, grounded 3D sphere with a fixed camera, a size slider, and Orbit/Height light-direction sliders.</p>
         </div>
         <div class="card">
           <h4>2. Physical Light Simulation</h4>
@@ -638,8 +638,8 @@
           <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.2 3D Viewport & Sphere Rendering</div>
-              <div class="task-desc">Implement Three.js scene, perspective camera with wheel zoom, grounded sphere geometry, and resize handling.</div>
-              <div class="task-criteria">Criteria: 60fps rendering, wheel zoom, no background-drag camera orbit, resize observer.</div>
+              <div class="task-desc">Implement Three.js scene, fixed perspective camera (no zoom), grounded sphere geometry, and resize handling.</div>
+              <div class="task-criteria">Criteria: 60fps rendering, static camera framing, no background-drag camera orbit, resize observer.</div>
             </div>
             <span class="status-badge done">Done</span>
           </div>
@@ -698,13 +698,13 @@
             <span class="status-badge current">current</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.9 Aerial Perspective & Atmosphere</div>
-              <div class="task-desc">Add distance-based atmospheric extinction and in-scattering for spheres, ground, and cast shadows, tinted by the horizon sky color and parameterized by a global Haze control.</div>
-              <div class="task-criteria">Criteria: Far sphere is hazier and lower-contrast than mid, mid hazier than near; haze shifts sampled colors consistently; ground and shadows fade into the same atmosphere.</div>
+              <div class="task-desc">Add single-scattering depth fog for spheres and ground: per-channel extinction plus in-scattering toward the local background (sky with a horizon haze band above the eye line, phase ground haze below). Each time-of-day preset carries its own calibrated Haze amount, and selecting it resets the slider to that value.</div>
+              <div class="task-criteria">Criteria: Far sphere is hazier and lower-contrast than mid, mid hazier than near; the far sphere desaturates toward its background without a halo; ground fades into a horizon haze band that meets the sky; near sphere stays exactly clear.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge done">Done</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -775,7 +775,7 @@
         </div>
         <div class="card">
           <h4>2. Aerial Perspective</h4>
-          <p>Distance-based extinction and in-scattering tinted by the horizon sky. Contrast and saturation fall off with distance so the far sphere reads visibly hazier than the mid sphere.</p>
+          <p>Single-scattering depth fog that fades each surface toward the background actually behind it: sky with a smooth horizon haze band above the eye line, phase-tinted ground haze below. Contrast and saturation fall off with distance, so the far sphere dissolves into the scene instead of turning into a pale disc.</p>
         </div>
         <div class="card">
           <h4>3. Per-Sphere Color</h4>
@@ -799,7 +799,7 @@
             <td><strong>Center</strong></td>
             <td>Near</td>
             <td>Largest sphere, primary subject, closest to camera</td>
-            <td>Minimal haze, full contrast</td>
+            <td>Exactly clear: colour reference</td>
             <td>Strongest contact AO and drop shadow</td>
           </tr>
           <tr>
@@ -858,7 +858,7 @@
           </tr>
           <tr>
             <td><strong>Atmosphere</strong></td>
-            <td>Distance-based haze applied consistently to spheres, ground, and shadows; stronger on the far sphere.</td>
+            <td>Distance-based single scattering applied consistently to spheres and ground; the airlight is the local sky/ground behind each pixel, with a horizon haze band.</td>
           </tr>
         </tbody>
       </table>
@@ -867,9 +867,12 @@
       <div class="card">
         <p style="font-size:13px; color:#cbd5e1;">
           The ground shader accumulates drop shadows and contact AO across all visible spheres. Each sphere renders with its own material
-          instance so albedo and depth treatment stay independent. Atmosphere is evaluated per fragment from camera distance and blended
-          toward the horizon/sky color; the ground uses the same model so objects and floor share one atmosphere. Picking reads the final
-          framebuffer, which means the sampled color already includes haze. The analytical swatch ramp follows the selected sphere, including its depth haze.
+          instance so albedo and depth treatment stay independent. Atmosphere is evaluated per fragment as single-scattering depth fog:
+          the surface is attenuated by distance and mixed toward the background behind it (sky along the view ray with a horizon haze band,
+          or the phase's ground haze below the eye line). Distant objects therefore desaturate toward what is actually behind them and can
+          never become paler than that background. The near sphere sits inside the fog-free range so it stays an exact colour reference.
+          Picking reads the final framebuffer, which means the sampled color already includes haze. The analytical swatch ramp follows the
+          selected sphere, including its depth haze.
         </p>
       </div>
     </div>

@@ -20,9 +20,9 @@ import * as THREE from 'three';
  *     three different distances. The lens is therefore a single fixed lens, and
  *     each distance is solved from its measured on-screen diameter.
  *
- * Everything else (zoom limits, slot positions) is derived from those numbers,
- * so the composition cannot drift when a preset changes. Time-of-day and
- * material changes must not touch this file.
+ * Everything else (slot positions) is derived from those numbers, so the
+ * composition cannot drift when a preset changes. Time-of-day and material
+ * changes must not touch this file. The camera is fixed; there is no zoom.
  */
 
 /** Physical radius of every sphere before the per-sphere size slider is applied. */

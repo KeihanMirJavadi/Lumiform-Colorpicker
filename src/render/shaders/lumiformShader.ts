@@ -20,10 +20,13 @@ export interface LumiformShaderUniforms {
   uSkyHemiPower: { value: number };
   uKeyAngularRadius: { value: number };
   uKeySoftNorm: { value: number };
+  uEffectiveHaze: { value: number };
+  uHorizonHaze: { value: THREE.Color };
+  uHorizonBand: { value: number };
+  uGroundHaze: { value: THREE.Color };
   uRoughness: { value: number };
   uSpecularIntensity: { value: number };
   uSphereCenter: { value: THREE.Vector3 };
-  uHaze: { value: number };
 }
 
 const vertexShader = /* glsl */ `
@@ -38,6 +41,10 @@ const vertexShader = /* glsl */ `
 
 const fragmentShader = /* glsl */ `
   const float PI = 3.14159265359;
+  // Mirrors core/atmosphere.ts. The near sphere's far surface ends at ~14.95,
+  // so fog begins just beyond it and the colour-reference sphere stays clear.
+  const float HAZE_DENSITY = 0.030;
+  const float HAZE_START = 15.5;
 
   uniform vec3 uAlbedo;
   uniform float uMetalness;
@@ -57,11 +64,14 @@ const fragmentShader = /* glsl */ `
   uniform float uSkyHemiPower;
   uniform float uKeyAngularRadius;
   uniform float uKeySoftNorm;
+  uniform float uEffectiveHaze;
+  uniform vec3 uHorizonHaze;
+  uniform float uHorizonBand;
+  uniform vec3 uGroundHaze;
 
   uniform float uRoughness;
   uniform float uSpecularIntensity;
   uniform vec3 uSphereCenter;
-  uniform float uHaze;
 
   varying vec3 vWorldPosition;
 
@@ -128,17 +138,30 @@ const fragmentShader = /* glsl */ `
     return mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
   }
 
-  // Sky gradient used for atmospheric in-scattering (matches the sky dome).
-  vec3 atmosphereColor(vec3 dir) {
+  // Normal 3-zone sky gradient, before the horizontal haze band.
+  vec3 skyBase(vec3 dir) {
     if (dir.y >= 0.0) {
       if (dir.y < 0.07) {
         float t = dir.y / 0.07;
         return mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
       }
-      float t = (dir.y - 0.07) / 0.095;
+      float t = (dir.y - 0.07) / 0.16;
       return mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
     }
     return uHorizonColor;
+  }
+
+  // Radiance of the sky along a ray, including the horizontal haze band.
+  //
+  // A ray near the horizon traverses far more air than one looking up, so the
+  // last few degrees are dominated by in-scattered light. This is also the
+  // airlight a distant object fades into, so the two cannot disagree at the
+  // horizon.
+  vec3 skyRadiance(vec3 dir) {
+    vec3 base = skyBase(dir);
+    float y = max(dir.y, 0.0);
+    float t = smoothstep(0.0, max(uHorizonBand, 1e-4), y);
+    return mix(uHorizonHaze, base, t);
   }
 
   // Display encoding: the shader works in linear light, the canvas expects sRGB.
@@ -220,11 +243,38 @@ const fragmentShader = /* glsl */ `
     // Total radiance.
     vec3 finalColor = directDiffuse + specular + ambientDiffuse + ambientSpecular;
 
-    // Aerial perspective: extinction + in-scattering tinted by the sky.
+    // --- Aerial perspective -------------------------------------------------
+    // Single-scattering depth fog: what survives the path to the eye is the
+    // object attenuated by extinction, plus the background radiance scattered
+    // into the same path. The airlight is not one global tint: above the
+    // horizon it is the sky along the view ray (including its haze band),
+    // below it the phase's ground haze. That is what lets a distant sphere
+    // dissolve into the scene without ever becoming paler than the background
+    // behind it.
     vec3 viewDir = normalize(vWorldPosition - cameraPosition);
     float viewDistance = length(vWorldPosition - cameraPosition);
-    float hazeAmount = 1.0 - exp(-uHaze * 0.006 * max(0.0, viewDistance - 20.0));
-    finalColor = mix(finalColor, atmosphereColor(viewDir), clamp(hazeAmount, 0.0, 0.85));
+
+    // Rayleigh removes short wavelengths first; aerosol haze is neutral. The
+    // mild spectral term gives clear air its blue-through-pale progression
+    // without tinting the already hazy phases.
+    float neutrality = smoothstep(0.10, 0.80, uEffectiveHaze);
+    vec3 spectral = mix(vec3(0.94, 1.00, 1.06), vec3(1.0), neutrality);
+    vec3 opticalDepth = uEffectiveHaze * HAZE_DENSITY * spectral
+      * max(0.0, viewDistance - HAZE_START);
+    vec3 transmittance = exp(-opticalDepth);
+
+    // The airlight crosses from the ground haze to the sky over a smooth
+    // angular window. A narrow split at the eye line would draw a hard
+    // horizontal seam across a hazy sphere; this keeps the transition gradual
+    // while still letting the lower half lean toward the ground behind it.
+    float horizonBlendWidth = clamp(uHorizonBand * 0.4, 0.02, 0.06);
+    float horizonBlend = smoothstep(
+      -horizonBlendWidth,
+      horizonBlendWidth,
+      viewDir.y
+    );
+    vec3 airlight = mix(uGroundHaze, skyRadiance(viewDir), horizonBlend);
+    finalColor = finalColor * transmittance + airlight * (1.0 - transmittance);
 
     // Tone map + display encoding.
     vec3 outColor = linearToSRGB(toneMap(finalColor));
@@ -254,10 +304,13 @@ export function createLumiformMaterial(initialAlbedo: THREE.Color | string | num
     uSkyHemiPower: { value: 1.3 },
     uKeyAngularRadius: { value: (14 * Math.PI) / 180 },
     uKeySoftNorm: { value: 1.0 },
+    uEffectiveHaze: { value: 0.5 },
+    uHorizonHaze: { value: new THREE.Color('#8EBAC3') },
+    uHorizonBand: { value: 0.03 },
+    uGroundHaze: { value: new THREE.Color('#6F9A50') },
     uRoughness: { value: 0.45 },
     uSpecularIntensity: { value: 0.4 },
     uSphereCenter: { value: new THREE.Vector3(0, 0, 0) },
-    uHaze: { value: 0.5 },
   };
 
   return new THREE.ShaderMaterial({

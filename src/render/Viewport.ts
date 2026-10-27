@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { OrbitCamera } from './OrbitCamera';
 import { LightingEngine } from './LightingEngine';
 import { ColorPickerTarget } from './ColorPickerTarget';
 import { createLumiformMaterial, LumiformShaderUniforms } from './shaders/lumiformShader';
 import { createSkyDomeMaterial, SkyShaderUniforms } from './shaders/skyShader';
 import { createGroundMaterial, GroundShaderUniforms } from './shaders/groundShader';
 import { LightingPreset, SurfaceFinish, RGBColor } from '../core/types';
+import { effectiveHaze } from '../core/atmosphere';
 import { SURFACE_FINISHES } from '../core/material';
 import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
 import { FRAMING, REFERENCE_ASPECT, verticalFovRad } from '../core/framing';
@@ -36,7 +36,6 @@ export class Viewport {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private orbitCamera: OrbitCamera;
   private lightingEngine: LightingEngine;
   private colorPickerTarget: ColorPickerTarget;
 
@@ -76,7 +75,6 @@ export class Viewport {
   private finishListeners: Set<(finish: SurfaceFinish, roughness: number, specular: number) => void> = new Set();
   private sampleListeners: Set<(rgb: RGBColor, hex: string) => void> = new Set();
   private selectionListeners: Set<(id: SphereSlotId) => void> = new Set();
-  private cameraListeners: Set<() => void> = new Set();
 
   constructor(options: ViewportOptions) {
     this.container = options.container;
@@ -85,8 +83,8 @@ export class Viewport {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x181818);
 
-    // 2. Camera — fixed reference framing (see core/framing.ts). Zoom is the
-    //    only camera control; time-of-day and material never move the camera.
+    // 2. Camera — fixed reference framing (see core/framing.ts). The camera
+    //    never moves; time-of-day and material changes only touch the shaders.
     const aspect =
       this.container.clientWidth > 0 && this.container.clientHeight > 0
         ? this.container.clientWidth / this.container.clientHeight
@@ -98,6 +96,10 @@ export class Viewport {
       600
     );
     this.camera.position.set(0, FRAMING.cameraY, FRAMING.cameraZ);
+    this.camera.lookAt(0, 0, 0);
+    // The eye line is the horizon. Tilt up so it lands on the reference's
+    // 55.1% instead of dead centre. The camera never moves after this.
+    this.camera.rotateX(FRAMING.pitchRad);
 
     // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -118,16 +120,7 @@ export class Viewport {
     this.container.innerHTML = '';
     this.container.appendChild(canvas);
 
-    // 4. Camera zoom only. The framing contract fixes the resting distance and
-    //    the horizon pitch; zoom is a symmetric dolly around that distance.
-    this.orbitCamera = new OrbitCamera(this.camera, {
-      radius: FRAMING.cameraZ,
-      minDistance: FRAMING.cameraZ * 0.4,
-      maxDistance: FRAMING.cameraZ * 1.5,
-      lookPitchRad: FRAMING.pitchRad,
-    });
-
-    // 5. Sky dome. It must enclose the far sphere slot (the farthest geometry
+    // 4. Sky dome. It must enclose the far sphere slot (the farthest geometry
     //    in the scene), otherwise the sky would be occluded by its own shell.
     this.skyGeometry = new THREE.SphereGeometry(300, 36, 24);
     const skyMaterial = createSkyDomeMaterial();
@@ -135,7 +128,7 @@ export class Viewport {
     this.skyMesh.renderOrder = -1;
     this.scene.add(this.skyMesh);
 
-    // 6. Ground plane. Its far edge must reach the eye line (see framing.ts),
+    // 5. Ground plane. Its far edge must reach the eye line (see framing.ts),
     //    otherwise the visible horizon sits below the true horizon.
     this.groundGeometry = new THREE.PlaneGeometry(1600, 1600, 1, 1);
     const groundMaterial = createGroundMaterial();
@@ -144,7 +137,7 @@ export class Viewport {
     this.groundMesh.rotation.x = -Math.PI / 2;
     this.scene.add(this.groundMesh);
 
-    // 7. Three spheres in fixed depth slots
+    // 6. Three spheres in fixed depth slots
     this.sphereGeometry = new THREE.SphereGeometry(BASE_SPHERE_RADIUS, 96, 96);
     const initialHex = options.initialColor !== undefined ? `#${new THREE.Color(options.initialColor).getHexString()}` : DEFAULT_ALBEDO_HEX;
 
@@ -166,8 +159,9 @@ export class Viewport {
       });
     }
 
-    // 8. Lighting engine — bind every sphere material
+    // 7. Lighting engine — bind every sphere material
     this.lightingEngine = new LightingEngine();
+    this.haze = this.lightingEngine.getEnvironment().hazePreset;
     this.lightingEngine.bindUniforms(
       this.spheres.map((s) => s.material.uniforms as LumiformShaderUniforms),
       skyMaterial.uniforms as SkyShaderUniforms,
@@ -175,10 +169,11 @@ export class Viewport {
     );
 
     this.lightingEngine.onEnvironmentChange(() => {
+      this.syncAtmosphereUniforms();
       this.colorPickerTarget?.scheduleResample();
     });
 
-    // 9. Eyedropper puck
+    // 8. Eyedropper puck
     this.colorPickerTarget = new ColorPickerTarget({
       container: this.container,
       renderer: this.renderer,
@@ -189,15 +184,16 @@ export class Viewport {
       },
     });
 
-    // 10. Transient selection ring
+    // 9. Transient selection ring
     this.selectionFlash = this.createSelectionFlash();
     this.scene.add(this.selectionFlash);
 
-    // 11. Input: zoom + sphere selection
-    this.bindZoom(canvas);
+    // 10. Input: sphere selection. The camera is fixed; the wheel is swallowed
+    //     so the viewport never zooms or scrolls under the pointer.
+    canvas.addEventListener('wheel', (event) => event.preventDefault(), { passive: false });
     this.bindSphereSelection(canvas);
 
-    // 12. Resize + render loop
+    // 11. Resize + render loop
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(this.container);
 
@@ -221,11 +217,6 @@ export class Viewport {
   public onSelectionChange(callback: (id: SphereSlotId) => void): () => void {
     this.selectionListeners.add(callback);
     return () => this.selectionListeners.delete(callback);
-  }
-
-  public onCameraChange(callback: () => void): () => void {
-    this.cameraListeners.add(callback);
-    return () => this.cameraListeners.delete(callback);
   }
 
   public getSelectedSphereId(): SphereSlotId {
@@ -358,6 +349,10 @@ export class Viewport {
 
   public setPreset(preset: LightingPreset): void {
     this.lightingEngine.setPreset(preset);
+    // The preset owns its haze amount. Keep the slider/render in sync here so
+    // every caller of setPreset gets the same calibrated atmosphere.
+    this.haze = this.lightingEngine.getEnvironment().hazePreset;
+    this.syncSphereUniforms();
     this.colorPickerTarget.scheduleResample();
   }
 
@@ -384,6 +379,10 @@ export class Viewport {
     groundUniforms.uGroundAlbedo.value.copy(col);
     this.lightingEngine.setGroundColor(col);
     this.colorPickerTarget.scheduleResample();
+  }
+
+  public getGroundColor(): THREE.Color {
+    return this.lightingEngine.getGroundColor();
   }
 
   public setSurfaceFinish(finish: SurfaceFinish): void {
@@ -476,7 +475,6 @@ export class Viewport {
       const uniforms = sphere.material.uniforms as LumiformShaderUniforms;
       uniforms.uAlbedo.value.set(sphere.albedoHex);
       uniforms.uSphereCenter.value.copy(sphere.mesh.position);
-      uniforms.uHaze.value = this.haze;
       uniforms.uRoughness.value = this.currentRoughness;
       uniforms.uSpecularIntensity.value = this.currentSpecular;
 
@@ -489,10 +487,50 @@ export class Viewport {
       }
     });
 
-    groundUniforms.uHaze.value = this.haze;
-
+    this.syncAtmosphereUniforms();
     this.updateSelectionFlashTransform();
     this.colorPickerTarget.scheduleResample();
+  }
+
+  /**
+   * Single place that maps the Haze slider and the phase's turbidity onto the
+   * shader uniforms. The preset's own Haze value is the calibrated atmosphere;
+   * below it fades to clear, above it reaches full fog. The horizon band widens
+   * with haze, which is what makes the ground/sky seam dissolve in hazy phases.
+   */
+  private syncAtmosphereUniforms(): void {
+    const env = this.lightingEngine.getEnvironment();
+    const optical = effectiveHaze(this.haze, env.hazeStrength, env.hazePreset);
+    const groundOptical = effectiveHaze(
+      this.haze,
+      env.groundHazeStrength,
+      env.hazePreset
+    );
+
+    const preset = Math.max(0.01, Math.min(0.99, env.hazePreset));
+    const t = Math.max(0, Math.min(1, this.haze / preset));
+    const bandFactor =
+      this.haze <= preset
+        ? t * t * (3 - 2 * t)
+        : 1 + ((this.haze - preset) / (1 - preset)) * 0.3;
+    const band = env.horizonBand * bandFactor;
+
+    for (const sphere of this.spheres) {
+      const uniforms = sphere.material.uniforms as LumiformShaderUniforms;
+      uniforms.uEffectiveHaze.value = optical;
+      uniforms.uHorizonHaze.value.copy(env.horizonHaze);
+      uniforms.uHorizonBand.value = band;
+      uniforms.uGroundHaze.value.copy(env.groundHaze);
+    }
+
+    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+    groundUniforms.uGroundEffectiveHaze.value = groundOptical;
+    groundUniforms.uGroundHaze.value.copy(env.groundHaze);
+
+    const skyUniforms = this.skyMesh.material.uniforms as SkyShaderUniforms;
+    skyUniforms.uHorizonHaze.value.copy(env.horizonHaze);
+    skyUniforms.uHorizonBand.value = band;
+    skyUniforms.uGroundHaze.value.copy(env.groundHaze);
   }
 
   private createSelectionFlash(): THREE.Sprite {
@@ -559,20 +597,6 @@ export class Viewport {
         this.selectSphere(id);
       }
     });
-  }
-
-  private bindZoom(canvas: HTMLCanvasElement): void {
-    canvas.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault();
-        const factor = Math.exp(e.deltaY * 0.0012);
-        this.orbitCamera.zoomBy(factor);
-        this.cameraListeners.forEach((cb) => cb());
-        this.colorPickerTarget.scheduleResample();
-      },
-      { passive: false }
-    );
   }
 
   private handleResize(): void {

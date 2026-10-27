@@ -1,4 +1,3 @@
-export * from './OrbitCamera';
 export * from './LightingEngine';
 export * from './SunIndicator';
 export * from './ColorPickerTarget';

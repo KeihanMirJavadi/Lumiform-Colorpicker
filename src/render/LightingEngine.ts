@@ -69,7 +69,15 @@ export class LightingEngine {
         color: atmos.groundLightColor.clone(),
         intensity: atmos.groundLightIntensity,
       },
+      hazeStrength: atmos.hazeStrength,
+      hazePreset: presetConfig.haze,
+      horizonHaze: atmos.horizonHaze.clone(),
+      horizonBand: atmos.horizonBand,
+      groundHaze: atmos.groundHaze.clone(),
+      groundHazeStrength: atmos.groundHazeStrength,
     };
+
+    this.groundAlbedo.copy(atmos.groundAlbedo);
 
     this.sunIndicator.setColor(this.environment.keyLight.color);
 
@@ -129,6 +137,9 @@ export class LightingEngine {
     this.activePreset = preset;
     this.environment.preset = preset;
     this.environment.keyLight.azimuth = config.azimuth;
+    // Each time of day carries its own calibrated Haze amount, so switching
+    // presets resets the slider instead of inheriting the previous setting.
+    this.environment.hazePreset = config.haze;
 
     // A preset owns its calibrated terminator softness. Clicking it is the way
     // back from a manual override.
@@ -225,6 +236,18 @@ export class LightingEngine {
     this.environment.skyLight.intensity = atmos.skyLightIntensity;
     this.environment.groundLight.color.copy(atmos.groundLightColor);
     this.environment.groundLight.intensity = atmos.groundLightIntensity;
+    this.environment.hazeStrength = atmos.hazeStrength;
+    this.environment.horizonHaze.copy(atmos.horizonHaze);
+    this.environment.horizonBand = atmos.horizonBand;
+    this.environment.groundHaze.copy(atmos.groundHaze);
+    this.environment.groundHazeStrength = atmos.groundHazeStrength;
+
+    // The phase owns the ground colour: the reference's ground hue changes with
+    // the light setup, and a fixed green albedo cannot reproduce it.
+    this.groundAlbedo.copy(atmos.groundAlbedo);
+    if (this.groundUniforms) {
+      this.groundUniforms.uGroundAlbedo.value.copy(this.groundAlbedo);
+    }
 
     this.sunIndicator.setColor(this.environment.keyLight.color);
   }
@@ -259,6 +282,9 @@ export class LightingEngine {
       mesh.uGroundLightColor.value.copy(this.environment.groundLight.color);
       mesh.uGroundLightIntensity.value = this.environment.groundLight.intensity;
       mesh.uSkyHemiPower.value = SKY_HEMISPHERE_POWER;
+      mesh.uHorizonHaze.value.copy(this.environment.horizonHaze);
+      mesh.uHorizonBand.value = this.environment.horizonBand;
+      mesh.uGroundHaze.value.copy(this.environment.groundHaze);
     }
 
     // 2. Sky dome uniforms (background only)
@@ -268,6 +294,9 @@ export class LightingEngine {
       this.skyUniforms.uEquatorColor.value.copy(this.environment.ambient.equatorColor);
       this.skyUniforms.uHorizonColor.value.copy(this.environment.ambient.horizonColor);
       this.skyUniforms.uGroundColor.value.copy(this.environment.ambient.groundColor);
+      this.skyUniforms.uHorizonHaze.value.copy(this.environment.horizonHaze);
+      this.skyUniforms.uHorizonBand.value = this.environment.horizonBand;
+      this.skyUniforms.uGroundHaze.value.copy(this.environment.groundHaze);
       this.skyUniforms.uSunColor.value.copy(this.environment.keyLight.color);
       this.skyUniforms.uSunIntensity.value = this.environment.keyLight.intensity;
     }
@@ -288,6 +317,7 @@ export class LightingEngine {
       this.groundUniforms.uSkyLightIntensity.value = this.environment.skyLight.intensity;
       this.groundUniforms.uGroundLightColor.value.copy(this.environment.groundLight.color);
       this.groundUniforms.uGroundLightIntensity.value = this.environment.groundLight.intensity;
+      this.groundUniforms.uGroundHaze.value.copy(this.environment.groundHaze);
     }
   }
 

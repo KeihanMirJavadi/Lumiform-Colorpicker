@@ -64,14 +64,14 @@ The project follows a **two-phase dual-target architecture**:
 ┌────────────────────────────────────────────────────────────────────────┐
 │                       Panel UI (Photoshop Dark #1e1e1e)                │
 │  ├─ Compact HSB Sliders + Hex Input                                    │
-│  ├─ Time-of-Day Presets (Daylight, Golden Hour, Night)                 │
+│  ├─ Time-of-Day Presets (7 phases: Morning to Early Morning)           │
 │  ├─ Surface Finish Toggle (Matte / Satin / Glossy)                     │
 │  └─ Grounded Sphere Size Slider                                        │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                     3D Viewport (Three.js WebGL)                       │
-│  ├─ High-Resolution Sphere Mesh (grounded, wheel-zoom camera)          │
+│  ├─ High-Resolution Sphere Mesh (grounded, fixed camera)               │
 │  ├─ Directional Key Light + Orbit/Height Sun Sliders                   │
 │  ├─ 3-Zone Hemispherical Ambient (Sky / Horizon / Ground Bounce)       │
 │  └─ Eyedropper Pointer Controller (WebGL readPixels, throttled to RAF) │
@@ -106,7 +106,7 @@ The project follows a **two-phase dual-target architecture**:
 * **Persistent Draggable Color Picker Target:** An always-visible circular reticle in the 3D viewport featuring crosshairs, an inner sampled color ring, and a floating Hex pill badge. Can be dragged freely across the canvas to sample any lit surface or bounce light via WebGL `readPixels`, with zero-lag bridge dispatch to Photoshop's active brush. Resamples automatically when the light position, sphere size, or ground color changes.
 * **2-Axis Sun Sliders:** Key-light direction is controlled exclusively from the panel via **Orbit** (Horizontal $0^\circ-360^\circ$) and **Height** (Vertical $-89^\circ-+89^\circ$) sliders. No sun marker or light gizmo is drawn in the 3D canvas.
 * **Automatic Preset Deselection:** Moving the Orbit/Height sliders immediately deselects the active lighting preset.
-* **Camera Zoom:** Mouse wheel over the canvas dollies the camera between fixed near/far limits. Dragging the empty canvas never orbits or rotates the camera; there is no canvas-drag camera control.
+* **Fixed Camera:** The framing contract sets the camera position, lens, and horizon pitch once. The mouse wheel does not zoom; it is swallowed over the canvas so the view stays static. Dragging the empty canvas never orbits or rotates the camera; there is no canvas-drag camera control.
 * **No Mesh Rotation:** The preview form is a sphere only. There is no alternate-form switcher and no object-rotation mode; sphere shading is rotation-invariant by construction.
 
 ### 4.2 Lighting & Environment Engine
@@ -117,10 +117,15 @@ The project follows a **two-phase dual-target architecture**:
   * **Horizon ($\hat{N}_y \approx 0$):** Soft lateral transition.
   * **Ground Bounce ($\hat{N}_y < 0$):** Underside reflection, driven only by light that actually reaches the ground (no always-on under-light).
 * **Display Pipeline:** Linear-light shading → neutral tone curve with a soft highlight shoulder → sRGB display encoding → 1/255 dithering to prevent gradient banding.
-* **Curated Presets (Phase 1):**
-  1. **Daylight:** High warm sun from the upper left, deep blue sky fill, natural green ground bounce.
-  2. **Golden Hour:** Low-angle amber sun ($3200\text{K}$), deep violet/blue ambient, warm saturated ground bounce.
-  3. **Night:** Cool pale blue moonlight rim, deep dark navy fill.
+* **Curated Presets (Phase 1):** Seven keyframes on one elevation curve, measured from the time-of-day reference sheet.
+  1. **Morning:** Pale hazy sky, soft warm low key, low contrast.
+  2. **Midday:** High side sun, pale cyan sky fill, saturated green bounce (measured).
+  3. **Afternoon:** Deep blue sky, crisp warm key, vivid green bounce.
+  4. **Near Sunset:** Low amber sun, lilac sky, long warm shadow.
+  5. **Golden Hour:** Lowest orange sun, rose sky, warm earth bounce.
+  6. **Night:** Cool moonlight, deep navy sky, faint bounce.
+  7. **Early Morning:** Before sunrise, cool ambient light and a pale rose horizon.
+  * Each keyframe owns its visible dome colours, horizon haze colour/width, lighting irradiances, key angle/softness, ground albedo, and ground/air turbidity. Clicking a preset and entering its Orbit/Height by hand produce identical pixels.
 
 ### 4.3 Surface Finish Modes
 * **Matte (default):** Roughness 1.0, 0% reflectance (pure diffuse Lambertian).
@@ -150,7 +155,11 @@ The project follows a **two-phase dual-target architecture**:
   All three rest on the ground plane. Slots are fixed to the reference composition; there are no position controls.
 * **Count control:** A `1 / 2 / 3` selector controls the number of spheres. Lowering the count **deletes** the removed sphere (far-left first, then right; the center is never removed). Raising the count fills the nearest empty slot first (right, then left) with a **fresh copy of the center sphere's current color**, at 100% size. Adding or removing never repositions the remaining spheres, and deleted state is not restored.
 * **Delete action:** Selecting a non-center sphere enables a **Delete** button that removes exactly that sphere. The center is permanent, so Delete is disabled while it is selected. Count buttons update to reflect the resulting number of spheres.
-* **Aerial perspective:** Distance-based atmospheric extinction and in-scattering, tinted by the horizon sky color, applied consistently to spheres, the ground, and cast shadows. A single global **Haze** control (0–100%) scales the effect. The near sphere reads with full contrast and saturation; the mid sphere is partially hazed; the far sphere loses contrast and takes on the atmospheric color.
+* **Aerial perspective:** Physically based single scattering: `L = L_surface · e^(−βd) + L_airlight · (1 − e^(−βd))`. The airlight is the local background, not one global tint: above the horizon it is the sky radiance along the view ray (including a smooth horizontal haze band), below it is the phase's ground-haze colour. This makes distant geometry desaturate toward whatever is actually behind it, so a far sphere can never become paler than its background. Extinction is per-channel in clear air (blue attenuates first) and neutral in hazy air, giving the deep-blue → pale-blue → background progression the reference shows.
+  * **Horizon haze band:** Each time-of-day keyframe supplies a horizon airlight colour and an angular band width. The sky fades from that colour at the eye line to its normal gradient above, which creates the soft ground/sky seam. The band widens as haze increases.
+  * **Ground haze:** The ground has its own calibrated aerial-perspective density because its visible depth span is only a few hundred world units, while the sky's air path is effectively infinite. Distant ground keeps some of its own hue instead of turning into pure sky.
+  * **Depth range:** Sphere fog begins at 15.5 world units, just beyond the near sphere's far surface, so the central colour-reference sphere is exactly clear at every Haze setting. Ground fog begins at 10 units. The mid sphere is lightly hazed and the far sphere loses contrast and takes on the atmospheric colour.
+  * **Haze control:** Every time-of-day preset carries its own calibrated Haze value, expressed as a fraction of the maximum: Midday 3%, Afternoon 9%, Night 15%, Morning 43%, Near Sunset/Early Morning 60%, Golden Hour 70%. Selecting a preset moves the slider to that value; at that setting the phase's measured atmosphere is reproduced exactly. Below it fades to clear, above it adds fog up to a strong maximum. The swatch ramp uses the same mapping and the selected sphere's distance.
 * **Per-sphere color state:** Each sphere carries its own base albedo. The color panel edits the selected sphere. A **Link Colors** toggle applies the selected color to every visible sphere when enabled, and keeps applying subsequent edits to all of them; disabling the link keeps the shared color so spheres can diverge from there.
 * **Per-sphere size:** Size is decoupled per sphere. Selecting a sphere exposes its own **Size** slider (20%–100% of the base radius). Scaling pivots on that sphere's bottom-center so it stays grounded; the camera does not move. Link Colors does not link sizes.
 * **Selection:** The active sphere is chosen by clicking it in the viewport or via a Center / Right / Left selector. Selection persists for editing, while a highlight ring flashes for about a second and fades on every selection action; there is no permanent outline. If the selected sphere is deleted, selection falls back to the center sphere.
@@ -173,12 +182,12 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
 
 * [x] **Task 1.2: 3D Viewport & Sphere Rendering**
   * **State:** `Done`
-  * **Description:** Implement Three.js scene, perspective camera with wheel zoom, high-resolution grounded sphere geometry, and resize handling.
-  * **Acceptance Criteria:** Smooth 60fps rendering, responsive canvas resizing, wheel zoom, no background-drag camera orbit.
+  * **Description:** Implement Three.js scene, fixed perspective camera (no zoom), high-resolution grounded sphere geometry, and resize handling.
+  * **Acceptance Criteria:** Smooth 60fps rendering, responsive canvas resizing, static camera framing, no background-drag camera orbit.
 
 * [x] **Task 1.3: Lighting Engine & Sun Sliders**
   * **State:** `Done`
-  * **Description:** Implement directional key light driven by Orbit/Height sliders, 3-zone ambient model (Sky/Horizon/Ground), dynamic atmosphere, and 3 presets (Daylight, Golden Hour, Night). No in-canvas sun marker.
+  * **Description:** Implement directional key light driven by Orbit/Height sliders, 3-zone ambient model (Sky/Horizon/Ground), dynamic atmosphere, and 7 time-of-day presets (Morning through Early Morning). No in-canvas sun marker.
   * **Acceptance Criteria:** Moving Orbit/Height repositions the light smoothly; clicking presets immediately updates the lighting atmosphere.
 
 * [x] **Task 1.4: Surface Finish (Matte / Satin / Glossy)**
@@ -206,10 +215,10 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Extend the viewport from one sphere to three fixed composition slots (center/near, right/mid, left/far) with a `1 / 2 / 3` count control, explicit Delete for the selected non-center sphere, nearest-empty refill, grounded placement, independent mesh instances, and a per-selected-sphere size control.
   * **Acceptance Criteria:** Count changes and Delete add/remove the correct spheres without moving the others; refills copy the center's current color at 100% size; every sphere rests on the ground; per-sphere sizes persist while the sphere exists; composition matches the reference framing at 60fps.
 
-* [ ] **Task 1.9: Aerial Perspective & Atmosphere**
-  * **State:** `planned`
-  * **Description:** Add distance-based atmospheric extinction and in-scattering for spheres, ground, and cast shadows, tinted by the horizon sky color and parameterized by a global Haze control.
-  * **Acceptance Criteria:** The far sphere is visibly hazier and lower-contrast than the mid sphere, and the mid sphere hazier than the near sphere; haze shifts sampled colors consistently; the ground and shadows fade into the same atmosphere.
+* [x] **Task 1.9: Aerial Perspective & Atmosphere**
+  * **State:** `Done`
+  * **Description:** Add single-scattering depth fog for spheres and ground: per-channel extinction plus in-scattering toward the local background (sky with a horizon haze band above the eye line, phase ground haze below). Each preset carries its own calibrated Haze amount and resets the slider when selected.
+  * **Acceptance Criteria:** The far sphere is visibly hazier and lower-contrast than the mid sphere, and the mid sphere hazier than the near sphere; the far sphere desaturates toward the background behind it without a halo; the ground fades into a horizon haze band that meets the sky; the near sphere stays exactly clear at every Haze setting; haze shifts sampled colors consistently.
 
 * [ ] **Task 1.10: Per-Sphere Color, Selection & Link Toggle**
   * **State:** `planned`

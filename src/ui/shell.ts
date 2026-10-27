@@ -84,15 +84,27 @@ export class AppShell {
               <input type="text" class="ps-input-hex" id="input-light-hex" maxlength="7" spellcheck="false" value="#FFF2EF" />
             </div>
           </div>
-          <div class="preset-segmented-control">
+          <div class="preset-segmented-control time-preset-control">
+            <button class="preset-btn" data-preset="morning" id="btn-preset-morning">
+              <span>🌤️</span> Morning
+            </button>
             <button class="preset-btn active" data-preset="midday" id="btn-preset-midday">
               <span>☀️</span> Midday
+            </button>
+            <button class="preset-btn" data-preset="afternoon" id="btn-preset-afternoon">
+              <span>🌞</span> Afternoon
+            </button>
+            <button class="preset-btn" data-preset="near-sunset" id="btn-preset-near-sunset">
+              <span>🌇</span> Near Sunset
             </button>
             <button class="preset-btn" data-preset="golden-hour" id="btn-preset-golden">
               <span>🌅</span> Golden Hour
             </button>
             <button class="preset-btn" data-preset="night" id="btn-preset-night">
               <span>🌙</span> Night
+            </button>
+            <button class="preset-btn preset-btn-wide" data-preset="early-morning" id="btn-preset-early">
+              <span>🌄</span> Early Morning
             </button>
           </div>
 
@@ -173,7 +185,7 @@ export class AppShell {
             <input type="number" class="ps-input-num" id="num-haze" min="0" max="100" value="50" />
             <span class="slider-unit">%</span>
           </div>
-          <p class="section-note" style="margin-top: 6px;">Distance-based haze affects the spheres, ground, and shadows; the sky stays unchanged.</p>
+          <p class="section-note" style="margin-top: 6px;">Depth fog: the near sphere stays clear while the mid and far spheres dissolve into the horizon haze. Selecting a time of day restores its calibrated Haze amount.</p>
         </div>
 
         <!-- Surface Finish Mode & Reflectivity Controls (Task 1.4 & Roughness / Specular Sliders) -->
@@ -230,11 +242,10 @@ export class AppShell {
             <p>• 🧭 <strong>Spheres &amp; Depth</strong>: Choose 1/2/3 spheres, then click a sphere (or use Center/Right/Left) to edit it.</p>
             <p>• 📐 <strong>Sphere Size</strong>: The Size slider edits the selected sphere and keeps it grounded.</p>
             <p>• 🔗 <strong>Link Colors</strong>: Apply one color change to every visible sphere at once.</p>
-            <p>• 🌫️ <strong>Haze</strong>: Distance-based atmosphere that shifts and softens the farther spheres.</p>
+            <p>• 🌫️ <strong>Haze</strong>: Distance-based atmosphere; far ground and spheres dissolve into the horizon.</p>
             <p>• ☀️ <strong>Sun Position Controls</strong>: Use the Orbit/Height sliders or the Time-of-Day presets.</p>
             <p>• 🌗 <strong>Terminator</strong>: 0° gives a hard lit-to-shadow edge, 45° a soft one. Presets restore their calibrated value.</p>
             <p>• 🌿 <strong>Ground Plane</strong>: Grass floor by default; customize color to see bounce light and shadow shift in real time.</p>
-            <p>• 🔍 <strong>Camera Zoom</strong>: Scroll the mouse wheel over the viewport to zoom in and out.</p>
           </div>
         </div>
       </main>
@@ -278,14 +289,6 @@ export class AppShell {
           finish,
           roughness,
           specular,
-          haze: this.viewport?.getHaze(),
-          distance: this.viewport?.getSelectedSphereDistance(),
-        });
-      });
-
-      // Camera zoom changes the selected sphere's distance (and therefore its haze).
-      this.viewport.onCameraChange(() => {
-        this.swatchRamp?.updateParameters({
           haze: this.viewport?.getHaze(),
           distance: this.viewport?.getSelectedSphereDistance(),
         });
@@ -490,6 +493,9 @@ export class AppShell {
           this.viewport.setPreset(preset);
           presetBtns.forEach((b) => b.classList.remove('active'));
           btn.classList.add('active');
+          // The preset carries its own calibrated haze amount; pull the slider
+          // and swatch ramp back in sync with it.
+          this.syncSphereUI();
         }
       });
     });
@@ -684,7 +690,7 @@ export class AppShell {
       pickerEl.click();
     });
 
-    const applyGroundColor = (hex: string) => {
+    const syncGroundUI = (hex: string) => {
       swatchEl.style.backgroundColor = hex;
       pickerEl.value = hex;
       if (hexInput !== document.activeElement) {
@@ -698,7 +704,10 @@ export class AppShell {
           b.classList.remove('active');
         }
       });
+    };
 
+    const applyGroundColor = (hex: string) => {
+      syncGroundUI(hex);
       this.viewport?.setGroundColor(hex);
       if (this.viewport) {
         this.swatchRamp?.updateParameters({
@@ -708,6 +717,13 @@ export class AppShell {
         });
       }
     };
+
+    // Time-of-day presets carry their own ground albedo (the reference ground
+    // hue changes with the phase). Mirror it into this control.
+    this.viewport.getLightingEngine().onEnvironmentChange(() => {
+      if (!this.viewport) return;
+      syncGroundUI('#' + this.viewport.getGroundColor().getHexString());
+    });
 
     pickerEl.addEventListener('input', () => {
       applyGroundColor(pickerEl.value);

@@ -18,7 +18,8 @@ export interface GroundShaderUniforms {
   uSphereCenters: { value: THREE.Vector3[] };
   uSphereRadii: { value: number[] };
   uSphereAlbedos: { value: THREE.Color[] };
-  uHaze: { value: number };
+  uGroundEffectiveHaze: { value: number };
+  uGroundHaze: { value: THREE.Color };
 }
 
 const vertexShader = /* glsl */ `
@@ -33,6 +34,9 @@ const vertexShader = /* glsl */ `
 
 const fragmentShader = /* glsl */ `
   const float PI = 3.14159265359;
+  // Mirrors core/atmosphere.ts.
+  const float HAZE_DENSITY = 0.030;
+  const float GROUND_HAZE_START = 10.0;
 
   uniform vec3 uLightDir;
   uniform vec3 uKeyColor;
@@ -52,7 +56,8 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uSphereCenters[3];
   uniform float uSphereRadii[3];
   uniform vec3 uSphereAlbedos[3];
-  uniform float uHaze;
+  uniform float uGroundEffectiveHaze;
+  uniform vec3 uGroundHaze;
 
   varying vec3 vWorldPosition;
 
@@ -71,18 +76,6 @@ const fragmentShader = /* glsl */ `
     vec3 x = max(c, vec3(0.0));
     vec3 over = max(x - vec3(0.8), vec3(0.0));
     return min(x, vec3(0.8)) + 0.2 * (1.0 - exp(-over / 0.2));
-  }
-
-  vec3 atmosphereColor(vec3 dir) {
-    if (dir.y >= 0.0) {
-      if (dir.y < 0.07) {
-        float t = dir.y / 0.07;
-        return mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
-      }
-      float t = (dir.y - 0.07) / 0.095;
-      return mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
-    }
-    return uHorizonColor;
   }
 
   void main() {
@@ -131,11 +124,15 @@ const fragmentShader = /* glsl */ `
 
     vec3 groundCol = uGroundAlbedo * lightE / PI;
 
-    // Aerial perspective, anchored to the new camera scale.
-    vec3 viewDir = normalize(P - cameraPosition);
+    // Aerial perspective. The floor's aerial colour is its own: distant ground
+    // keeps some of the ground hue instead of turning into pure sky. The same
+    // single-scattering form as the spheres -- attenuated surface plus
+    // in-scattered background -- so the horizon band and the spheres agree.
     float viewDistance = length(P - cameraPosition);
-    float hazeAmount = 1.0 - exp(-uHaze * 0.0004 * max(0.0, viewDistance - 30.0));
-    groundCol = mix(groundCol, atmosphereColor(viewDir), clamp(hazeAmount, 0.0, 0.85));
+    float opticalDepth = uGroundEffectiveHaze * HAZE_DENSITY
+      * max(0.0, viewDistance - GROUND_HAZE_START);
+    float transmittance = exp(-opticalDepth);
+    groundCol = groundCol * transmittance + uGroundHaze * (1.0 - transmittance);
 
     // Distant boundary fade: the plane's far edge reaches the eye line and the
     // fade completes before the far clip plane, so the ground meets the horizon
@@ -172,7 +169,8 @@ export function createGroundMaterial(): THREE.ShaderMaterial {
         new THREE.Color(DEFAULT_ALBEDO_HEX),
       ],
     },
-    uHaze: { value: 0.5 },
+    uGroundEffectiveHaze: { value: 0.25 },
+    uGroundHaze: { value: new THREE.Color('#6F9A50') },
   };
 
   return new THREE.ShaderMaterial({

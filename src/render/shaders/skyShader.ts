@@ -6,6 +6,9 @@ export interface SkyShaderUniforms {
   uEquatorColor: { value: THREE.Color };
   uHorizonColor: { value: THREE.Color };
   uGroundColor: { value: THREE.Color };
+  uHorizonHaze: { value: THREE.Color };
+  uHorizonBand: { value: number };
+  uGroundHaze: { value: THREE.Color };
   uLightDir: { value: THREE.Vector3 };
   uSunColor: { value: THREE.Color };
   uSunIntensity: { value: number };
@@ -26,11 +29,38 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uEquatorColor;
   uniform vec3 uHorizonColor;
   uniform vec3 uGroundColor;
+  uniform vec3 uHorizonHaze;
+  uniform float uHorizonBand;
+  uniform vec3 uGroundHaze;
   uniform vec3 uLightDir;
   uniform vec3 uSunColor;
   uniform float uSunIntensity;
 
   varying vec3 vWorldPosition;
+
+  // Normal 3-zone sky gradient, before the horizontal haze band.
+  vec3 skyBase(vec3 dir) {
+    if (dir.y >= 0.0) {
+      if (dir.y < 0.07) {
+        float t = dir.y / 0.07;
+        return mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
+      }
+      float t = (dir.y - 0.07) / 0.16;
+      return mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
+    }
+    return uHorizonColor;
+  }
+
+  // Radiance of the sky along a ray. A horizontal sight line crosses far more
+  // air than one looking up, so in-scattering is strongest at the horizon and
+  // falls off smoothly with elevation. Distant geometry uses this same
+  // function as its airlight, so an object can never fade past its background.
+  vec3 skyRadiance(vec3 dir) {
+    vec3 base = skyBase(dir);
+    float y = max(dir.y, 0.0);
+    float t = smoothstep(0.0, max(uHorizonBand, 1e-4), y);
+    return mix(uHorizonHaze, base, t);
+  }
 
   // 1/255 triangular-ish dither: removes banding in the smooth sky/form gradients.
   float ditherNoise(vec2 p) {
@@ -54,20 +84,13 @@ const fragmentShader = /* glsl */ `
     // the dome and the horizon must stay exactly on the eye line.
     vec3 dir = normalize(vWorldPosition - cameraPosition);
 
-    // 3-stop gradient. Thresholds fitted to the reference's measured sky
-    // profile over the ~14 deg of sky the landscape framing shows.
-    vec3 sky;
-    if (dir.y >= 0.0) {
-      if (dir.y < 0.07) {
-        float t = dir.y / 0.07;
-        sky = mix(uHorizonColor, uEquatorColor, smoothstep(0.0, 1.0, t));
-      } else {
-        float t = (dir.y - 0.07) / 0.095;
-        sky = mix(uEquatorColor, uZenithColor, smoothstep(0.0, 1.0, t));
-      }
-    } else {
-      float t = clamp(-dir.y / 0.3, 0.0, 1.0);
-      sky = mix(uHorizonColor, uGroundColor * 0.45, t);
+    // 3-stop gradient plus the horizontal haze band. Below the eye line the
+    // dome takes the ground's aerial colour, so the finite ground plane can
+    // fade into it at the horizon without a seam.
+    vec3 sky = skyRadiance(dir);
+    if (dir.y < 0.0) {
+      float t = smoothstep(0.0, 0.03, -dir.y);
+      sky = mix(uHorizonHaze, uGroundHaze, t);
     }
 
     // 2. Clean sky: no sun disc or halo is drawn in the preview canvas.
@@ -85,6 +108,9 @@ export function createSkyDomeMaterial(): THREE.ShaderMaterial {
     uEquatorColor: { value: new THREE.Color('#2F8CD1') },
     uHorizonColor: { value: new THREE.Color('#90BAC6') },
     uGroundColor: { value: new THREE.Color('#478503') },
+    uHorizonHaze: { value: new THREE.Color('#8EBAC3') },
+    uHorizonBand: { value: 0.03 },
+    uGroundHaze: { value: new THREE.Color('#6F9A50') },
     uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
     uSunColor: { value: new THREE.Color('#FFEFE8') },
     uSunIntensity: { value: 3.506 },

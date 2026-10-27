@@ -3,7 +3,7 @@ import { AnalyticalSwatch, calculate5ValueRamp } from '../core/swatchCalculator'
 import { LightingEnvironment } from '../core/lighting';
 import { SurfaceFinish } from '../core/types';
 import { SURFACE_FINISHES } from '../core/material';
-import { atmosphereAmount } from '../core/atmosphere';
+import { atmosphereAmount, effectiveHaze } from '../core/atmosphere';
 import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
 
 export interface SwatchRampOptions {
@@ -99,8 +99,11 @@ export class SwatchRamp {
       this.roughness,
       this.specular,
       {
-        amount: atmosphereAmount(this.haze, this.distance),
-        color: this.env.ambient.horizonColor,
+        amount: atmosphereAmount(
+          effectiveHaze(this.haze, this.env.hazeStrength, this.env.hazePreset),
+          this.distance
+        ),
+        color: this.env.horizonHaze,
       }
     );
 
