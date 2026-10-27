@@ -66,12 +66,13 @@ The project follows a **two-phase dual-target architecture**:
 │  ├─ Compact HSB Sliders + Hex Input                                    │
 │  ├─ Time-of-Day Presets (7 phases: Morning to Early Morning)           │
 │  ├─ Surface Finish Toggle (Matte / Satin / Glossy)                     │
-│  └─ Grounded Sphere Size Slider                                        │
+│  └─ Per-Sphere Size Slider                                             │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                     3D Viewport (Three.js WebGL)                       │
-│  ├─ High-Resolution Sphere Mesh (grounded, fixed camera)               │
+│  ├─ Up to 3 Grounded Spheres (near / mid / far, fixed camera)          │
+│  ├─ Single-Scattering Depth Fog + Horizon Haze Band                    │
 │  ├─ Directional Key Light + Orbit/Height Sun Sliders                   │
 │  ├─ 3-Zone Hemispherical Ambient (Sky / Horizon / Ground Bounce)       │
 │  └─ Eyedropper Pointer Controller (WebGL readPixels, throttled to RAF) │
@@ -117,15 +118,15 @@ The project follows a **two-phase dual-target architecture**:
   * **Horizon ($\hat{N}_y \approx 0$):** Soft lateral transition.
   * **Ground Bounce ($\hat{N}_y < 0$):** Underside reflection, driven only by light that actually reaches the ground (no always-on under-light).
 * **Display Pipeline:** Linear-light shading → neutral tone curve with a soft highlight shoulder → sRGB display encoding → 1/255 dithering to prevent gradient banding.
-* **Curated Presets (Phase 1):** Seven keyframes on one elevation curve, measured from the time-of-day reference sheet.
-  1. **Morning:** Pale hazy sky, soft warm low key, low contrast.
-  2. **Midday:** High side sun, pale cyan sky fill, saturated green bounce (measured).
-  3. **Afternoon:** Deep blue sky, crisp warm key, vivid green bounce.
-  4. **Near Sunset:** Low amber sun, lilac sky, long warm shadow.
-  5. **Golden Hour:** Lowest orange sun, rose sky, warm earth bounce.
-  6. **Night:** Cool moonlight, deep navy sky, faint bounce.
-  7. **Early Morning:** Before sunrise, cool ambient light and a pale rose horizon.
-  * Each keyframe owns its visible dome colours, horizon haze colour/width, lighting irradiances, key angle/softness, ground albedo, and ground/air turbidity. Clicking a preset and entering its Orbit/Height by hand produce identical pixels.
+* **Curated Presets (Phase 1):** Seven keyframes on one elevation curve, measured from the time-of-day reference sheet. Selecting a preset restores that phase's key light, sky, ground albedo, and calibrated Haze amount.
+  1. **Morning:** Pale hazy sky, soft warm low key, low contrast. Haze 43%.
+  2. **Midday:** High side sun, pale cyan sky fill, saturated green bounce (measured). Haze 3%.
+  3. **Afternoon:** Deep blue sky, crisp warm key, vivid green bounce. Haze 9%.
+  4. **Near Sunset:** Low amber sun, lilac sky, long warm shadow. Haze 60%.
+  5. **Golden Hour:** Lowest orange sun, rose sky, warm earth bounce. Haze 70%.
+  6. **Night:** Cool moonlight, deep navy sky, faint bounce. Haze 15%.
+  7. **Early Morning:** Before sunrise, cool ambient light, pale rose over a blue-gray horizon haze. Haze 60%.
+  * Each keyframe owns its visible dome colours, horizon haze colour/width, lighting irradiances, key angle/softness, ground albedo, and ground/air turbidity. Clicking a preset and entering its Orbit/Height by hand produce identical lighting at the preset's calibrated Haze; Haze is a separate control, and a preset click resets it to that phase's value.
 
 ### 4.3 Surface Finish Modes
 * **Matte (default):** Roughness 1.0, 0% reflectance (pure diffuse Lambertian).
@@ -210,8 +211,8 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Compute Highlight, Half-Tone, Terminator, Core Shadow, and Bounce Light swatches from normal vectors. Clicking any swatch applies it.
   * **Acceptance Criteria:** All 5 swatches update in real time as light/base color changes; clicking a swatch sets active color and shows tooltip.
 
-* [ ] **Task 1.8: Multi-Sphere Depth Staging**
-  * **State:** `current`
+* [x] **Task 1.8: Multi-Sphere Depth Staging**
+  * **State:** `Done`
   * **Description:** Extend the viewport from one sphere to three fixed composition slots (center/near, right/mid, left/far) with a `1 / 2 / 3` count control, explicit Delete for the selected non-center sphere, nearest-empty refill, grounded placement, independent mesh instances, and a per-selected-sphere size control.
   * **Acceptance Criteria:** Count changes and Delete add/remove the correct spheres without moving the others; refills copy the center's current color at 100% size; every sphere rests on the ground; per-sphere sizes persist while the sphere exists; composition matches the reference framing at 60fps.
 
@@ -220,8 +221,8 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Add single-scattering depth fog for spheres and ground: per-channel extinction plus in-scattering toward the local background (sky with a horizon haze band above the eye line, phase ground haze below). Each preset carries its own calibrated Haze amount and resets the slider when selected.
   * **Acceptance Criteria:** The far sphere is visibly hazier and lower-contrast than the mid sphere, and the mid sphere hazier than the near sphere; the far sphere desaturates toward the background behind it without a halo; the ground fades into a horizon haze band that meets the sky; the near sphere stays exactly clear at every Haze setting; haze shifts sampled colors consistently.
 
-* [ ] **Task 1.10: Per-Sphere Color, Selection & Link Toggle**
-  * **State:** `planned`
+* [x] **Task 1.10: Per-Sphere Color, Selection & Link Toggle**
+  * **State:** `Done`
   * **Description:** Give each sphere an independent albedo, add sphere selection (viewport click + panel selector with a transient highlight flash), and add a Link Colors toggle that applies edits to all visible spheres at once.
   * **Acceptance Criteria:** Unlinked edits affect only the selected sphere; linked edits affect all visible spheres; selection falls back to the center when the selected sphere is deleted; the swatch ramp (including depth haze) and eyedropper follow the selection.
 
@@ -230,7 +231,7 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
 ### Stage 2: Adobe Photoshop UXP Plugin Porting
 
 * [ ] **Task 2.1: UXP Manifest v5 & Packaging Configuration**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Configure `manifest.json` with entry points, panel dimensions, and Photoshop 2025 host requirements.
   * **Acceptance Criteria:** Manifest passes Adobe UXP Developer Tool validation.
 

@@ -399,11 +399,11 @@
       <div class="grid-3">
         <div class="card">
           <h4>1. In-Panel 3D Viewport</h4>
-          <p>Three.js WebGL viewport rendering a smooth, grounded 3D sphere with a fixed camera, a size slider, and Orbit/Height light-direction sliders.</p>
+          <p>Three.js WebGL viewport rendering up to three grounded spheres in fixed near/mid/far slots, with a fixed camera, a per-sphere size slider, and Orbit/Height light-direction sliders.</p>
         </div>
         <div class="card">
           <h4>2. Physical Light Simulation</h4>
-          <p>Directional key light with 3-zone ambient environment (Sky, Horizon, Ground bounce) and instant Time-of-Day presets.</p>
+          <p>Directional key light with 3-zone ambient environment (Sky, Horizon, Ground bounce) and seven calibrated Time-of-Day presets, each with its own Haze amount.</p>
         </div>
         <div class="card">
           <h4>3. Live 5-Value Swatch Ramp</h4>
@@ -514,38 +514,77 @@
         </div>
       </div>
 
-      <h3>Phase 1 Curated Presets</h3>
+      <h3>Seven Time-of-Day Presets</h3>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">
+        Each preset restores its own key light, sky, ground albedo, horizon haze, and calibrated Haze amount. Haze is expressed as a fraction of the maximum: 0% is clear air, the preset value reproduces that phase's measured atmosphere, and 100% is maximum fog.
+      </p>
       <table>
         <thead>
           <tr>
             <th>Preset</th>
             <th>Key Light</th>
-            <th>Sky Ambient</th>
-            <th>Ground Bounce</th>
+            <th>Sky / Atmosphere</th>
+            <th>Ground</th>
+            <th>Haze</th>
             <th>Artistic Use Case</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Daylight</strong></td>
-            <td>Bright warm sun ($5500\text{K}$) overhead</td>
-            <td>Cool clear blue</td>
-            <td>Warm ochre / dirt reflection</td>
-            <td>Standard outdoor day scenes, crisp value clarity.</td>
+            <td><strong>Morning</strong></td>
+            <td>Soft warm low key (24°, broad terminator)</td>
+            <td>Pale cream horizon, soft blue zenith, wide haze band</td>
+            <td>Pale olive-green, gentle bounce</td>
+            <td>43%</td>
+            <td>Pastel dawn, soft low-contrast forms.</td>
+          </tr>
+          <tr>
+            <td><strong>Midday</strong></td>
+            <td>High side sun (58°, crisp terminator)</td>
+            <td>Deep blue zenith, cyan equator, thin cyan horizon band</td>
+            <td>Saturated green, strong green bounce</td>
+            <td>3%</td>
+            <td>Clear reference light, crisp form and shadow.</td>
+          </tr>
+          <tr>
+            <td><strong>Afternoon</strong></td>
+            <td>Crisp warm side sun (19°, hard terminator)</td>
+            <td>Deep blue sky with a broad pale cream horizon band</td>
+            <td>Vivid green, olive toward the horizon</td>
+            <td>9%</td>
+            <td>Strong warm/cool form contrast.</td>
+          </tr>
+          <tr>
+            <td><strong>Near Sunset</strong></td>
+            <td>Low amber sun (13°, soft terminator)</td>
+            <td>Lilac upper sky, peach horizon band</td>
+            <td>Warm brown-gold, long shadows</td>
+            <td>60%</td>
+            <td>Long shadows, warm rim light.</td>
           </tr>
           <tr>
             <td><strong>Golden Hour</strong></td>
-            <td>Low-angle amber/orange ($3200\text{K}$)</td>
-            <td>Deep sky-blue / violet</td>
-            <td>Warm saturated ground bounce</td>
-            <td>Cinematic sunset, warm highlights with contrasting cool shadows.</td>
+            <td>Lowest orange sun (10°, soft terminator)</td>
+            <td>Rose/lilac upper sky, bright orange horizon</td>
+            <td>Dark warm earth, golden horizon</td>
+            <td>70%</td>
+            <td>Cinematic sunset, saturated warmth.</td>
           </tr>
           <tr>
             <td><strong>Night</strong></td>
-            <td>Cool pale blue moonlight rim</td>
-            <td>Deep dark navy blue</td>
-            <td>Subtle desaturated dark fill</td>
-            <td>Nighttime, moody mystery, moonlight edge-lit characters.</td>
+            <td>Dim cool moonlight (16°, soft terminator)</td>
+            <td>Deep navy sky with a blue-gray horizon band</td>
+            <td>Dark teal, near-black</td>
+            <td>15%</td>
+            <td>Moody night, faint edge light.</td>
+          </tr>
+          <tr>
+            <td><strong>Early Morning</strong></td>
+            <td>Pre-sunrise cool ambient (22°, very soft)</td>
+            <td>Lavender-pink above a blue-gray horizon haze layer</td>
+            <td>Blue-gray, cool bounce</td>
+            <td>60%</td>
+            <td>Cool dawn, very soft edges.</td>
           </tr>
         </tbody>
       </table>
@@ -622,7 +661,7 @@
       <div class="stage-card">
         <div class="stage-header">
           <div class="stage-title">Stage 1: Web Application Prototype (Vite + TypeScript + Three.js)</div>
-          <span class="status-badge current" id="stage1-badge">In Progress</span>
+          <span class="status-badge done" id="stage1-badge">Complete</span>
         </div>
         <div class="task-list">
 
@@ -647,8 +686,8 @@
           <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.3 Lighting Engine & Sun Sliders</div>
-              <div class="task-desc">Implement directional key light driven by Orbit/Height sliders, dynamic 3-zone ambient (Sky/Horizon/Ground), and 3 presets (Daylight, Golden Hour, Night). No in-canvas sun marker.</div>
-              <div class="task-criteria">Criteria: Orbit/Height sliders reposition the light smoothly; presets update ambient and key parameters.</div>
+              <div class="task-desc">Implement directional key light driven by Orbit/Height sliders, dynamic 3-zone ambient (Sky/Horizon/Ground), and seven calibrated time-of-day presets (Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night, Early Morning). No in-canvas sun marker.</div>
+              <div class="task-criteria">Criteria: Orbit/Height sliders reposition the light smoothly; each preset restores its own key, sky, ground albedo, and calibrated Haze amount.</div>
             </div>
             <span class="status-badge done">Done</span>
           </div>
@@ -689,13 +728,13 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.8 Multi-Sphere Depth Staging</div>
               <div class="task-desc">Extend the viewport from one sphere to three fixed composition slots (center/near, right/mid, left/far) with a 1 / 2 / 3 count control, explicit Delete for the selected non-center sphere, nearest-empty refill, grounded placement, independent mesh instances, and a per-selected-sphere size control.</div>
               <div class="task-criteria">Criteria: Count changes and Delete add/remove the correct spheres without moving the others; refills copy the center's current color at 100% size; every sphere rests on the ground; per-sphere sizes persist while the sphere exists; composition matches the reference at 60fps.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
           <div class="task-item" data-status="done">
@@ -707,13 +746,13 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.10 Per-Sphere Color, Selection & Link Toggle</div>
               <div class="task-desc">Give each sphere an independent albedo, add sphere selection (viewport click + panel selector with a transient highlight flash), and add a Link Colors toggle that applies edits to all visible spheres at once.</div>
               <div class="task-criteria">Criteria: Unlinked edits affect only the selected sphere; linked edits affect all visible spheres; selection falls back to center when deleted; the swatch ramp (including depth haze) and eyedropper follow selection.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge done">Done</span>
           </div>
 
         </div>
@@ -723,17 +762,17 @@
       <div class="stage-card">
         <div class="stage-header">
           <div class="stage-title">Stage 2: Adobe Photoshop UXP Plugin Porting</div>
-          <span class="status-badge planned" id="stage2-badge">Planned</span>
+          <span class="status-badge current" id="stage2-badge">In Progress</span>
         </div>
         <div class="task-list">
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">2.1 UXP Manifest v5 & Packaging Configuration</div>
               <div class="task-desc">Configure <code>manifest.json</code> with entry points, panel dimensions, and Photoshop 2025 host requirements.</div>
               <div class="task-criteria">Criteria: Manifest passes UXP Developer Tool validation.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -763,9 +802,9 @@
     <div id="depth" class="tab-content">
       <h2>Depth, Atmosphere & Multi-Sphere Composition</h2>
       <p>
-        The preview is being extended from a single sphere into a three-sphere depth study. The goal is for concept artists to compare
-        how the same lighting behaves at near, mid, and far distances, and to sample atmosphere-shifted colors directly from the render.
-        <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span>
+        The preview uses three fixed depth slots. The goal is for concept artists to compare how the same lighting behaves at near, mid,
+        and far distances, and to sample atmosphere-shifted colors directly from the render.
+        <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span>
       </p>
 
       <div class="grid-3">
@@ -857,8 +896,16 @@
             <td>Samples the final, atmosphere-affected pixel from any sphere, so haze-shifted colors can be sent directly to Photoshop's brush.</td>
           </tr>
           <tr>
+            <td><strong>Time-of-Day Presets</strong></td>
+            <td>Seven calibrated phases: Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night, Early Morning. Selecting one restores its key light, sky, ground albedo, and Haze amount. The Haze slider moves to that preset's calibrated value (Midday 3% through Golden Hour 70%).</td>
+          </tr>
+          <tr>
+            <td><strong>Haze</strong></td>
+            <td>0% clears the atmosphere, the preset value reproduces that phase's measured depth fade, and 100% reaches maximum fog. The near sphere stays exactly clear; mid and far spheres dissolve into the horizon band. Manually changing the sun keeps the current Haze; selecting a preset resets it.</td>
+          </tr>
+          <tr>
             <td><strong>Atmosphere</strong></td>
-            <td>Distance-based single scattering applied consistently to spheres and ground; the airlight is the local sky/ground behind each pixel, with a horizon haze band.</td>
+            <td>Distance-based single scattering applied consistently to spheres and ground. The airlight is the local sky/ground behind each pixel, with a smooth horizon haze band; the ground-to-sky transition is spread across the band so hazy spheres do not show a seam at the eye line.</td>
           </tr>
         </tbody>
       </table>
@@ -871,6 +918,8 @@
           the surface is attenuated by distance and mixed toward the background behind it (sky along the view ray with a horizon haze band,
           or the phase's ground haze below the eye line). Distant objects therefore desaturate toward what is actually behind them and can
           never become paler than that background. The near sphere sits inside the fog-free range so it stays an exact colour reference.
+          The ground-to-sky airlight transition is spread over the horizon band rather than snapped at the eye line, so a hazy sphere
+          reads as one form instead of two colours. Each preset owns its calibrated Haze amount, and selecting it resets the slider.
           Picking reads the final framebuffer, which means the sampled color already includes haze. The analytical swatch ramp follows the
           selected sphere, including its depth haze.
         </p>
