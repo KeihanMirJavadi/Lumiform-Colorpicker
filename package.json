@@ -1,12 +1,15 @@
 {
   "name": "lumiform-colorpicker",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Real-Time 3D Color Picker & Light Simulator for Photoshop 2025",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "plugin:build": "tsc --noEmit && vite build --config vite.plugin.config.ts && node scripts/inline-plugin-build.mjs",
+    "plugin:package": "node scripts/package-plugin.mjs",
+    "plugin": "npm run plugin:build && npm run plugin:package"
   },
   "repository": {
     "type": "git",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@types/three": "^0.186.0",
+    "archiver": "^8.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
   }
