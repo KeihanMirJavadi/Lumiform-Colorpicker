@@ -85,8 +85,9 @@ The project follows a **two-phase dual-target architecture**:
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │               Photoshop Bridge Interface (IPhotoshopBridge)            │
-│  ├─ MockPhotoshopBridge   (Web browser dev preview & verification)     │
-│  └─ UXPPhotoshopBridge    (Adobe Photoshop 2025 UXP batchPlay)         │
+│  ├─ MockPhotoshopBridge     (Web browser dev preview & verification)   │
+│  ├─ WebViewPhotoshopBridge   (WebView ↔ UXP host postMessage)          │
+│  └─ plugin/main.js           (Photoshop app.foregroundColor relay)     │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -95,7 +96,23 @@ The project follows a **two-phase dual-target architecture**:
 * **3D Library:** Three.js
 * **Build Tool:** Vite
 * **Target 1 (Phase 1):** Standalone Web Application with Mock Photoshop Bridge for rapid iteration.
-* **Target 2 (Phase 2):** Adobe UXP Plugin (Manifest v5) targeting Adobe Photoshop 2025.
+* **Target 2 (Phase 2):** Adobe UXP Plugin (Manifest v5) targeting Adobe Photoshop 2025+, distributed as a `.ccx`.
+
+### 3.1 Photoshop Add-on Runtime (Stage 2)
+
+* **Why a WebView:** A UXP panel itself has no WebGL (UXP only exposes a 2D canvas), so the Three.js renderer cannot run directly in the panel DOM. The panel therefore hosts the built web app in a **local UXP WebView** (`<webview src="plugin:/web/index.html">`). WebView2 on Windows and WKWebView on macOS provide the WebGL context, and the existing renderer, shaders, and eyedropper work unchanged.
+* **Panel shell:** `plugin/index.html` is the native UXP panel. It contains only the full-size WebView plus loading/error overlays; `plugin/main.js` is the UXP host.
+* **Bridge split:**
+  * `src/bridge/WebViewPhotoshopBridge.ts` runs inside the WebView, implements `IPhotoshopBridge`, and sends `ready`, `set-foreground` and `get-foreground` messages through `window.uxpHost`.
+  * `plugin/main.js` receives those messages, reads/writes `app.foregroundColor` through the Photoshop DOM (`SolidColor`), and pushes `status`, `foreground` and `error` messages back. Rapid eyedropper samples are coalesced into one write at a time.
+  * `getPhotoshopBridge()` selects the WebView bridge when `window.uxpHost` exists and the mock otherwise, so `npm run dev` remains fully interactive.
+* **Runtime requirements:** Photoshop 26.0+ (UXP 8.0+) for local WebView rendering. The manifest requests only `requiredPermissions.webview` (`allowLocalRendering: "yes"`, `enableMessageBridge: "localOnly"`); no network, clipboard, or filesystem permissions.
+* **Build and package:**
+  * `npm run plugin:build` type-checks, builds the web app into `plugin/web`, and inlines the JS/CSS into a single `plugin/web/index.html` (avoids the `plugin:/` ES-module/asset-origin issue).
+  * `npm run plugin:package` zips the `plugin/` contents into `release/Lumiform-Colorpicker-<version>.ccx`.
+  * `npm run plugin` runs both.
+* **Install paths:** end users double-click the `.ccx` (Creative Cloud/UPIA); developers load `plugin/manifest.json` through UXP Developer Tool; the plugin folder can also be copied into Photoshop's `Plug-ins` directory when UPIA is unavailable. Full instructions live in `Docs/PHOTOSHOP.md`.
+* **Current verification state:** The web build, inlined plugin page, bridge protocol harness, manifest structure, and `.ccx` contents are verified locally. In-Photoshop panel loading and brush updates are the remaining end-to-end check (Task 2.2/2.3).
 
 ---
 
@@ -230,17 +247,17 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
 
 ### Stage 2: Adobe Photoshop UXP Plugin Porting
 
-* [ ] **Task 2.1: UXP Manifest v5 & Packaging Configuration**
-  * **State:** `current`
-  * **Description:** Configure `manifest.json` with entry points, panel dimensions, and Photoshop 2025 host requirements.
-  * **Acceptance Criteria:** Manifest passes Adobe UXP Developer Tool validation.
+* [x] **Task 2.1: UXP Manifest v5 & Packaging Configuration**
+  * **State:** `Done`
+  * **Description:** Configure `manifest.json` with a dockable panel entry point, panel dimensions, Photoshop 2025+ host requirements, local WebView permissions, and a repeatable `.ccx` packaging script. Include panel icons and a single-file plugin web build.
+  * **Acceptance Criteria:** Manifest follows the UXP v5 schema with a valid entry point and permissions; `npm run plugin` produces a `.ccx` whose root contains `manifest.json`, the panel shell, icons, and the inlined web app. UDT validation is rechecked when the plugin is first loaded in Photoshop.
 
-* [ ] **Task 2.2: Photoshop Bridge Implementation (UXPPhotoshopBridge)**
-  * **State:** `planned`
-  * **Description:** Implement `UXPPhotoshopBridge` connecting sampled colors to Photoshop's `app.foregroundColor` via UXP batchPlay.
-  * **Acceptance Criteria:** Clicking sphere or swatches inside Photoshop panel updates active brush color with zero lag.
+* [ ] **Task 2.2: Photoshop Bridge Implementation (WebViewPhotoshopBridge + UXP host)**
+  * **State:** `current`
+  * **Description:** Implement the WebView-side `WebViewPhotoshopBridge` and the UXP host relay in `plugin/main.js`: `ready`/`set-foreground`/`get-foreground` messages in, `status`/`foreground`/`error` messages out, `app.foregroundColor` reads/writes, and coalesced eyedropper writes.
+  * **Acceptance Criteria:** Clicking a sphere, swatch, or dragging the picker inside the Photoshop panel updates the active brush color with no visible lag; external Photoshop foreground changes update the panel status bar. Bridge protocol is verified in a browser harness; the in-Photoshop check is the remaining step.
 
 * [ ] **Task 2.3: End-to-End Photoshop Verification & Polish**
   * **State:** `planned`
-  * **Description:** Load into Adobe Photoshop 2025 via UDT, test panel docking, resizing, theme consistency, and paint responsiveness.
-  * **Acceptance Criteria:** Plugin runs stably in Photoshop 2025 with full bi-directional brush responsiveness.
+  * **Description:** Load the packaged plugin into Adobe Photoshop 2025+ via UDT or the `.ccx`, test panel docking, resizing, high-DPI scaling, WebGL startup, and paint responsiveness.
+  * **Acceptance Criteria:** Plugin runs stably in Photoshop 2025+ with full bi-directional brush responsiveness and no panel-layout regressions.

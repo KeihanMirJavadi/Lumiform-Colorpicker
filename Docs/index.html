@@ -410,6 +410,31 @@
           <p>Mathematically accurate real-time swatches: Highlight, Half-Tone, Terminator, Core Shadow, and Bounce Light.</p>
         </div>
       </div>
+
+      <h3>Photoshop Add-on (v1.0)</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Dockable UXP Panel</h4>
+          <p>
+            The first Photoshop version ships as a UXP Manifest v5 panel. It hosts the existing Three.js renderer in a
+            local WebView, so the lighting, haze, swatches, and eyedropper are identical to the browser build.
+            <span class="badge-tag" style="background:rgba(59,130,246,0.2); color:#93c5fd; border:1px solid rgba(59,130,246,0.4);">Packaged</span>
+          </p>
+        </div>
+        <div class="card">
+          <h4>Foreground Color Bridge</h4>
+          <p>
+            Picking a sphere, swatch, or reticle posts the color to the UXP host, which writes Photoshop's
+            <code>app.foregroundColor</code>. External brush changes flow back to the panel status bar.
+            <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In-Photoshop check pending</span>
+          </p>
+        </div>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">
+        Install: download <code>Lumiform-Colorpicker-1.0.0.ccx</code> (or build it with <code>npm run plugin</code>),
+        double-click it through Creative Cloud, or load <code>plugin/manifest.json</code> through UXP Developer Tool.
+        Full guide: <code>Docs/PHOTOSHOP.md</code>.
+      </p>
     </div>
 
     <!-- TAB 2: SPECS -->
@@ -444,10 +469,30 @@
                                        ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                Photoshop Bridge Interface (IPhotoshopBridge)           │
-│  ├─ MockPhotoshopBridge   (Browser dev: logs & updates visual swatch)  │
-│  └─ UXPPhotoshopBridge    (Photoshop 2025: app.foregroundColor)        │
+│  ├─ MockPhotoshopBridge       (Browser dev: logs & visual swatch)       │
+│  └─ WebView bridge + UXP host (Photoshop: app.foregroundColor)          │
 └────────────────────────────────────────────────────────────────────────┘
         </pre>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <h4>Photoshop Add-on Runtime (UXP Panel + Local WebView)</h4>
+        <p>
+          UXP panels do not provide WebGL, so the dockable Photoshop panel hosts the built Three.js app in a
+          <strong>local UXP WebView</strong> (<code>plugin:/web/index.html</code>). WebView2 on Windows and WKWebView on
+          macOS provide the WebGL context, so the existing renderer, shaders, and eyedropper run unchanged.
+        </p>
+        <ul style="font-size:13px; margin-left:18px; margin-top:8px; color:#cbd5e1;">
+          <li><strong>Panel shell:</strong> <code>plugin/index.html</code> — full-size WebView plus loading/error overlays.</li>
+          <li><strong>Host relay:</strong> <code>plugin/main.js</code> — reads/writes <code>app.foregroundColor</code>, coalesces rapid samples, polls external changes.</li>
+          <li><strong>WebView bridge:</strong> <code>src/bridge/WebViewPhotoshopBridge.ts</code> — implements the same bridge interface as the mock.</li>
+          <li><strong>Package:</strong> <code>npm run plugin</code> → <code>release/Lumiform-Colorpicker-1.0.0.ccx</code>.</li>
+        </ul>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
+          The web app is inlined into one HTML file to avoid module/asset resolution on the <code>plugin:/</code> origin.
+          Requirements: Photoshop 2025 (26.0+) or 2026; install via the <code>.ccx</code>, UXP Developer Tool, or the
+          Photoshop <code>Plug-ins</code> folder. See <code>Docs/PHOTOSHOP.md</code>.
+        </p>
       </div>
 
       <h3>Technology Stack</h3>
@@ -462,13 +507,13 @@
         <tbody>
           <tr>
             <td>3D Graphics</td>
-            <td>Three.js (WebGL)</td>
-            <td>Lightweight, flexible custom GLSL shaders, fast canvas pixel readback.</td>
+            <td>Three.js (WebGL, inside a local UXP WebView)</td>
+            <td>Lightweight, flexible custom GLSL shaders, fast canvas pixel readback. The WebView supplies the WebGL context that a UXP panel lacks.</td>
           </tr>
           <tr>
             <td>Build System</td>
             <td>Vite + TypeScript</td>
-            <td>Instant HMR, strict type safety, optimized production bundles for UXP.</td>
+            <td>Instant HMR, strict type safety, and a plugin build that inlines the app into one HTML file.</td>
           </tr>
           <tr>
             <td>UI Styling</td>
@@ -477,8 +522,18 @@
           </tr>
           <tr>
             <td>Plugin Target</td>
-            <td>Adobe UXP Manifest v5</td>
-            <td>Modern Photoshop 2025 standard, replaces deprecated CEP panels.</td>
+            <td>Adobe UXP Manifest v5 + local WebView</td>
+            <td>Modern Photoshop 2025+ standard, replaces deprecated CEP panels; WebView preserves the existing WebGL renderer.</td>
+          </tr>
+          <tr>
+            <td>Photoshop Bridge</td>
+            <td>WebView <code>postMessage</code> + UXP <code>app.foregroundColor</code></td>
+            <td>Isolates Photoshop API access in the panel host and coalesces eyedropper updates before they reach the brush.</td>
+          </tr>
+          <tr>
+            <td>Distribution</td>
+            <td>Unsigned <code>.ccx</code> (ZIP)</td>
+            <td>Double-click install through Creative Cloud/UPIA, or load the manifest through UXP Developer Tool.</td>
           </tr>
         </tbody>
       </table>
@@ -766,29 +821,29 @@
         </div>
         <div class="task-list">
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">2.1 UXP Manifest v5 & Packaging Configuration</div>
-              <div class="task-desc">Configure <code>manifest.json</code> with entry points, panel dimensions, and Photoshop 2025 host requirements.</div>
-              <div class="task-criteria">Criteria: Manifest passes UXP Developer Tool validation.</div>
+              <div class="task-desc">Configure <code>manifest.json</code> with a dockable panel entry point, Photoshop 2025+ host requirements, local WebView permissions, panel icons, and a repeatable <code>.ccx</code> packaging script. Build the web app into a single inlined HTML file for the <code>plugin:/</code> origin.</div>
+              <div class="task-criteria">Criteria: Manifest follows the UXP v5 schema; <code>npm run plugin</code> produces a <code>.ccx</code> whose root contains <code>manifest.json</code>, the panel shell, icons, and the inlined web app. UDT validation is rechecked on first load.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="current">
+            <div class="task-info">
+              <div class="task-name">2.2 Photoshop Bridge Implementation (WebViewPhotoshopBridge)</div>
+              <div class="task-desc">Connect color sampling to Photoshop's <code>app.foregroundColor</code>. The WebView-side bridge sends <code>ready</code>/<code>set-foreground</code>/<code>get-foreground</code> messages to <code>plugin/main.js</code>, which reads/writes a <code>SolidColor</code>, coalesces rapid eyedropper samples, and pushes external foreground changes back to the panel.</div>
+              <div class="task-criteria">Criteria: Clicking a sphere, swatch, or dragging the picker changes the active brush color with no visible lag; external Photoshop color changes update the panel status bar. The protocol harness passes; the in-Photoshop check remains.</div>
             </div>
             <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
             <div class="task-info">
-              <div class="task-name">2.2 Photoshop Bridge Implementation (UXPPhotoshopBridge)</div>
-              <div class="task-desc">Connect color sampling directly to Photoshop's <code>app.foregroundColor</code> using UXP batchPlay.</div>
-              <div class="task-criteria">Criteria: Clicking sphere or swatches inside Photoshop panel changes active brush color with zero lag.</div>
-            </div>
-            <span class="status-badge planned">planned</span>
-          </div>
-
-          <div class="task-item" data-status="planned">
-            <div class="task-info">
               <div class="task-name">2.3 End-to-End Photoshop Verification & Polish</div>
-              <div class="task-desc">Verify in Adobe Photoshop 2025 via UDT, test dockability, panel resizing, and high-DPI scaling.</div>
-              <div class="task-criteria">Criteria: Plugin operates seamlessly inside Photoshop workspace.</div>
+              <div class="task-desc">Load the packaged plugin in Adobe Photoshop 2025+ via UDT or the <code>.ccx</code>, test panel docking, resizing, high-DPI scaling, WebGL startup, and paint responsiveness.</div>
+              <div class="task-criteria">Criteria: Plugin runs stably in Photoshop 2025+ with full bi-directional brush responsiveness and no panel-layout regressions.</div>
             </div>
             <span class="status-badge planned">planned</span>
           </div>
