@@ -26,7 +26,7 @@ export class AppShell {
     this.root.innerHTML = `
       <header class="app-header">
         <span class="app-logo">Lumiform Colorpicker</span>
-        <span class="app-version">v0.1.0</span>
+        <span class="app-version">v1.0.0</span>
       </header>
 
       <main class="panel-content">

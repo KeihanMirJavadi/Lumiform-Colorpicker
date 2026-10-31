@@ -1,0 +1,106 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #1e1e1e;
+  color: #ececec;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #1e1e1e;
+}
+
+#lumiformView {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #1e1e1e;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1e1e1e;
+  z-index: 10;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 300px;
+  padding: 18px;
+  text-align: center;
+}
+
+.overlay-card strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.muted {
+  color: #9e9e9e;
+  font-size: 11px;
+}
+
+.small {
+  font-size: 10px;
+  color: #6f6f6f;
+}
+
+#errorMessage {
+  margin: 0;
+  word-break: break-word;
+}
+
+#reloadButton {
+  margin-top: 4px;
+  padding: 6px 14px;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  background-color: #2d2d2d;
+  color: #ececec;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+#reloadButton:hover {
+  background-color: #383838;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #3a3a3a;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
