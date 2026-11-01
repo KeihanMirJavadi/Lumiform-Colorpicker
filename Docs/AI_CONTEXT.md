@@ -330,13 +330,13 @@ lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unc
   * **Description:** Added a temporary UXP theme probe (`tools/theme-probe/`, packaged by `npm run probe:package`) reporting `document.theme.getCurrent()`, live theme changes, `--uxp-host-*`, `app.appSkinInfo` and a timestamped log, writing one JSON snapshot per theme. Confirmed Black/Dark Gray/Medium Gray/Light Gray -> `darkest`/`dark`/`light`/`lightest`; froze the four palettes and token sheet in `AI_CONTEXT_UI.md` 10.3.1 from Adobe's theme files. No reskin behaviour shipped.
   * **Acceptance Criteria:** Met - a theme name was captured for each of the four Photoshop themes, live changes were observed, four palettes and the token sheet are documented, and no reskin behaviour shipped.
 
-* [ ] **Task 4.2: Flat shell, compact header and status bar**
-  * **State:** `current`
-  * **Description:** Replace section cards with flat rows, 1 px dividers and no shadows or oversized radii. Add the compact Photoshop-like header, workspace-coloured canvas frame and 22-24 px status bar. Preserve the V1.1 spine, closed `<details>` defaults and live summaries.
-  * **Acceptance Criteria:** At 320/420/600 the panel has no card look, the header is compact, the status bar is pinned, all four closed summaries remain live and the active theme palette is applied.
+* [x] **Task 4.2: Flat shell, compact header and status bar**
+  * **State:** `Done`
+  * **Description:** Replaced section cards with flat rows, 1 px dividers, no shadows and 2 px radii. Added the 28 px header, workspace matte around the unchanged 412:227 canvas and 24 px status bar. Added the four frozen palettes behind `data-ps-theme` (Dark Gray default) and neutralised the blue chrome. Preserved the V1.1 spine, closed `<details>` defaults and live summaries.
+  * **Acceptance Criteria:** Met - at 320/420/600 there is no card look, the header is compact, the status bar is pinned, the four closed summaries remain live and the active palette is applied.
 
 * [ ] **Task 4.3: Control reskin**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Restyle buttons, sphere toggles, links, checkboxes, hex/number fields, disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states and a 1 px focus outline. Leave the time-of-day control untouched.
   * **Acceptance Criteria:** Every control is usable at 320 px; selected/active states use the sampled tint; no blue chrome or hover lift; the time gradient, thumb and geometry are unchanged.
 

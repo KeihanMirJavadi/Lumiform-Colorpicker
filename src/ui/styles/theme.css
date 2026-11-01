@@ -1684,3 +1684,210 @@ details.section-card {
 .guide-github-arrow {
   color: var(--ps-ink-secondary);
 }
+
+/* ==========================================================================
+   V1.2 control reskin (Task 4.3)
+
+   22-24 px density, ~2 px radii, neutral hover/selected states, 1 px focus.
+   The time-of-day slider keeps its exact geometry, gradient and thumb (P15);
+   only the surrounding icon buttons inherit the neutral selected token.
+   ========================================================================== */
+
+/* --- toggles and links --------------------------------------------------- */
+
+.sphere-toggle {
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sphere-toggle[data-state='off'] {
+  border-style: solid;
+  border-color: var(--ps-line);
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+}
+
+.sphere-toggle[data-state='on'] {
+  border-color: var(--ps-line-strong);
+  background-color: var(--ps-field);
+  color: var(--ps-ink);
+}
+
+.sphere-toggle:hover:not([data-state='selected']) {
+  border-color: var(--ps-line-strong);
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+.sphere-link-row {
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+
+.check-row {
+  min-height: 24px;
+  font-size: 11px;
+  color: var(--ps-ink-secondary);
+}
+
+/* Native-looking checkbox: 14 px square, neutral fill, ink check. */
+.check-row input[type='checkbox'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 2px;
+  background-color: var(--ps-field);
+  position: relative;
+  cursor: pointer;
+}
+
+.check-row input[type='checkbox']:checked {
+  background-color: var(--ps-selected);
+  border-color: var(--ps-line-strong);
+}
+
+.check-row input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 5px;
+  height: 8px;
+  border-right: 1.5px solid var(--ps-ink);
+  border-bottom: 1.5px solid var(--ps-ink);
+  transform: rotate(45deg);
+}
+
+.check-row input[type='checkbox']:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+/* --- disclosures and notes ---------------------------------------------- */
+
+.hsb-summary {
+  min-height: 24px;
+  padding: 2px 0;
+}
+
+.hsb-title {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.section-note,
+.ramp-click-hint {
+  color: var(--ps-ink-secondary);
+  opacity: 1;
+}
+
+/* --- segmented presets --------------------------------------------------- */
+
+.preset-segmented-control {
+  gap: 2px;
+  padding: 1px;
+}
+
+.finish-btn,
+.ground-preset-btn {
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.finish-btn:hover,
+.ground-preset-btn:hover {
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+/* --- fields -------------------------------------------------------------- */
+
+.ps-input-hex,
+.ps-input-num {
+  height: 24px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-input-hex {
+  width: 76px;
+}
+
+.ps-input-num {
+  width: 46px;
+}
+
+.albedo-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  border-color: var(--ps-line-strong);
+}
+
+.albedo-send-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+}
+
+/* --- swatch ramp --------------------------------------------------------- */
+
+.swatch-block {
+  border-radius: 2px;
+}
+
+.swatch-tag {
+  letter-spacing: 0;
+}
+
+.swatch-hex {
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- sliders: scoped so the time-of-day control is untouched (P15) ------- */
+
+.ps-slider:not(.time-range) {
+  border-color: var(--ps-line);
+}
+
+.ps-slider:not(.time-range)::-webkit-slider-thumb {
+  box-shadow: none;
+  transition: none;
+}
+
+.ps-slider:not(.time-range)::-webkit-slider-thumb:hover {
+  transform: none;
+}
+
+.ps-slider:not(.time-range)::-moz-range-thumb {
+  box-shadow: none;
+}
+
+.slider-unit {
+  color: var(--ps-ink-secondary);
+}
+
+/* The edited marker used to be amber; the time gradient is the only colour
+   accent allowed in the V1.2 chrome. */
+.time-state-edited {
+  color: var(--ps-ink-secondary);
+  font-style: italic;
+}
+
+/* Readable hints on the two light themes: the frozen muted token is Adobe's
+   disabled colour, so hint text uses the secondary ink instead (P17). */
+.active-brush-label {
+  color: var(--ps-ink-secondary);
+}

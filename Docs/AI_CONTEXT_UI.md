@@ -12,12 +12,12 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.2 current) |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.3 current) |
 | Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.1.0 - `release/Lumiform-Colorpicker-1.1.0.ccx` |
 | Next release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (planned) |
-| Current task | **4.2 - Flat shell, compact header and status bar** |
+| Current task | **4.3 - Control reskin** |
 | Renderer changes | None across V1.1/V1.2. `src/core/framing.ts` and the shaders stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for both UI phases. |
@@ -581,7 +581,7 @@ Rules:
 
 ### 10.5 Stage 4 roadmap
 
-States follow the parent protocol. Only **4.2** is `current`.
+States follow the parent protocol. Only **4.3** is `current`.
 
 * [x] **Task 4.1: Theme probe, reference freeze and token foundation**
   * **State:** `Done`
@@ -596,16 +596,18 @@ States follow the parent protocol. Only **4.2** is `current`.
   * **Evidence:** probe captures at 18:12 and the controlled pass at 18:34-18:35; `theme-d/darkest/light/lightest.json`
     and `theme-latest.json` in the probe's `PluginData` folder.
 
-* [ ] **Task 4.2: Flat shell, compact header and status bar**
-  * **State:** `current`
-  * **Description:** Replace section cards with flat rows on the panel background, 1 px dividers, no shadows or
-    oversized radii. Add the compact Photoshop-like header, the workspace-coloured canvas frame and the 22-24 px
-    status bar. Preserve the V1.1 spine, closed `<details>` defaults and live summaries.
-  * **Acceptance Criteria:** At 320/420/600 the panel has no card look, the header is compact, the status bar is
-    pinned, all four closed summaries remain live and the active theme palette is applied.
+* [x] **Task 4.2: Flat shell, compact header and status bar**
+  * **State:** `Done`
+  * **Description:** Replaced section cards with flat rows on the panel surface, 1 px dividers, no shadows and 2 px
+    radii. Added the 28 px header, the workspace matte around the unchanged 412:227 canvas and the 24 px pinned
+    status bar. Added the four frozen palettes behind `data-ps-theme` (Dark Gray default) and neutralised the
+    remaining blue chrome. Preserved the V1.1 spine, closed `<details>` defaults and live summaries.
+  * **Acceptance Criteria:** Met - at 320/420/600 there is no card look, the header is 28 px, the status bar is
+    24 px and pinned, all four closed summaries remain live (24 px rows), and the active palette is applied for all
+    four themes. Verified with computed styles and width sweeps; no horizontal control overflow.
 
 * [ ] **Task 4.3: Control reskin**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Restyle buttons, three-state sphere toggles, link rows, checkboxes, hex/number fields,
     disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states, a 1 px
     focus outline and no transforms or glow. Leave the time-of-day control untouched.
@@ -724,3 +726,5 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 | 2026-11-01 | V1.2 plan locked. The Photoshop reference sampled Medium Gray chrome; the four-theme host relay, flat native skin, line icons, Segoe UI, neutral selection and manual Appearance override were agreed. Stage 4 added with Task 4.1 current. |
 | 2026-11-01 | Task 4.1 probe built in `tools/theme-probe/` and packaged as `Lumiform-ThemeProbe-1.0.0.ccx`. It reports the theme name, live `onUpdated` events, `--uxp-host-*` colours and `app.appSkinInfo`, and saves one JSON snapshot per theme into its `PluginData` folder so palettes are frozen from exact values instead of screenshots. Installed into Photoshop's `Plug-ins` folder for the capture run. |
 | 2026-11-01 | Task 4.1 Done. The probe confirmed live `document.theme` changes but found no `--uxp-host-*` variables and no `app.appSkinInfo` in a third-party panel. Photoshop's own `host-theme.css`, `DesignAppColorThemesV5.xml` and `UIColors.txt` supplied the authoritative four-theme palette. A controlled Black -> Dark Gray -> Medium Gray -> Light Gray pass confirmed `darkest` / `dark` / `light` / `lightest`. The reference was re-identified as **Dark Gray**, not Medium Gray, and the sampled header/status greys were found not to be theme tokens. The four palettes and the semantic token sheet are frozen in 10.3.1. Task 4.2 is current. |
+| 2026-11-01 | Task 4.2 Done. Flat surfaces replace the card stack: 28 px header, 1 px dividers, workspace matte around the unchanged canvas, 24 px status bar and no decorative shadows. The four frozen palettes live behind `data-ps-theme` with Dark Gray as the P5/P24 fallback; the legacy V1.1 tokens alias the new semantic ones. Verified at 320/420/600 with no control overflow. Task 4.3 is current. |
+| 2026-11-01 | Task 4.3 implemented. Controls now use 24 px rows, 2 px radii, a custom neutral checkbox, Segoe UI tabular numerals in hex/number fields, and neutral hover/selected states with no lift or glow. Slider changes are scoped with `:not(.time-range)`, so the time-of-day gradient, thumb and geometry remain untouched. Awaiting visual review. |

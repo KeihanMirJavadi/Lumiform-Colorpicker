@@ -986,22 +986,22 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">4.2 Flat shell, compact header and status bar</div>
-              <div class="task-desc">Replace section cards with flat rows, 1 px dividers and no shadows or oversized radii. Add the compact Photoshop-like header, workspace-coloured canvas frame and 22-24 px status bar. Preserve the V1.1 spine, closed <code>&lt;details&gt;</code> defaults and live summaries.</div>
-              <div class="task-criteria">Criteria: At 320/420/600 the panel has no card look, the header is compact, the status bar is pinned, all four closed summaries remain live and the active theme palette is applied.</div>
+              <div class="task-desc">Replaced section cards with flat rows, 1 px dividers, no shadows and 2 px radii. Added the 28 px header, workspace matte around the unchanged 412:227 canvas and 24 px status bar. Added the four frozen palettes behind <code>data-ps-theme</code> (Dark Gray default) and neutralised the blue chrome.</div>
+              <div class="task-criteria">Criteria met: no card look at 320/420/600, compact header, pinned 24 px status bar, live closed summaries and the active palette applied.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">4.3 Control reskin</div>
               <div class="task-desc">Restyle buttons, sphere toggles, links, checkboxes, hex/number fields, disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states and a 1 px focus outline. Leave the time-of-day control untouched.</div>
               <div class="task-criteria">Criteria: Every control is usable at 320 px; selected/active states use the sampled tint; no blue chrome or hover lift; the time gradient, thumb and geometry are unchanged.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -1459,8 +1459,8 @@ black / darkGray / mediumGray / lightGray token sets
         </thead>
         <tbody>
           <tr><td>4.1 Theme probe, reference freeze and token foundation</td><td><span class="status-badge done">Done</span></td><td>Theme API confirmed live; four palettes and token sheet frozen from Adobe's files.</td></tr>
-          <tr><td>4.2 Flat shell, compact header and status bar</td><td><span class="status-badge current">current</span></td><td>No cards or shadows; compact native shell.</td></tr>
-          <tr><td>4.3 Control reskin</td><td><span class="status-badge planned">planned</span></td><td>22-24 px native controls; time gradient untouched.</td></tr>
+          <tr><td>4.2 Flat shell, compact header and status bar</td><td><span class="status-badge done">Done</span></td><td>Flat surfaces, 28 px header, 24 px status bar, four palettes.</td></tr>
+          <tr><td>4.3 Control reskin</td><td><span class="status-badge current">current</span></td><td>22-24 px native controls; time gradient untouched.</td></tr>
           <tr><td>4.4 Typography and icon set</td><td><span class="status-badge planned">planned</span></td><td>Segoe UI, sentence case, 14 line icons.</td></tr>
           <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge planned">planned</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
           <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge planned">planned</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
