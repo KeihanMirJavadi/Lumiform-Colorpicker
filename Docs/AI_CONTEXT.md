@@ -283,13 +283,13 @@ States are mirrored here so the parent protocol keeps working.
   * **Description:** Rebuild the panel shell into the V1.1 spine (header, canvas, time of day, ramp, spheres, sun & atmosphere, ground, surface finish, status bar). Replace section cards with `<details>` blocks that start closed, add the header info affordance and live collapsed-header summaries.
   * **Acceptance Criteria:** At 320/420/600 px the panel shows the new spine with four closed, correctly summarised sections; opening each reveals its controls; the status bar stays pinned.
 
-* [ ] **Task 3.2: Time-of-day strip (icons + snapped slider + detach/↺)**
-  * **State:** `current`
+* [x] **Task 3.2: Time-of-day strip (icons + snapped slider + detach/↺)**
+  * **State:** `Done`
   * **Description:** Seven icon buttons in one row above a snapping slider, chronological preset order, live relighting, and the detach rule for all six lighting controls with the `· edited ↺` reset label.
   * **Acceptance Criteria:** Clicking and dragging the strip agree; crossing a stop relights immediately; moving any lighting control clears all buttons and shows `edited`; `↺` restores the calibrated preset; one line at 320 px.
 
 * [ ] **Task 3.3: Sphere model - Near/Mid/Far toggles, merged panel, size link**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Rename spheres to Near/Mid/Far, replace the count control and Delete with three-state toggles, add the last-sphere guard, restore-on-re-enable, selection fallback, Link Size, and the merged sphere panel with size, albedo and the nested H/S/B disclosure.
   * **Acceptance Criteria:** Toggles enable/select/disable as specified; the last sphere cannot be disabled; re-enabling restores colour and size; link toggles equalise immediately; no count or Delete control remains.
 
