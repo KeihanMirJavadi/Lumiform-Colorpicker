@@ -12,12 +12,12 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.6 current) |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.7 current) |
 | Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.1.0 - `release/Lumiform-Colorpicker-1.1.0.ccx` |
 | Next release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built, awaiting install/review) |
-| Current task | **4.6 - Guide and UXP host shell** |
+| Current task | **4.7 - Verification, documentation and release** |
 | Renderer changes | None across V1.1/V1.2. `src/core/framing.ts` and the shaders stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for both UI phases. |
@@ -581,7 +581,7 @@ Rules:
 
 ### 10.5 Stage 4 roadmap
 
-States follow the parent protocol. Only **4.6** is `current`.
+States follow the parent protocol. Only **4.7** is `current`.
 
 * [x] **Task 4.1: Theme probe, reference freeze and token foundation**
   * **State:** `Done`
@@ -632,15 +632,18 @@ States follow the parent protocol. Only **4.6** is `current`.
     reloads and ignores host changes, Auto resumes following the host, the fallback is Dark Gray, and there is no
     update loop. The in-Photoshop live check is part of 4.7.
 
-* [ ] **Task 4.6: Guide and UXP host shell**
-  * **State:** `current`
-  * **Description:** Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub.
-    Restyle the loading/error shell with `--uxp-host-*` and a neutral spinner.
-  * **Acceptance Criteria:** The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still
-    work; the GitHub row still opens externally; the host shell matches the active theme and has no blue accent.
+* [x] **Task 4.6: Guide and UXP host shell**
+  * **State:** `Done`
+  * **Description:** Restyled the guide as a native dialog: 1 px border, 2 px radius, 28-30 px title bar, flat
+    sections with hairline dividers, no large shadow, sentence-case headings, and the Appearance row above GitHub.
+    Rewrote the UXP host shell to follow Photoshop with `prefers-color-scheme` blocks and `--uxp-host-*` fallbacks,
+    with a neutral spinner and button.
+  * **Acceptance Criteria:** Met in the browser: the guide covers the panel and is readable in all four themes
+    (verified by computed colours), Back/Esc/backdrop close it, sections stay flat, and there is no blue in the
+    guide or host shell. The in-Photoshop host-shell check is part of 4.7.
 
 * [ ] **Task 4.7: Verification, documentation and release**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check
     contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild
     the `.ccx`.
@@ -734,3 +737,4 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 | 2026-11-01 | Task 4.3 Done. Controls use 24 px rows, 2 px radii, a custom neutral checkbox, Segoe UI tabular numerals in hex/number fields, and neutral hover/selected states with no lift or glow. Slider changes are scoped with `:not(.time-range)`, so the time-of-day gradient, thumb and geometry remain untouched. Ground presets reflow to 2x2 below 380 px; no controls clip at 320. |
 | 2026-11-01 | Task 4.4 Done. All 14 emoji and the info/reset/close/external glyphs are replaced by 19 inline 16 px line SVGs (1.5 px stroke, `currentColor`); the seven time icons stay on one row at 320 px and labels/aria text are unchanged. Version bumped to 1.2.0 and `release/Lumiform-Colorpicker-1.2.0.ccx` packaged for the first in-Photoshop review. Task 4.5 is current. |
 | 2026-11-01 | Task 4.5 Done. The host relays `document.theme` live and appends `?theme=` to the WebView URL; the bridge exposes `onThemeChange`; the guide's Appearance row offers Auto plus the four themes and persists the choice in `localStorage`. Verified in the browser with the mock: Auto follows simulated host switches, a pinned theme survives reloads and ignores host changes, and the URL bootstrap paints the right palette before the shell renders. The 1.2.0 package was rebuilt with the relay. Task 4.6 is current. |
+| 2026-11-01 | Task 4.6 Done. The guide is a flat native dialog (1 px border, 2 px radius, compact title bar, hairline section dividers, no shadow) with the Appearance row above GitHub; Back/Esc/backdrop all close it. The UXP loading/error shell now follows the four themes through `prefers-color-scheme` with `--uxp-host-*` fallbacks, a neutral spinner and no blue. Verified in the browser; the host-shell theme check remains for 4.7, which is current. |

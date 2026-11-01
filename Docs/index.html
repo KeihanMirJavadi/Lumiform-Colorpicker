@@ -1022,22 +1022,22 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">4.6 Guide and UXP host shell</div>
-              <div class="task-desc">Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub. Restyle the loading/error shell with <code>--uxp-host-*</code> and a neutral spinner.</div>
-              <div class="task-criteria">Criteria: The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still work; the GitHub row still opens externally; the host shell matches the active theme with no blue accent.</div>
+              <div class="task-desc">The guide is a flat native dialog (1 px border, 2 px radius, compact title bar, hairline dividers, no shadow) with the Appearance row above GitHub. The UXP loading/error shell follows the four themes via <code>prefers-color-scheme</code> with <code>--uxp-host-*</code> fallbacks, a neutral spinner and no blue.</div>
+              <div class="task-criteria">Criteria met in the browser: readable in all four themes, Back/Esc/backdrop close, no blue in the guide or host shell. In-Photoshop host-shell check is part of 4.7.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">4.7 Verification, documentation and release</div>
               <div class="task-desc">Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild the <code>.ccx</code>.</div>
               <div class="task-criteria">Criteria: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; every earlier criterion is demonstrated; four-theme screenshots and docs match; <code>Lumiform-Colorpicker-1.2.0.ccx</code> is produced.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
         </div>
@@ -1463,8 +1463,8 @@ black / darkGray / mediumGray / lightGray token sets
           <tr><td>4.3 Control reskin</td><td><span class="status-badge done">Done</span></td><td>24 px native controls; time gradient untouched.</td></tr>
           <tr><td>4.4 Typography and icon set</td><td><span class="status-badge done">Done</span></td><td>Segoe UI, sentence case, 19 line icons.</td></tr>
           <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge done">Done</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
-          <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge current">current</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
-          <tr><td>4.7 Verification, documentation and release</td><td><span class="status-badge planned">planned</span></td><td>Four-theme checks, docs sync, 1.2.0 <code>.ccx</code>.</td></tr>
+          <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge done">Done</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
+          <tr><td>4.7 Verification, documentation and release</td><td><span class="status-badge current">current</span></td><td>Four-theme checks, docs sync, 1.2.0 <code>.ccx</code>.</td></tr>
         </tbody>
       </table>
 

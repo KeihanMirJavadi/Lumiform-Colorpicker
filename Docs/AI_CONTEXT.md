@@ -350,12 +350,12 @@ lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unc
   * **Description:** The host relays `document.theme` live and appends `?theme=` to the WebView URL; the bridge exposes `onThemeChange`; the guide's Appearance row offers Auto plus the four themes and persists the choice in `localStorage`. The mock bridge mirrors the host for browser development.
   * **Acceptance Criteria:** Met in the browser: Auto follows simulated host switches, a pinned choice survives reloads and ignores host changes, Auto resumes, the fallback is Dark Gray, and there is no update loop. The in-Photoshop live check remains for 4.7.
 
-* [ ] **Task 4.6: Guide and UXP host shell**
-  * **State:** `current`
-  * **Description:** Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub. Restyle the loading/error shell with `--uxp-host-*` and a neutral spinner.
-  * **Acceptance Criteria:** The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still work; the GitHub row still opens externally; the host shell matches the active theme with no blue accent.
+* [x] **Task 4.6: Guide and UXP host shell**
+  * **State:** `Done`
+  * **Description:** The guide is a flat native dialog (1 px border, 2 px radius, 28-30 px title bar, hairline section dividers, no shadow) with the Appearance row above GitHub. The UXP loading/error shell follows the four themes via `prefers-color-scheme` with `--uxp-host-*` fallbacks, a neutral spinner and no blue.
+  * **Acceptance Criteria:** Met in the browser: the guide covers the panel, is readable in all four themes, Back/Esc/backdrop close it, and there is no blue in the guide or host shell. The in-Photoshop host-shell check is part of 4.7.
 
 * [ ] **Task 4.7: Verification, documentation and release**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild the `.ccx`.
   * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; every earlier criterion is demonstrated; four-theme screenshots and docs match; `Lumiform-Colorpicker-1.2.0.ccx` is produced.
