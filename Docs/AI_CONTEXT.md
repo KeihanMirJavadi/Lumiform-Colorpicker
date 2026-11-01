@@ -170,26 +170,25 @@ The project follows a **two-phase dual-target architecture**:
 
 ### 4.5 Depth, Atmosphere & Multi-Sphere Composition
 
-> **V1.1 CHANGE:** Stage 3 replaces the `1 / 2 / 3` count control, the Delete button and the separate
-> selector row with three-state Near / Mid / Far toggles, adds a Link Size toggle and renames the spheres
-> everywhere. Until Task 3.3 lands, the behaviour described below is what ships in v1.0. See
-> [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) for the target design.
+> **V1.1:** Sphere visibility and selection are the three-state Near / Mid / Far toggles. The v1.0
+> `1 / 2 / 3` count control and Delete button no longer exist. See
+> [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) for the panel design.
 
 * **Three composition slots:** The scene supports up to three spheres in fixed depth slots:
-  * **Center** — nearest to the camera, largest on screen.
-  * **Right** — mid ground.
-  * **Left** — furthest, sitting near the horizon.
+  * **Near** (`center`) — nearest to the camera, largest on screen.
+  * **Mid** (`right`) — mid ground.
+  * **Far** (`left`) — furthest, sitting near the horizon.
   All three rest on the ground plane. Slots are fixed to the reference composition; there are no position controls.
-* **Count control:** A `1 / 2 / 3` selector controls the number of spheres. Lowering the count **deletes** the removed sphere (far-left first, then right; the center is never removed). Raising the count fills the nearest empty slot first (right, then left) with a **fresh copy of the center sphere's current color**, at 100% size. Adding or removing never repositions the remaining spheres, and deleted state is not restored.
-* **Delete action:** Selecting a non-center sphere enables a **Delete** button that removes exactly that sphere. The center is permanent, so Delete is disabled while it is selected. Count buttons update to reflect the resulting number of spheres.
+* **Visibility & selection:** Near/Mid/Far are three-state toggles. Clicking an off sphere enables and selects it; clicking an enabled but unselected sphere selects it; clicking the selected sphere hides it. The last enabled sphere cannot be hidden — the guard lives in the model. Hiding the selected sphere falls back in Near -> Mid -> Far order. Re-enabling restores the colour and size the sphere owned before it was hidden; with Link Colours or Link Size on, the sphere joins the shared value instead.
+* **Links:** **Link Colours** and **Link Size** each adopt the selected sphere's value when enabled and keep applying subsequent edits to every enabled sphere. Disabling a link keeps the shared value so spheres can diverge from there.
 * **Aerial perspective:** Physically based single scattering: `L = L_surface · e^(−βd) + L_airlight · (1 − e^(−βd))`. The airlight is the local background, not one global tint: above the horizon it is the sky radiance along the view ray (including a smooth horizontal haze band), below it is the phase's ground-haze colour. This makes distant geometry desaturate toward whatever is actually behind it, so a far sphere can never become paler than its background. Extinction is per-channel in clear air (blue attenuates first) and neutral in hazy air, giving the deep-blue → pale-blue → background progression the reference shows.
   * **Horizon haze band:** Each time-of-day keyframe supplies a horizon airlight colour and an angular band width. The sky fades from that colour at the eye line to its normal gradient above, which creates the soft ground/sky seam. The band widens as haze increases.
   * **Ground haze:** The ground has its own calibrated aerial-perspective density because its visible depth span is only a few hundred world units, while the sky's air path is effectively infinite. Distant ground keeps some of its own hue instead of turning into pure sky.
   * **Depth range:** Sphere fog begins at 15.5 world units, just beyond the near sphere's far surface, so the central colour-reference sphere is exactly clear at every Haze setting. Ground fog begins at 10 units. The mid sphere is lightly hazed and the far sphere loses contrast and takes on the atmospheric colour.
   * **Haze control:** Every time-of-day preset carries its own calibrated Haze value, expressed as a fraction of the maximum: Midday 3%, Afternoon 9%, Night 15%, Morning 43%, Near Sunset/Early Morning 60%, Golden Hour 70%. Selecting a preset moves the slider to that value; at that setting the phase's measured atmosphere is reproduced exactly. Below it fades to clear, above it adds fog up to a strong maximum. The swatch ramp uses the same mapping and the selected sphere's distance.
-* **Per-sphere color state:** Each sphere carries its own base albedo. The color panel edits the selected sphere. A **Link Colors** toggle applies the selected color to every visible sphere when enabled, and keeps applying subsequent edits to all of them; disabling the link keeps the shared color so spheres can diverge from there.
-* **Per-sphere size:** Size is decoupled per sphere. Selecting a sphere exposes its own **Size** slider (20%–100% of the base radius). Scaling pivots on that sphere's bottom-center so it stays grounded; the camera does not move. Link Colors does not link sizes.
-* **Selection:** The active sphere is chosen by clicking it in the viewport or via a Center / Right / Left selector. Selection persists for editing, while a highlight ring flashes for about a second and fades on every selection action; there is no permanent outline. If the selected sphere is deleted, selection falls back to the center sphere.
+* **Per-sphere colour state:** Each sphere carries its own base albedo, and hidden spheres keep theirs for restore-on-re-enable. The merged Spheres panel edits the selected sphere.
+* **Per-sphere size:** Size is decoupled per sphere (20%–100% of the base radius). It applies to the selected sphere, or to every enabled sphere when Link Size is on. Scaling pivots on that sphere's bottom-center so it stays grounded; the camera does not move.
+* **Selection:** The active sphere is chosen by clicking it in the viewport or by clicking a Near / Mid / Far toggle. Selection persists for editing, while a highlight ring flashes for about a second and fades on every selection action; there is no permanent outline. If the selected sphere is hidden, selection falls back in Near -> Mid -> Far order.
 * **Picking through atmosphere:** The eyedropper samples the final rendered (atmosphere-affected) color of any sphere, so the same albedo can be compared across near, mid, and far depths.
 * **Swatch ramp:** The analytical 5-value ramp follows the selected sphere and includes that sphere's depth-dependent atmospheric haze, so its swatches match the rendered color at that distance.
 * **Shadows & contact AO:** Ground shading accumulates drop shadows and contact occlusion from every visible sphere, with haze applied to the ground and far shadows.
@@ -288,13 +287,13 @@ States are mirrored here so the parent protocol keeps working.
   * **Description:** Seven icon buttons in one row above a snapping slider, chronological preset order, live relighting, and the detach rule for all six lighting controls with the `· edited ↺` reset label.
   * **Acceptance Criteria:** Clicking and dragging the strip agree; crossing a stop relights immediately; moving any lighting control clears all buttons and shows `edited`; `↺` restores the calibrated preset; one line at 320 px.
 
-* [ ] **Task 3.3: Sphere model - Near/Mid/Far toggles, merged panel, size link**
-  * **State:** `current`
+* [x] **Task 3.3: Sphere model - Near/Mid/Far toggles, merged panel, size link**
+  * **State:** `Done`
   * **Description:** Rename spheres to Near/Mid/Far, replace the count control and Delete with three-state toggles, add the last-sphere guard, restore-on-re-enable, selection fallback, Link Size, and the merged sphere panel with size, albedo and the nested H/S/B disclosure.
   * **Acceptance Criteria:** Toggles enable/select/disable as specified; the last sphere cannot be disabled; re-enabling restores colour and size; link toggles equalise immediately; no count or Delete control remains.
 
 * [ ] **Task 3.4: Ramp header, sphere indicator & albedo dot**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Retitle the ramp with a read-only Near/Mid/Far chip and an albedo dot; keep the grid, recomputation and click-to-paint behaviour.
   * **Acceptance Criteria:** Chip follows selection; dot matches albedo; swatches still update on lighting, haze and finish changes; clicks still write to Photoshop.
 

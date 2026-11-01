@@ -13,7 +13,7 @@
 | Phase | **V1.1 - UI Design** (Stage 3) |
 | Branch | `feature/3.1-ui-redesign`, cut from `feature/2.1-uxp-plugin` @ `ca05c15` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
-| Current task | **3.3 - Sphere model: Near/Mid/Far toggles, merged panel, size link** |
+| Current task | **3.4 - Ramp header, sphere indicator & albedo dot** |
 | Renderer changes | None planned. `src/core/framing.ts` and the shaders stay untouched. |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for V1.1. |
 
@@ -275,8 +275,8 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
     each stop; moving any of the six controls clears all buttons and shows `edited`; `↺` restores the last
     preset exactly; at 320 px the row stays a single line.
 
-* [ ] **Task 3.3: Sphere model - Near/Mid/Far toggles, merged panel, size link**
-  * **State:** `current`
+* [x] **Task 3.3: Sphere model - Near/Mid/Far toggles, merged panel, size link**
+  * **State:** `Done`
   * **Description:** Rename spheres to Near/Mid/Far everywhere, remove the count control and Delete, add the
     three-state toggles with the last-sphere guard and restore-on-re-enable, move selection fallback to
     Near -> Mid -> Far, and add Link Size beside Link Colours. Merge size, albedo chip/hex and the nested
@@ -286,7 +286,7 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
     applying edits; no count or Delete control remains.
 
 * [ ] **Task 3.4: Ramp header, sphere indicator & albedo dot**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Retitle the ramp, add the read-only sphere chip and the albedo dot, and keep the grid and
     click-to-paint behaviour unchanged.
   * **Acceptance Criteria:** The chip follows selection and reads Near/Mid/Far; the dot matches the sphere's
@@ -375,3 +375,4 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
 | 2026-11-01 | Document created. V1.1 UI decisions captured and Stage 3 roadmap added. |
 | 2026-11-01 | Task 3.1 verified and marked Done. Panel spine, closed `<details>` sections and live summaries are implemented; Task 3.2 is current. |
 | 2026-11-01 | Task 3.2 verified and marked Done. Chronological icon strip, snapped slider, live relighting and the six-control detach/reset model are implemented; Task 3.3 is current. |
+| 2026-11-01 | Task 3.3 verified and marked Done. Near/Mid/Far three-state toggles, the merged Spheres panel, Link Size and restore-on-re-enable are implemented; Task 3.4 is current. |

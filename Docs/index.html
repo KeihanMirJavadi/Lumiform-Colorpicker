@@ -897,22 +897,22 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">3.3 Sphere model - Near / Mid / Far toggles, merged panel, size link</div>
               <div class="task-desc">Rename spheres to Near / Mid / Far, replace the count control and Delete with three-state toggles, add the last-sphere guard, restore-on-re-enable, selection fallback Near &rarr; Mid &rarr; Far, Link Size, and the merged panel with size, albedo and the nested H/S/B disclosure.</div>
               <div class="task-criteria">Criteria: Toggles enable / select / disable as specified; the last sphere cannot be disabled; re-enabling restores colour and size; link toggles equalise immediately; no count or Delete control remains.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">3.4 Ramp header, sphere indicator &amp; albedo dot</div>
               <div class="task-desc">Retitle the ramp with a read-only Near / Mid / Far chip and an albedo dot; keep the grid, the recomputation triggers and click-to-paint behaviour.</div>
               <div class="task-criteria">Criteria: Chip follows selection; dot matches albedo; swatches still update on lighting, haze and finish changes; clicks still write to Photoshop.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -959,15 +959,15 @@
       <div class="grid-3">
         <div class="card">
           <h4>1. Three Depth Slots</h4>
-          <p>Center sphere nearest the camera, right sphere at mid distance, left sphere furthest near the horizon. All spheres start at the same base radius and rest on the ground; perspective creates the initial size difference, and each sphere can then be scaled independently.</p>
+          <p>Near sits closest to the camera, Mid at mid distance and Far near the horizon. All spheres start at the same base radius and rest on the ground; perspective creates the initial size difference, and each sphere can then be scaled independently.</p>
         </div>
         <div class="card">
           <h4>2. Aerial Perspective</h4>
           <p>Single-scattering depth fog that fades each surface toward the background actually behind it: sky with a smooth horizon haze band above the eye line, phase-tinted ground haze below. Contrast and saturation fall off with distance, so the far sphere dissolves into the scene instead of turning into a pale disc.</p>
         </div>
         <div class="card">
-          <h4>3. Per-Sphere Color</h4>
-          <p>Each sphere has its own albedo. A Link Colors toggle applies one edit to every visible sphere, while unlinked edits affect only the selected sphere.</p>
+          <h4>3. Per-Sphere Colour &amp; Size</h4>
+          <p>Each sphere has its own albedo and size. Link Colours and Link Size apply one edit to every enabled sphere, while unlinked edits affect only the selected sphere. Hidden spheres keep their values for restore-on-re-enable.</p>
         </div>
       </div>
 
@@ -976,7 +976,7 @@
         <thead>
           <tr>
             <th>Slot</th>
-            <th>Depth</th>
+            <th>Internal id</th>
             <th>On-Screen Role</th>
             <th>Atmosphere</th>
             <th>Shadows</th>
@@ -984,22 +984,22 @@
         </thead>
         <tbody>
           <tr>
-            <td><strong>Center</strong></td>
-            <td>Near</td>
+            <td><strong>Near</strong></td>
+            <td><code>center</code></td>
             <td>Largest sphere, primary subject, closest to camera</td>
             <td>Exactly clear: colour reference</td>
             <td>Strongest contact AO and drop shadow</td>
           </tr>
           <tr>
-            <td><strong>Right</strong></td>
-            <td>Mid</td>
+            <td><strong>Mid</strong></td>
+            <td><code>right</code></td>
             <td>Secondary sphere, partially receding</td>
             <td>Partial haze, softened contrast</td>
             <td>Softer, shorter-looking shadow</td>
           </tr>
           <tr>
-            <td><strong>Left</strong></td>
-            <td>Far</td>
+            <td><strong>Far</strong></td>
+            <td><code>left</code></td>
             <td>Smallest sphere near the horizon line</td>
             <td>Strong haze, atmospheric color shift</td>
             <td>Faint shadow, absorbs into ground haze</td>
@@ -1007,9 +1007,11 @@
         </tbody>
       </table>
 
-      <p style="font-size:12px; color:#f59e0b; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); padding:10px 12px; border-radius:6px;">
-        <strong>v1.0 behaviour.</strong> V1.1 replaces the count control, Delete and the separate selector row with
-        Near / Mid / Far toggles, adds Link Size and renames the spheres - see tab 7.
+      <p style="font-size:12px; color:#93c5fd; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.35); padding:10px 12px; border-radius:6px;">
+        <strong>V1.1 behaviour.</strong> Near / Mid / Far are three-state toggles that carry visibility and selection.
+        The last enabled sphere cannot be hidden, re-enabling restores that sphere's previous colour and size, and
+        Link Colours / Link Size keep every enabled sphere on the selected value. The v1.0 count control, Delete and
+        separate selector row no longer exist.
       </p>
 
       <h3>Controls</h3>
@@ -1022,28 +1024,20 @@
         </thead>
         <tbody>
           <tr>
-            <td><strong>Sphere Count</strong></td>
-            <td><code>1 / 2 / 3</code> selector. Lowering removes the far-left first, then the right; the center always remains. Raising fills the nearest empty slot (right before left) with a fresh copy of the center's current color at 100% size. Existing spheres never move, and deleted state is not restored.</td>
+            <td><strong>Near / Mid / Far</strong></td>
+            <td>Three-state toggles. Off enables and selects the sphere; on-but-unselected selects it; selected hides it. The last enabled sphere cannot be hidden. Hiding the selected sphere falls back in Near &rarr; Mid &rarr; Far order, and re-enabling restores the colour and size it owned before it was hidden.</td>
           </tr>
           <tr>
-            <td><strong>Delete</strong></td>
-            <td>Selecting a non-center sphere enables <strong>Delete</strong>, which removes exactly that sphere. Delete is disabled while the center is selected. Count buttons update to the resulting number of spheres.</td>
+            <td><strong>Link Colours / Link Size</strong></td>
+            <td>Each link adopts the selected sphere's value when enabled and keeps applying subsequent edits to every enabled sphere. Disabling a link keeps the shared value so spheres can diverge. Re-enabling a hidden sphere while a link is on joins the shared value.</td>
           </tr>
           <tr>
-            <td><strong>Selected Sphere</strong></td>
-            <td>Click a sphere in the viewport or use the Center / Right / Left selector. The selection persists for editing, while a highlight ring flashes for ~1 second and fades on every selection action. If the selected sphere is deleted, selection falls back to the center.</td>
+            <td><strong>Size</strong></td>
+            <td>20%–100% of the base radius. Applies to the selected sphere, or to every enabled sphere when Link Size is on. Scaling pivots on the sphere's bottom-center so it stays grounded; the camera does not move.</td>
           </tr>
           <tr>
-            <td><strong>Per-Sphere Size</strong></td>
-            <td>Selecting a sphere exposes its own Size slider (20%–100%). Scaling pivots on that sphere's bottom-center so it stays grounded; the camera does not move. Link Colors does not link sizes.</td>
-          </tr>
-          <tr>
-            <td><strong>Link Colors</strong></td>
-            <td>When enabled, the selected sphere's color is applied to every visible sphere and subsequent edits affect them all. Disabling the link keeps the shared color so spheres can diverge from there.</td>
-          </tr>
-          <tr>
-            <td><strong>Color Panel</strong></td>
-            <td>HSB sliders and hex input edit the selected sphere's albedo. The swatch ramp follows the selected sphere.</td>
+            <td><strong>Albedo &amp; H &middot; S &middot; B</strong></td>
+            <td>The merged Spheres panel exposes the selected sphere's albedo chip and hex, with the HSB sliders behind a closed disclosure. The swatch ramp follows the selected sphere.</td>
           </tr>
           <tr>
             <td><strong>Eyedropper</strong></td>
@@ -1201,8 +1195,8 @@
         <tbody>
           <tr><td>3.1 Panel spine, collapsible sections &amp; live headers</td><td><span class="status-badge done">Done</span></td><td>New spine, four closed sections, live summaries.</td></tr>
           <tr><td>3.2 Time-of-day strip</td><td><span class="status-badge done">Done</span></td><td>Icon row, snapped slider, chronological order, detach + <code>&#8634;</code>.</td></tr>
-          <tr><td>3.3 Sphere model</td><td><span class="status-badge current">current</span></td><td>Near / Mid / Far toggles, merged panel, Link Size.</td></tr>
-          <tr><td>3.4 Ramp header</td><td><span class="status-badge planned">planned</span></td><td>Sphere chip and albedo dot.</td></tr>
+          <tr><td>3.3 Sphere model</td><td><span class="status-badge done">Done</span></td><td>Near / Mid / Far toggles, merged panel, Link Size.</td></tr>
+          <tr><td>3.4 Ramp header</td><td><span class="status-badge current">current</span></td><td>Sphere chip and albedo dot.</td></tr>
           <tr><td>3.5 Light row &amp; streaming</td><td><span class="status-badge planned">planned</span></td><td>Labelled Light row, clickable albedo, per-frame writes.</td></tr>
           <tr><td>3.6 Guide takeover</td><td><span class="status-badge planned">planned</span></td><td>Full overlay, GitHub row, <code>open-url</code> bridge.</td></tr>
           <tr><td>3.7 Verification &amp; polish</td><td><span class="status-badge planned">planned</span></td><td>320/420/600 px + Photoshop checks, docs sync, new <code>.ccx</code>.</td></tr>
