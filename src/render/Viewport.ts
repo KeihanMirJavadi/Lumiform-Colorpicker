@@ -42,6 +42,7 @@ export class Viewport {
   private spheres: SphereRuntime[] = [];
   private selectedId: SphereSlotId = 'center';
   private linkedColors = false;
+  private linkedSizes = false;
   private haze = 0.5;
 
   private sphereGeometry: THREE.SphereGeometry;
@@ -253,54 +254,53 @@ export class Viewport {
     this.colorPickerTarget.scheduleResample();
   }
 
-  /** Adds or removes spheres to reach the requested count. */
-  public setSphereCount(count: number): void {
-    const target = Math.max(1, Math.min(3, Math.round(count)));
-    const center = this.getSphere('center');
-
-    let active = this.getActiveCount();
-    if (target > active) {
-      // Fill nearest empty slots first: right, then left.
-      for (const id of ['right', 'left'] as SphereSlotId[]) {
-        if (active >= target) break;
-        const sphere = this.getSphere(id);
-        if (!sphere.active) {
-          sphere.active = true;
-          sphere.albedoHex = center.albedoHex;
-          sphere.size = 1;
-          active += 1;
-        }
-      }
-    } else if (target < active) {
-      // Count decrease removes the farthest visible sphere first: left, then right.
-      for (const id of ['left', 'right'] as SphereSlotId[]) {
-        if (active <= target) break;
-        const sphere = this.getSphere(id);
-        if (sphere.active) {
-          sphere.active = false;
-          active -= 1;
-        }
-      }
-      if (!this.getSphere(this.selectedId).active) {
-        this.selectedId = 'center';
-        this.startSelectionFlash();
-        this.selectionListeners.forEach((cb) => cb('center'));
-      }
+  /**
+   * Enables a hidden sphere, restores the colour and size it owned before it
+   * was hidden, and selects it. With a link on, the sphere joins the shared
+   * value instead of resurrecting its old one.
+   */
+  public enableSphere(id: SphereSlotId): void {
+    const sphere = this.getSphere(id);
+    if (sphere.active) {
+      this.selectSphere(id);
+      return;
     }
 
+    const selected = this.getSphere(this.selectedId);
+    sphere.active = true;
+    if (this.linkedColors) sphere.albedoHex = selected.albedoHex;
+    if (this.linkedSizes) sphere.size = selected.size;
+
+    this.selectedId = id;
+    this.startSelectionFlash();
+    this.selectionListeners.forEach((cb) => cb(id));
     this.syncSphereUniforms();
   }
 
-  /** Deletes the selected sphere (center is permanent). */
-  public deleteSelectedSphere(): boolean {
-    if (this.selectedId === 'center') return false;
-    const sphere = this.getSphere(this.selectedId);
+  /**
+   * Hides a sphere. The last remaining sphere cannot be hidden, and hiding the
+   * selected sphere falls back to the first enabled slot in Near -> Mid -> Far
+   * order. The rest of the sphere's state is kept for a later re-enable.
+   */
+  public disableSphere(id: SphereSlotId): boolean {
+    const sphere = this.getSphere(id);
+    if (!sphere.active || this.getActiveCount() <= 1) return false;
+
     sphere.active = false;
-    this.selectedId = 'center';
-    this.startSelectionFlash();
-    this.selectionListeners.forEach((cb) => cb('center'));
+    if (this.selectedId === id) {
+      this.selectedId = this.findSelectionFallback();
+      this.startSelectionFlash();
+      this.selectionListeners.forEach((cb) => cb(this.selectedId));
+    }
     this.syncSphereUniforms();
     return true;
+  }
+
+  private findSelectionFallback(): SphereSlotId {
+    for (const id of ['center', 'right', 'left'] as SphereSlotId[]) {
+      if (this.getSphere(id).active) return id;
+    }
+    return 'center';
   }
 
   public setSphereColor(hex: string): void {
@@ -333,8 +333,30 @@ export class Viewport {
     return this.linkedColors;
   }
 
+  public setLinkedSizes(linked: boolean): void {
+    this.linkedSizes = linked;
+    if (linked) {
+      const shared = this.getSphere(this.selectedId).size;
+      for (const sphere of this.spheres) {
+        if (sphere.active) sphere.size = shared;
+      }
+    }
+    this.syncSphereUniforms();
+  }
+
+  public getLinkedSizes(): boolean {
+    return this.linkedSizes;
+  }
+
   public setSelectedSphereSize(size: number): void {
-    this.getSphere(this.selectedId).size = Math.max(0.2, Math.min(1.0, size));
+    const clamped = Math.max(0.2, Math.min(1.0, size));
+    if (this.linkedSizes) {
+      for (const sphere of this.spheres) {
+        if (sphere.active) sphere.size = clamped;
+      }
+    } else {
+      this.getSphere(this.selectedId).size = clamped;
+    }
     this.syncSphereUniforms();
   }
 

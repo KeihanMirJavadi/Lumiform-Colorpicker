@@ -186,126 +186,133 @@ html, body {
 /* Mesh uniform-scale row (bottom stays grounded) */
 .mesh-scale-row {
   padding: 0 4px;
+  margin-top: 10px;
   margin-bottom: 6px;
 }
 
-/* Sphere depth staging */
-.count-control {
-  display: flex;
-  gap: 2px;
-  background-color: var(--ps-bg-input);
-  border: 1px solid var(--ps-border-subtle);
-  border-radius: var(--ps-radius-sm);
-  padding: 2px;
-}
-
-.count-btn {
-  background: none;
-  border: none;
-  color: var(--ps-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  width: 26px;
-  height: 22px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.count-btn:hover {
-  color: var(--ps-text-primary);
-  background-color: rgba(255, 255, 255, 0.06);
-}
-
-.count-btn.active {
-  background-color: var(--ps-accent-blue);
-  color: #fff;
-}
-
-.sphere-selector-row {
-  display: flex;
-  align-items: stretch;
+/* Sphere visibility + selection toggles (Task 3.3) */
+.sphere-toggle-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
-  margin-top: 10px;
 }
 
-.sphere-select-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  background-color: var(--ps-bg-elevated);
+.sphere-toggle {
+  height: 30px;
+  min-width: 0;
+  padding: 0 6px;
+  border-radius: var(--ps-radius-sm);
   border: 1px solid var(--ps-border);
+  background-color: transparent;
+  color: var(--ps-text-disabled);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.sphere-toggle[data-state='off'] {
+  border-style: dashed;
+  background-color: transparent;
+  color: var(--ps-text-disabled);
+}
+
+.sphere-toggle[data-state='on'] {
+  border-color: var(--ps-border-subtle);
+  background-color: var(--ps-bg-input);
   color: var(--ps-text-secondary);
-  border-radius: var(--ps-radius-sm);
-  padding: 5px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
-.sphere-select-btn span {
-  font-size: 9px;
-  font-weight: 500;
-  opacity: 0.7;
-}
-
-.sphere-select-btn:hover:not(:disabled) {
-  color: var(--ps-text-primary);
-  background-color: var(--ps-bg-hover);
-}
-
-.sphere-select-btn.active {
-  background-color: var(--ps-accent-blue);
+.sphere-toggle[data-state='selected'] {
   border-color: var(--ps-accent-hover);
-  color: #fff;
+  background-color: var(--ps-accent-blue);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
-.sphere-select-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
+.sphere-toggle:hover:not([data-state='selected']) {
+  border-color: var(--ps-border);
+  background-color: var(--ps-bg-hover);
+  color: var(--ps-text-primary);
 }
 
-.sphere-delete-btn {
-  background-color: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: #fca5a5;
-  border-radius: var(--ps-radius-sm);
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.sphere-toggle:active {
+  transform: scale(0.97);
 }
 
-.sphere-delete-btn:hover:not(:disabled) {
-  background-color: rgba(239, 68, 68, 0.25);
-  color: #fff;
+.sphere-toggle:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
 }
 
-.sphere-delete-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
+.sphere-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin-top: 10px;
 }
 
-.link-colors-row {
+.check-row {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 10px;
+  gap: 6px;
+  min-height: 22px;
   font-size: 11px;
   color: var(--ps-text-secondary);
   cursor: pointer;
   user-select: none;
 }
 
-.link-colors-row input[type='checkbox'] {
+.check-row input[type='checkbox'] {
   accent-color: var(--ps-accent-blue);
   width: 13px;
   height: 13px;
   cursor: pointer;
+}
+
+/* Nested HSB disclosure inside the Spheres panel. */
+.hsb-disclosure {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ps-border-subtle);
+}
+
+.hsb-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 22px;
+  padding: 2px 0;
+  border-radius: var(--ps-radius-sm);
+  cursor: pointer;
+}
+
+.hsb-summary::-webkit-details-marker {
+  display: none;
+}
+
+.hsb-summary:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
+.hsb-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--ps-text-secondary);
+}
+
+.hsb-disclosure[open] > .hsb-summary .section-chevron {
+  transform: rotate(45deg);
+}
+
+.hsb-disclosure .slider-group {
+  margin-top: 8px;
 }
 
 .section-note {

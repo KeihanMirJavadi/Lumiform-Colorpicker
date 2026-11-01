@@ -121,7 +121,46 @@ export class AppShell {
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
-            <!-- Sphere Size (per selected sphere, bottom stays on the ground) -->
+            <div class="sphere-toggle-row" role="group" aria-label="Sphere visibility and selection">
+              <button
+                type="button"
+                class="sphere-toggle"
+                data-sphere="center"
+                data-state="selected"
+                aria-pressed="true"
+                aria-current="true"
+                title="Near — selected. Click to hide."
+              >Near</button>
+              <button
+                type="button"
+                class="sphere-toggle"
+                data-sphere="right"
+                data-state="on"
+                aria-pressed="true"
+                title="Mid — enabled. Click to select."
+              >Mid</button>
+              <button
+                type="button"
+                class="sphere-toggle"
+                data-sphere="left"
+                data-state="on"
+                aria-pressed="true"
+                title="Far — enabled. Click to select."
+              >Far</button>
+            </div>
+
+            <div class="sphere-link-row">
+              <label class="check-row">
+                <input type="checkbox" id="toggle-link-colors" />
+                <span>Link Colours</span>
+              </label>
+              <label class="check-row">
+                <input type="checkbox" id="toggle-link-size" />
+                <span>Link Size</span>
+              </label>
+            </div>
+
+            <!-- Sphere Size (selected sphere, or all enabled when Link Size is on) -->
             <div class="sun-slider-row mesh-scale-row">
               <span class="sun-axis-name" style="width: 82px;">Size · <span id="size-target">Near</span></span>
               <div class="slider-track-wrap">
@@ -131,29 +170,7 @@ export class AppShell {
               <span class="slider-unit">%</span>
             </div>
 
-            <div class="field-row">
-              <span class="field-label">Visible spheres</span>
-              <div class="count-control" id="sphere-count-control">
-                <button class="count-btn" data-count="1">1</button>
-                <button class="count-btn" data-count="2">2</button>
-                <button class="count-btn active" data-count="3">3</button>
-              </div>
-            </div>
-
-            <div class="sphere-selector-row">
-              <button class="sphere-select-btn active" data-sphere="center">Center <span>Near</span></button>
-              <button class="sphere-select-btn" data-sphere="right">Right <span>Mid</span></button>
-              <button class="sphere-select-btn" data-sphere="left">Left <span>Far</span></button>
-              <button class="sphere-delete-btn" id="btn-delete-sphere" title="Delete the selected sphere">Delete</button>
-            </div>
-
-            <label class="link-colors-row">
-              <input type="checkbox" id="toggle-link-colors" />
-              <span>Link colors across all visible spheres</span>
-            </label>
-            <p class="section-note" id="sphere-hint">Select a sphere in the canvas or above to edit its color and size.</p>
-
-            <!-- In-Panel HSB & Hex Color Controls (Task 1.5) -->
+            <!-- Albedo chip + hex, with the HSB sliders behind a closed disclosure -->
             <div class="sphere-color-block" id="color-controls-container"></div>
           </div>
         </details>
@@ -439,7 +456,7 @@ export class AppShell {
     const selectedSlot = SPHERE_SLOTS.find((slot) => slot.id === selectedId);
     this.setStateText(
       '#spheres-summary',
-      `${selectedSlot?.depthLabel ?? 'Near'} · ${this.viewport.getSelectedSphereColor().toUpperCase()}`
+      `${selectedSlot?.label ?? 'Near'} · ${this.viewport.getSelectedSphereColor().toUpperCase()}`
     );
 
     // Sun & Atmosphere · <last preset> [· edited]
@@ -474,33 +491,35 @@ export class AppShell {
   private bindSphereControls(): void {
     if (!this.viewport) return;
 
-    // Count 1 / 2 / 3
-    this.root.querySelectorAll<HTMLButtonElement>('.count-btn').forEach((btn) => {
+    // Near / Mid / Far toggles: off enables and selects, on selects, selected hides.
+    this.root.querySelectorAll<HTMLButtonElement>('.sphere-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const count = parseInt(btn.getAttribute('data-count') ?? '3', 10);
-        this.viewport?.setSphereCount(count);
+        if (!this.viewport) return;
+        const id = btn.getAttribute('data-sphere') as SphereSlotId | null;
+        if (!id) return;
+
+        const active = this.viewport.isSphereActive(id);
+        const selected = this.viewport.getSelectedSphereId();
+        if (!active) {
+          this.viewport.enableSphere(id);
+        } else if (id !== selected) {
+          this.viewport.selectSphere(id);
+        } else {
+          this.viewport.disableSphere(id);
+        }
         this.syncSphereUI();
       });
     });
 
-    // Center / Right / Left selection
-    this.root.querySelectorAll<HTMLButtonElement>('.sphere-select-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-sphere') as SphereSlotId | null;
-        if (id) this.viewport?.selectSphere(id);
-      });
-    });
-
-    // Delete selected sphere
-    this.root.querySelector<HTMLButtonElement>('#btn-delete-sphere')?.addEventListener('click', () => {
-      this.viewport?.deleteSelectedSphere();
+    const linkColorsToggle = this.root.querySelector<HTMLInputElement>('#toggle-link-colors');
+    linkColorsToggle?.addEventListener('change', () => {
+      this.viewport?.setLinkedColors(linkColorsToggle.checked);
       this.syncSphereUI();
     });
 
-    // Link colors
-    const linkToggle = this.root.querySelector<HTMLInputElement>('#toggle-link-colors');
-    linkToggle?.addEventListener('change', () => {
-      this.viewport?.setLinkedColors(linkToggle.checked);
+    const linkSizeToggle = this.root.querySelector<HTMLInputElement>('#toggle-link-size');
+    linkSizeToggle?.addEventListener('change', () => {
+      this.viewport?.setLinkedSizes(linkSizeToggle.checked);
       this.syncSphereUI();
     });
   }
@@ -535,32 +554,51 @@ export class AppShell {
     });
   }
 
-  /** Keeps sphere count, selector, size, color panel, and swatch ramp aligned with the viewport state. */
+  /** Keeps the toggles, links, size, colour panel and ramp aligned with the viewport. */
   private syncSphereUI(): void {
     if (!this.viewport) return;
 
     const activeCount = this.viewport.getActiveCount();
     const selectedId = this.viewport.getSelectedSphereId();
+    const selectedSlot = SPHERE_SLOTS.find((s) => s.id === selectedId);
 
-    this.root.querySelectorAll<HTMLButtonElement>('.count-btn').forEach((btn) => {
-      btn.classList.toggle('active', parseInt(btn.getAttribute('data-count') ?? '0', 10) === activeCount);
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>('.sphere-select-btn').forEach((btn) => {
+    this.root.querySelectorAll<HTMLButtonElement>('.sphere-toggle').forEach((btn) => {
       const id = btn.getAttribute('data-sphere') as SphereSlotId | null;
       if (!id) return;
+      const slot = SPHERE_SLOTS.find((s) => s.id === id);
+      const name = slot?.label ?? 'Near';
       const active = this.viewport!.isSphereActive(id);
-      btn.disabled = !active;
-      btn.classList.toggle('active', active && id === selectedId);
+      const selected = active && id === selectedId;
+      const state = selected ? 'selected' : active ? 'on' : 'off';
+      btn.dataset.state = state;
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      if (selected) {
+        btn.setAttribute('aria-current', 'true');
+      } else {
+        btn.removeAttribute('aria-current');
+      }
+
+      const lastOne = active && activeCount <= 1;
+      btn.title = selected
+        ? lastOne
+          ? `${name} — selected. At least one sphere must stay visible.`
+          : `${name} — selected. Click to hide.`
+        : active
+          ? `${name} — enabled. Click to select.`
+          : `${name} — hidden. Click to show and select.`;
+      btn.setAttribute('aria-label', btn.title);
     });
 
-    const deleteBtn = this.root.querySelector<HTMLButtonElement>('#btn-delete-sphere');
-    if (deleteBtn) deleteBtn.disabled = selectedId === 'center';
+    const linkColorsToggle = this.root.querySelector<HTMLInputElement>('#toggle-link-colors');
+    if (linkColorsToggle) linkColorsToggle.checked = this.viewport.getLinkedColors();
+    const linkSizeToggle = this.root.querySelector<HTMLInputElement>('#toggle-link-size');
+    if (linkSizeToggle) linkSizeToggle.checked = this.viewport.getLinkedSizes();
 
     const sizeLabel = this.root.querySelector<HTMLElement>('#size-target');
     if (sizeLabel) {
-      const slot = SPHERE_SLOTS.find((s) => s.id === selectedId);
-      sizeLabel.textContent = slot?.depthLabel ?? 'Near';
+      sizeLabel.textContent = this.viewport.getLinkedSizes()
+        ? 'All'
+        : selectedSlot?.label ?? 'Near';
     }
 
     const sizePct = Math.round(this.viewport.getSelectedSphereSize() * 100);

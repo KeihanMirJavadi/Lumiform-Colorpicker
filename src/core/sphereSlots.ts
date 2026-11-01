@@ -19,9 +19,9 @@ export interface SphereSlotConfig {
  * than hand-placed, so they follow the camera contract automatically.
  */
 export const SPHERE_SLOTS: SphereSlotConfig[] = [
-  { id: 'center', label: 'Center', depthLabel: 'Near', position: FRAMING.slots.near.clone() },
-  { id: 'right', label: 'Right', depthLabel: 'Mid', position: FRAMING.slots.mid.clone() },
-  { id: 'left', label: 'Left', depthLabel: 'Far', position: FRAMING.slots.far.clone() },
+  { id: 'center', label: 'Near', depthLabel: 'Near', position: FRAMING.slots.near.clone() },
+  { id: 'right', label: 'Mid', depthLabel: 'Mid', position: FRAMING.slots.mid.clone() },
+  { id: 'left', label: 'Far', depthLabel: 'Far', position: FRAMING.slots.far.clone() },
 ];
 
 export { BASE_SPHERE_RADIUS };

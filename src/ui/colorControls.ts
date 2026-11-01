@@ -42,45 +42,51 @@ export class ColorControls {
   private render(): void {
     this.container.innerHTML = `
       <div class="color-controls-panel">
-        <div class="section-header">
-          <h2>Selected Sphere Color (Decoupled Albedo)</h2>
+        <div class="field-row albedo-row">
+          <span class="field-label">Albedo</span>
           <div class="hex-group">
-            <div class="albedo-swatch" id="albedo-swatch-preview" title="Current Base Albedo"></div>
+            <div class="albedo-swatch" id="albedo-swatch-preview" title="Selected sphere albedo"></div>
             <input type="text" class="ps-input-hex" id="input-hex" maxlength="7" spellcheck="false" value="${DEFAULT_ALBEDO_HEX}" />
           </div>
         </div>
 
-        <div class="slider-group">
-          <!-- Hue -->
-          <div class="slider-row">
-            <span class="slider-label">H</span>
-            <div class="slider-track-wrap">
-              <input type="range" class="ps-slider hue-slider" id="slider-hue" min="0" max="360" value="${this.hsb.h}" />
+        <details class="hsb-disclosure" id="hsb-disclosure">
+          <summary class="hsb-summary">
+            <span class="hsb-title">H · S · B</span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="slider-group">
+            <!-- Hue -->
+            <div class="slider-row">
+              <span class="slider-label">H</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider hue-slider" id="slider-hue" min="0" max="360" value="${this.hsb.h}" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-hue" min="0" max="360" value="${this.hsb.h}" />
+              <span class="slider-unit">°</span>
             </div>
-            <input type="number" class="ps-input-num" id="num-hue" min="0" max="360" value="${this.hsb.h}" />
-            <span class="slider-unit">°</span>
-          </div>
 
-          <!-- Saturation -->
-          <div class="slider-row">
-            <span class="slider-label">S</span>
-            <div class="slider-track-wrap">
-              <input type="range" class="ps-slider sat-slider" id="slider-sat" min="0" max="100" value="${this.hsb.s}" />
+            <!-- Saturation -->
+            <div class="slider-row">
+              <span class="slider-label">S</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider sat-slider" id="slider-sat" min="0" max="100" value="${this.hsb.s}" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-sat" min="0" max="100" value="${this.hsb.s}" />
+              <span class="slider-unit">%</span>
             </div>
-            <input type="number" class="ps-input-num" id="num-sat" min="0" max="100" value="${this.hsb.s}" />
-            <span class="slider-unit">%</span>
-          </div>
 
-          <!-- Brightness -->
-          <div class="slider-row">
-            <span class="slider-label">B</span>
-            <div class="slider-track-wrap">
-              <input type="range" class="ps-slider bri-slider" id="slider-bri" min="0" max="100" value="${this.hsb.b}" />
+            <!-- Brightness -->
+            <div class="slider-row">
+              <span class="slider-label">B</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider bri-slider" id="slider-bri" min="0" max="100" value="${this.hsb.b}" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-bri" min="0" max="100" value="${this.hsb.b}" />
+              <span class="slider-unit">%</span>
             </div>
-            <input type="number" class="ps-input-num" id="num-bri" min="0" max="100" value="${this.hsb.b}" />
-            <span class="slider-unit">%</span>
           </div>
-        </div>
+        </details>
       </div>
     `;
 
