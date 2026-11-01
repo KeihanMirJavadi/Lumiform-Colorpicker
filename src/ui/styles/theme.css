@@ -952,6 +952,53 @@ details[open] > .section-summary .section-chevron {
   color: var(--ps-text-disabled);
 }
 
+/* Ramp header: read-only sphere chip + albedo dot (Task 3.4) */
+.ramp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ramp-sphere-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 50%;
+  padding: 2px 7px;
+  border: 1px solid var(--ps-border-subtle);
+  border-radius: 999px;
+  background-color: var(--ps-bg-input);
+  color: var(--ps-text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.ramp-albedo-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background-color: #e3e3e3;
+  transition: background-color 0.1s ease;
+}
+
+.ramp-sphere-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ramp-click-hint {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ps-text-disabled);
+  white-space: nowrap;
+}
+
 /* Analytical 5-Value Swatch Ramp (Task 1.7) */
 .swatch-ramp-grid {
   display: grid;

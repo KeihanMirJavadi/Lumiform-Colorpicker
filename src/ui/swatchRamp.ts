@@ -9,6 +9,7 @@ import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
 export interface SwatchRampOptions {
   container: HTMLElement;
   initialAlbedoHex?: string;
+  initialSphereName?: string;
   initialEnv: LightingEnvironment;
   initialFinish?: SurfaceFinish;
   initialRoughness?: number;
@@ -21,6 +22,7 @@ export interface SwatchRampOptions {
 export class SwatchRamp {
   private container: HTMLElement;
   private albedoHex: string;
+  private sphereName: string;
   private env: LightingEnvironment;
   private finish: SurfaceFinish;
   private roughness: number;
@@ -34,6 +36,7 @@ export class SwatchRamp {
   constructor(options: SwatchRampOptions) {
     this.container = options.container;
     this.albedoHex = options.initialAlbedoHex ?? DEFAULT_ALBEDO_HEX;
+    this.sphereName = options.initialSphereName ?? 'Near';
     this.env = options.initialEnv;
     this.finish = options.initialFinish ?? DEFAULT_SURFACE_FINISH;
     this.haze = options.initialHaze ?? 0.5;
@@ -64,6 +67,7 @@ export class SwatchRamp {
 
   public updateParameters(params: {
     albedoHex?: string;
+    sphereName?: string;
     env?: LightingEnvironment;
     finish?: SurfaceFinish;
     roughness?: number;
@@ -72,6 +76,7 @@ export class SwatchRamp {
     distance?: number;
   }): void {
     if (params.albedoHex !== undefined) this.albedoHex = params.albedoHex;
+    if (params.sphereName !== undefined) this.sphereName = params.sphereName;
     if (params.env !== undefined) this.env = params.env;
     if (params.finish !== undefined) this.finish = params.finish;
     if (params.roughness !== undefined) this.roughness = params.roughness;
@@ -111,11 +116,20 @@ export class SwatchRamp {
   }
 
   private render(): void {
+    const albedo = this.albedoHex.toUpperCase();
     this.container.innerHTML = `
       <div class="swatch-ramp-card">
-        <div class="section-header">
-          <h2>Analytical 5-Value Swatch Ramp</h2>
-          <span style="font-size: 10px; color: var(--ps-text-disabled);">Click to Paint</span>
+        <div class="ramp-header">
+          <h2>5-VALUE RAMP</h2>
+          <span
+            class="ramp-sphere-chip"
+            title="${this.sphereName} · ${albedo}"
+            aria-label="Ramp computed for ${this.sphereName}, albedo ${albedo}"
+          >
+            <span class="ramp-albedo-dot" style="background-color: ${this.albedoHex};" aria-hidden="true"></span>
+            <span class="ramp-sphere-name">${this.sphereName}</span>
+          </span>
+          <span class="ramp-click-hint">Click to Paint</span>
         </div>
         <div class="swatch-ramp-grid" id="swatch-grid">
           ${this.currentSwatches

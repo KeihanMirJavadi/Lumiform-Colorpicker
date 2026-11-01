@@ -348,6 +348,9 @@ export class AppShell {
       this.swatchRamp = new SwatchRamp({
         container: swatchRampContainer,
         initialAlbedoHex: this.viewport.getSelectedSphereColor(),
+        initialSphereName:
+          SPHERE_SLOTS.find((slot) => slot.id === this.viewport!.getSelectedSphereId())?.label ??
+          'Near',
         initialEnv: this.viewport.getLightingEngine().getEnvironment(),
         initialFinish: this.viewport.getSurfaceFinish(),
         initialRoughness: this.viewport.getRoughness(),
@@ -620,6 +623,7 @@ export class AppShell {
     if (this.swatchRamp) {
       this.swatchRamp.updateParameters({
         albedoHex: this.viewport.getSelectedSphereColor(),
+        sphereName: selectedSlot?.label ?? 'Near',
         haze: this.viewport.getHaze(),
         distance: this.viewport.getSelectedSphereDistance(),
       });
