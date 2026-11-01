@@ -344,6 +344,9 @@ export class Viewport {
 
   public setHaze(haze: number): void {
     this.haze = Math.max(0, Math.min(1, haze));
+    // Haze is one of the six preset-owned lighting values; moving it detaches
+    // the look from the time-of-day preset without touching the spheres.
+    this.lightingEngine.markManualEdit();
     this.syncSphereUniforms();
   }
 

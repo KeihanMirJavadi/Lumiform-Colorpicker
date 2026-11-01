@@ -6,8 +6,23 @@ import { StatusBar } from './statusBar';
 import { ColorControls } from './colorControls';
 import { SwatchRamp } from './swatchRamp';
 import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX } from '../core/defaults';
-import { LIGHTING_PRESETS, MAX_KEY_ANGULAR_RADIUS_DEG } from '../core/lighting';
+import {
+  LIGHTING_PRESET_ORDER,
+  LIGHTING_PRESETS,
+  MAX_KEY_ANGULAR_RADIUS_DEG,
+} from '../core/lighting';
 import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
+
+/** Icon-only time-of-day buttons (D7); names live in title/aria-label. */
+const TIME_OF_DAY_ICONS: Record<LightingPreset, string> = {
+  'early-morning': '🌄',
+  morning: '🌤️',
+  midday: '☀️',
+  afternoon: '🌞',
+  'near-sunset': '🌇',
+  'golden-hour': '🌅',
+  night: '🌙',
+};
 
 export class AppShell {
   private root: HTMLElement;
@@ -50,34 +65,48 @@ export class AppShell {
         <!-- 1. Canvas: fixed 412:227 framing, eyedropper reticle -->
         <div class="viewport-card" id="viewport-container"></div>
 
-        <!-- 2. Time of Day (always open) -->
+        <!-- 2. Time of Day (always open): icon strip + snapped slider -->
         <section class="section-card" aria-labelledby="time-of-day-heading">
-          <div class="section-header">
+          <div class="section-header time-of-day-header">
             <h2 id="time-of-day-heading">Time of Day</h2>
-            <span class="section-state" id="time-of-day-state">Midday</span>
+            <div class="time-of-day-state" aria-live="polite">
+              <span class="time-state-name" id="time-of-day-label">Midday</span>
+              <span class="time-state-edited" id="time-of-day-edited" hidden>· edited</span>
+              <button
+                type="button"
+                class="time-reset-btn"
+                id="btn-time-reset"
+                title="Restore Midday"
+                aria-label="Restore Midday"
+                hidden
+              >↺</button>
+            </div>
           </div>
-          <div class="preset-segmented-control time-preset-control">
-            <button class="preset-btn" data-preset="morning" id="btn-preset-morning">
-              <span>🌤️</span> Morning
-            </button>
-            <button class="preset-btn active" data-preset="midday" id="btn-preset-midday">
-              <span>☀️</span> Midday
-            </button>
-            <button class="preset-btn" data-preset="afternoon" id="btn-preset-afternoon">
-              <span>🌞</span> Afternoon
-            </button>
-            <button class="preset-btn" data-preset="near-sunset" id="btn-preset-near-sunset">
-              <span>🌇</span> Near Sunset
-            </button>
-            <button class="preset-btn" data-preset="golden-hour" id="btn-preset-golden">
-              <span>🌅</span> Golden Hour
-            </button>
-            <button class="preset-btn" data-preset="night" id="btn-preset-night">
-              <span>🌙</span> Night
-            </button>
-            <button class="preset-btn preset-btn-wide" data-preset="early-morning" id="btn-preset-early">
-              <span>🌄</span> Early Morning
-            </button>
+          <div class="time-strip">
+            <div class="time-strip-icons" role="group" aria-label="Time of day presets">
+              ${LIGHTING_PRESET_ORDER.map(
+                (preset) => `
+                <button
+                  type="button"
+                  class="time-icon-btn"
+                  data-preset="${preset}"
+                  title="${LIGHTING_PRESETS[preset].name}"
+                  aria-label="${LIGHTING_PRESETS[preset].name}"
+                  aria-pressed="false"
+                >${TIME_OF_DAY_ICONS[preset]}</button>
+              `
+              ).join('')}
+            </div>
+            <input
+              type="range"
+              class="ps-slider time-range"
+              id="slider-time-of-day"
+              min="0"
+              max="${LIGHTING_PRESET_ORDER.length - 1}"
+              step="1"
+              value="${LIGHTING_PRESET_ORDER.indexOf('midday')}"
+              aria-label="Time of day"
+            />
           </div>
         </section>
 
@@ -359,7 +388,7 @@ export class AppShell {
     this.bindSphereControls();
     this.bindHazeControl();
     this.bindMeshScaleControl();
-    this.bindPresetButtons();
+    this.bindTimeOfDayStrip();
     this.bindSunSliders();
     this.bindTerminatorControl();
     this.bindLightColorControls();
@@ -386,6 +415,22 @@ export class AppShell {
     });
   }
 
+  /**
+   * The preset the strip should point at, plus whether the lighting has been
+   * manually edited since it was applied. The thumb stays parked on the last
+   * stop while edited (D9).
+   */
+  private getTimeOfDayState(): { name: string; edited: boolean } {
+    const env = this.viewport!.getLightingEngine().getEnvironment();
+    if (env.preset !== 'custom') {
+      this.lastPreset = env.preset;
+    }
+    return {
+      name: LIGHTING_PRESETS[this.lastPreset].name,
+      edited: env.preset === 'custom',
+    };
+  }
+
   private updateSectionSummaries(): void {
     if (!this.viewport) return;
 
@@ -398,15 +443,11 @@ export class AppShell {
     );
 
     // Sun & Atmosphere · <last preset> [· edited]
-    const env = this.viewport.getLightingEngine().getEnvironment();
-    if (env.preset !== 'custom') {
-      this.lastPreset = env.preset;
-    }
-    const presetState = `${LIGHTING_PRESETS[this.lastPreset].name}${
-      env.preset === 'custom' ? ' · edited' : ''
-    }`;
-    this.setStateText('#sun-summary', presetState);
-    this.setStateText('#time-of-day-state', presetState);
+    const timeOfDay = this.getTimeOfDayState();
+    this.setStateText(
+      '#sun-summary',
+      `${timeOfDay.name}${timeOfDay.edited ? ' · edited' : ''}`
+    );
 
     // Ground · <current ground albedo>
     this.setStateText(
@@ -578,19 +619,69 @@ export class AppShell {
     });
   }
 
-  private bindPresetButtons(): void {
-    const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
-    presetBtns.forEach((btn) => {
+  /**
+   * Time-of-day strip: seven icon buttons above one snapping slider (D5-D9).
+   * Clicking an icon and landing on a slider stop are the same action, so the
+   * two paths cannot disagree.
+   */
+  private bindTimeOfDayStrip(): void {
+    if (!this.viewport) return;
+
+    const slider = this.root.querySelector<HTMLInputElement>('#slider-time-of-day')!;
+    const resetBtn = this.root.querySelector<HTMLButtonElement>('#btn-time-reset')!;
+    const label = this.root.querySelector<HTMLElement>('#time-of-day-label')!;
+    const editedEl = this.root.querySelector<HTMLElement>('#time-of-day-edited')!;
+    const iconBtns = Array.from(this.root.querySelectorAll<HTMLButtonElement>('.time-icon-btn'));
+
+    const applyPreset = (preset: LightingPreset) => {
+      if (!this.viewport) return;
+      this.lastPreset = preset;
+      this.viewport.setPreset(preset);
+      // The preset carries its own haze amount and softness; pull every other
+      // control and the swatch ramp back in sync with it.
+      this.syncSphereUI();
+    };
+
+    iconBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        const preset = btn.getAttribute('data-preset') as LightingPreset;
-        if (preset && this.viewport) {
-          this.viewport.setPreset(preset);
-          presetBtns.forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
-          // The preset carries its own calibrated haze amount; pull the slider
-          // and swatch ramp back in sync with it.
-          this.syncSphereUI();
-        }
+        const preset = btn.getAttribute('data-preset') as LightingPreset | null;
+        if (preset) applyPreset(preset);
+      });
+    });
+
+    slider.addEventListener('input', () => {
+      const index = Math.max(
+        0,
+        Math.min(
+          LIGHTING_PRESET_ORDER.length - 1,
+          Number.parseInt(slider.value, 10) || 0
+        )
+      );
+      applyPreset(LIGHTING_PRESET_ORDER[index]);
+    });
+
+    // `↺` re-applies only the last preset's six lighting values (D10).
+    resetBtn.addEventListener('click', () => {
+      applyPreset(this.lastPreset);
+    });
+
+    this.viewport.getLightingEngine().onEnvironmentChange(() => {
+      const { name, edited } = this.getTimeOfDayState();
+      const index = Math.max(0, LIGHTING_PRESET_ORDER.indexOf(this.lastPreset));
+
+      label.textContent = name;
+      editedEl.hidden = !edited;
+      resetBtn.hidden = !edited;
+      resetBtn.title = `Restore ${name}`;
+      resetBtn.setAttribute('aria-label', `Restore ${name}`);
+
+      slider.value = index.toString();
+      slider.setAttribute('aria-valuetext', edited ? `${name}, edited` : name);
+
+      iconBtns.forEach((btn) => {
+        const active = !edited && btn.getAttribute('data-preset') === this.lastPreset;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
     });
   }
@@ -606,12 +697,7 @@ export class AppShell {
     const azimNum = this.root.querySelector<HTMLInputElement>('#num-sun-azim')!;
     const elevNum = this.root.querySelector<HTMLInputElement>('#num-sun-elev')!;
 
-    const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
-
     const applyAnglesFromUI = (azimDeg: number, elevDeg: number) => {
-      // Immediately deselect presets on manual slider adjustment
-      presetBtns.forEach((btn) => btn.classList.remove('active'));
-
       const azimRad = (azimDeg * Math.PI) / 180;
       const elevRad = (elevDeg * Math.PI) / 180;
       this.viewport?.setLightAngles(azimRad, elevRad);
@@ -663,14 +749,6 @@ export class AppShell {
         elevSlider.value = elevDeg.toString();
         elevNum.value = elevDeg.toString();
       }
-
-      presetBtns.forEach((btn) => {
-        if (env.preset !== 'custom' && btn.getAttribute('data-preset') === env.preset) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
 
       // Update analytical swatches
       this.swatchRamp?.updateParameters({
@@ -725,7 +803,6 @@ export class AppShell {
     const swatchEl = this.root.querySelector<HTMLElement>('#swatch-light-color')!;
     const pickerEl = this.root.querySelector<HTMLInputElement>('#picker-light-color')!;
     const hexInput = this.root.querySelector<HTMLInputElement>('#input-light-hex')!;
-    const presetBtns = this.root.querySelectorAll<HTMLButtonElement>('.preset-btn');
 
     swatchEl.addEventListener('click', () => {
       pickerEl.click();
@@ -738,7 +815,6 @@ export class AppShell {
         hexInput.value = hex.toUpperCase();
       }
 
-      presetBtns.forEach((btn) => btn.classList.remove('active'));
       this.viewport?.setLightColor(hex);
       if (this.viewport) {
         this.swatchRamp?.updateParameters({

@@ -482,15 +482,15 @@ export const LIGHTING_PRESETS: Record<LightingPreset, {
   },
 };
 
-/** UI order, following the reference sheet: dawn through dusk to night. */
+/** UI order: chronological, dawn through dusk to night. */
 export const LIGHTING_PRESET_ORDER: LightingPreset[] = [
+  'early-morning',
   'morning',
   'midday',
   'afternoon',
   'near-sunset',
   'golden-hour',
   'night',
-  'early-morning',
 ];
 
 /**

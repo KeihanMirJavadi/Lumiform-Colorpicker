@@ -83,8 +83,7 @@ export class LightingEngine {
 
     // Direct sun drag: same evaluator as the sliders and the presets.
     this.sunIndicator.onDirectionChange((_dir, azimuth, elevation) => {
-      this.activePreset = 'custom';
-      this.environment.preset = 'custom';
+      this.markPresetCustom();
       this.environment.keyLight.azimuth = azimuth;
       this.applyElevation(elevation);
       this.syncShaderUniforms();
@@ -157,8 +156,7 @@ export class LightingEngine {
   }
 
   public setLightAngles(azimuth: number, elevation: number): void {
-    this.activePreset = 'custom';
-    this.environment.preset = 'custom';
+    this.markPresetCustom();
     this.environment.keyLight.azimuth = (azimuth % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
 
     this.applyElevation(
@@ -174,8 +172,7 @@ export class LightingEngine {
 
   public setKeyLightColor(colorHex: string | THREE.Color): void {
     const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
-    this.activePreset = 'custom';
-    this.environment.preset = 'custom';
+    this.markPresetCustom();
     this.environment.keyLight.color.copy(col);
     this.sunIndicator.setColor(col);
 
@@ -190,6 +187,7 @@ export class LightingEngine {
    */
   public setKeyAngularRadius(radians: number): void {
     const max = (MAX_KEY_ANGULAR_RADIUS_DEG * Math.PI) / 180;
+    this.markPresetCustom();
     this.angularRadiusOverride = Math.max(0, Math.min(max, radians));
     this.environment.keyLight.angularRadius = this.angularRadiusOverride;
 
@@ -203,6 +201,7 @@ export class LightingEngine {
 
   public setGroundColor(colorHex: string | THREE.Color): void {
     const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
+    this.markPresetCustom();
     this.groundAlbedo.copy(col);
 
     if (this.groundUniforms) {
@@ -214,6 +213,22 @@ export class LightingEngine {
 
   public getGroundColor(): THREE.Color {
     return this.groundAlbedo.clone();
+  }
+
+  /**
+   * Detaches the current look from its preset. Call this from controls whose
+   * value lives outside the engine (Haze) so the time-of-day strip clears its
+   * buttons. Does nothing (and does not notify) when already custom.
+   */
+  public markManualEdit(): void {
+    if (this.activePreset === 'custom') return;
+    this.markPresetCustom();
+    this.notifyChange();
+  }
+
+  private markPresetCustom(): void {
+    this.activePreset = 'custom';
+    this.environment.preset = 'custom';
   }
 
   /** Single source of truth for every light change. */
