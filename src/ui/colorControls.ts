@@ -6,6 +6,8 @@ export interface ColorControlsOptions {
   container: HTMLElement;
   initialHex?: string;
   onChange?: (hsb: HSBColor, rgb: RGBColor, hex: string) => void;
+  /** Clicking the albedo chip sends that exact hex to Photoshop. */
+  onAlbedoClick?: (hex: string) => void;
 }
 
 export class ColorControls {
@@ -22,6 +24,7 @@ export class ColorControls {
   private briNum!: HTMLInputElement;
   private hexInput!: HTMLInputElement;
   private swatchPreview!: HTMLElement;
+  private onAlbedoClick?: (hex: string) => void;
 
   constructor(options: ColorControlsOptions) {
     this.container = options.container;
@@ -33,6 +36,7 @@ export class ColorControls {
     if (options.onChange) {
       this.listeners.add(options.onChange);
     }
+    this.onAlbedoClick = options.onAlbedoClick;
 
     this.render();
     this.bindEvents();
@@ -45,8 +49,14 @@ export class ColorControls {
         <div class="field-row albedo-row">
           <span class="field-label">Albedo</span>
           <div class="hex-group">
-            <div class="albedo-swatch" id="albedo-swatch-preview" title="Selected sphere albedo"></div>
-            <input type="text" class="ps-input-hex" id="input-hex" maxlength="7" spellcheck="false" value="${DEFAULT_ALBEDO_HEX}" />
+            <button
+              type="button"
+              class="albedo-swatch albedo-send-btn"
+              id="albedo-swatch-preview"
+              title="Send the selected sphere's albedo to Photoshop"
+              aria-label="Send the selected sphere's albedo to Photoshop"
+            ></button>
+            <input type="text" class="ps-input-hex" id="input-hex" maxlength="7" spellcheck="false" aria-label="Albedo hex" value="${DEFAULT_ALBEDO_HEX}" />
           </div>
         </div>
 
@@ -139,8 +149,14 @@ export class ColorControls {
       this.updateUI(true);
     });
 
-    // Hex input validation and synchronization
-    this.hexInput.addEventListener('change', () => {
+    // Albedo chip: send the exact hex immediately (D21).
+    this.swatchPreview.addEventListener('click', () => {
+      this.onAlbedoClick?.(this.getHex());
+    });
+
+    // Hex input: a complete valid value streams live; blur/Enter normalizes
+    // the field to the canonical hex (and discards partial input).
+    this.hexInput.addEventListener('input', () => {
       let raw = this.hexInput.value.trim();
       if (!raw.startsWith('#')) {
         raw = '#' + raw;
@@ -149,11 +165,11 @@ export class ColorControls {
       if (rgb) {
         this.hsb = rgbToHsb(rgb);
         this.updateUI(true);
-      } else {
-        // Reset to current valid hex
-        const currentRgb = hsbToRgb(this.hsb);
-        this.hexInput.value = rgbToHex(currentRgb);
       }
+    });
+
+    this.hexInput.addEventListener('change', () => {
+      this.hexInput.value = rgbToHex(hsbToRgb(this.hsb));
     });
 
     this.hexInput.addEventListener('keydown', (e) => {

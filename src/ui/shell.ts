@@ -36,6 +36,9 @@ export class AppShell {
    * name to show next to `edited` (D9).
    */
   private lastPreset: LightingPreset = 'midday';
+  /** Latest colour waiting for the next animation frame (D21). */
+  private pendingForegroundHex: string | null = null;
+  private foregroundFrameId: number | null = null;
 
   constructor(root: HTMLElement, bridge: IPhotoshopBridge) {
     this.root = root;
@@ -388,6 +391,10 @@ export class AppShell {
             distance: this.viewport?.getSelectedSphereDistance(),
           });
           this.updateSectionSummaries();
+          this.streamForeground(hex);
+        },
+        onAlbedoClick: (hex) => {
+          this.sendForegroundNow(hex);
         },
       });
     }
@@ -489,6 +496,35 @@ export class AppShell {
     if (el && el.textContent !== text) {
       el.textContent = text;
     }
+  }
+
+  /**
+   * Coalesces colour edits into one foreground write per animation frame.
+   * The host bridge already coalesces; this keeps the web side from emitting
+   * more than the brush can use (D21).
+   */
+  private streamForeground(hex: string): void {
+    this.pendingForegroundHex = hex;
+    if (this.foregroundFrameId !== null) return;
+
+    this.foregroundFrameId = requestAnimationFrame(() => {
+      this.foregroundFrameId = null;
+      const pending = this.pendingForegroundHex;
+      this.pendingForegroundHex = null;
+      if (pending) {
+        void this.bridge.setForegroundColor(pending);
+      }
+    });
+  }
+
+  /** Albedo chip click: send now and drop any queued frame write. */
+  private sendForegroundNow(hex: string): void {
+    if (this.foregroundFrameId !== null) {
+      cancelAnimationFrame(this.foregroundFrameId);
+      this.foregroundFrameId = null;
+    }
+    this.pendingForegroundHex = null;
+    void this.bridge.setForegroundColor(hex);
   }
 
   private bindSphereControls(): void {
@@ -1061,6 +1097,11 @@ export class AppShell {
   }
 
   public destroy(): void {
+    if (this.foregroundFrameId !== null) {
+      cancelAnimationFrame(this.foregroundFrameId);
+      this.foregroundFrameId = null;
+    }
+    this.pendingForegroundHex = null;
     this.viewport?.dispose();
     this.viewport = null;
     this.colorControls = null;
