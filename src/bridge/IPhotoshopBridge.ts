@@ -26,6 +26,15 @@ export interface IPhotoshopBridge {
   openUrl(url: string): Promise<void>;
 
   /**
+   * Returns keyboard focus to the Photoshop document after a canvas drag.
+   *
+   * A UXP WebView owns the keyboard while the pointer is inside it, so global
+   * Photoshop shortcuts (brush size, tool keys) are swallowed until the user
+   * clicks the document. The host calls `app.bringToFront()` to hand focus back.
+   */
+  focusPhotoshop(): void;
+
+  /**
    * Subscribes to bridge status changes.
    */
   onStatusChange(callback: (status: string) => void): () => void;

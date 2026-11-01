@@ -360,6 +360,26 @@ export class Viewport {
     this.syncSphereUniforms();
   }
 
+  /**
+   * Restores the Spheres panel to its initial state: every slot visible,
+   * Near selected, both links off, and size/albedo back to the defaults.
+   */
+  public resetSpheres(): void {
+    this.linkedColors = false;
+    this.linkedSizes = false;
+
+    for (const sphere of this.spheres) {
+      sphere.active = true;
+      sphere.albedoHex = DEFAULT_ALBEDO_HEX;
+      sphere.size = 1;
+    }
+
+    this.selectedId = 'center';
+    this.syncSphereUniforms();
+    this.selectionListeners.forEach((cb) => cb('center'));
+    this.colorPickerTarget.scheduleResample();
+  }
+
   public getHaze(): number {
     return this.haze;
   }

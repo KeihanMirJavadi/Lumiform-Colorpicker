@@ -143,9 +143,29 @@ function buildWebUrl(cacheBuster) {
 async function openExternalUrl(url) {
   try {
     const uxp = require("uxp");
-    await uxp.shell.openExternal(url);
+    const failure = await uxp.shell.openExternal(url);
+    // openExternal resolves with "" on success and an error string on failure;
+    // it does not reject, so a silently failed launch must be surfaced here.
+    if (typeof failure === "string" && failure) {
+      sendError(`Could not open the link: ${failure}`);
+    }
   } catch (error) {
     sendError(`Could not open the link: ${error.message || error}`);
+  }
+}
+
+/**
+ * Hands keyboard focus back to the Photoshop document. Without this a UXP
+ * WebView keeps the keyboard after a canvas drag, so Photoshop shortcuts
+ * (brush size, tool keys) do nothing until the document is clicked.
+ */
+function focusPhotoshopDocument() {
+  try {
+    if (photoshopApp && typeof photoshopApp.bringToFront === "function") {
+      photoshopApp.bringToFront();
+    }
+  } catch (error) {
+    log("Could not return focus to Photoshop:", error);
   }
 }
 
@@ -337,6 +357,11 @@ function handleWebMessage(event) {
       return;
     }
     void openExternalUrl(url);
+    return;
+  }
+
+  if (data.type === "focus-photoshop") {
+    focusPhotoshopDocument();
   }
 }
 

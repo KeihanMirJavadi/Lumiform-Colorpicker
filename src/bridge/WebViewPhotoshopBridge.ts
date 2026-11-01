@@ -13,7 +13,7 @@ import { IPhotoshopBridge, ColorChangeEvent } from './IPhotoshopBridge';
  */
 export interface WebToHostMessage {
   source: 'lumiform-web';
-  type: 'ready' | 'set-foreground' | 'get-foreground' | 'open-url';
+  type: 'ready' | 'set-foreground' | 'get-foreground' | 'open-url' | 'focus-photoshop';
   requestId?: number;
   rgb?: RGBColor;
   hex?: string;
@@ -140,6 +140,10 @@ export class WebViewPhotoshopBridge implements IPhotoshopBridge {
       return;
     }
     this.post({ source: 'lumiform-web', type: 'open-url', url });
+  }
+
+  focusPhotoshop(): void {
+    this.post({ source: 'lumiform-web', type: 'focus-photoshop' });
   }
 
   async getForegroundColor(): Promise<RGBColor | null> {

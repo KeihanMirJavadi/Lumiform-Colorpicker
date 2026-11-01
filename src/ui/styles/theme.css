@@ -2115,3 +2115,52 @@ details.section-card {
   font-size: 9px;
   color: var(--ps-ink-secondary);
 }
+
+/* ==========================================================================
+   V1.2 verification polish (Task 4.7)
+   ========================================================================== */
+
+/* Per-panel reset in a collapsed header. The button stops its own click so the
+   <details> does not toggle; it renders as a quiet 18 px ghost icon. */
+.section-reset-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  margin-left: 2px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.section-reset-btn:hover {
+  background-color: var(--ps-hover);
+  border-color: var(--ps-line);
+  color: var(--ps-ink);
+}
+
+.section-reset-btn:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+.section-reset-btn .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* The base .ps-slider width:100% was overriding .time-range, leaving the track
+   11 px right of centre and past the section's right edge. Higher specificity
+   restores the intended inset so the midpoint lines up with the Midday icon. */
+.ps-slider.time-range {
+  display: block;
+  width: calc(100% - 22px);
+  margin: 0 auto;
+}

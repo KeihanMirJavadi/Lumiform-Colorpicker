@@ -76,6 +76,9 @@
       "domains": [],
       "allowLocalRendering": "yes",
       "enableMessageBridge": "localOnly"
+    },
+    "launchProcess": {
+      "schemes": ["https"]
     }
   }
 }

@@ -5,7 +5,7 @@ import { SURFACE_FINISHES } from '../core/material';
 import { StatusBar } from './statusBar';
 import { ColorControls } from './colorControls';
 import { SwatchRamp } from './swatchRamp';
-import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX } from '../core/defaults';
+import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
 import {
   LIGHTING_PRESET_ORDER,
   LIGHTING_PRESETS,
@@ -142,6 +142,13 @@ export class AppShell {
           <summary class="section-summary">
             <span class="section-title">Spheres</span>
             <span class="section-state" id="spheres-summary">Near Â· #E3E3E3</span>
+            <button
+              type="button"
+              class="section-reset-btn"
+              data-reset="spheres"
+              title="Reset Spheres"
+              aria-label="Reset Spheres"
+            >${ICONS.reset}</button>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
@@ -204,6 +211,13 @@ export class AppShell {
           <summary class="section-summary">
             <span class="section-title">Sun &amp; Atmosphere</span>
             <span class="section-state" id="sun-summary">Midday</span>
+            <button
+              type="button"
+              class="section-reset-btn"
+              data-reset="sun"
+              title="Reset Sun &amp; Atmosphere"
+              aria-label="Reset Sun and Atmosphere"
+            >${ICONS.reset}</button>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
@@ -272,6 +286,13 @@ export class AppShell {
           <summary class="section-summary">
             <span class="section-title">Ground Surface &amp; Color</span>
             <span class="section-state" id="ground-summary">${DEFAULT_GROUND_HEX}</span>
+            <button
+              type="button"
+              class="section-reset-btn"
+              data-reset="ground"
+              title="Reset Ground Surface &amp; Color"
+              aria-label="Reset Ground Surface and Color"
+            >${ICONS.reset}</button>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
@@ -305,6 +326,13 @@ export class AppShell {
           <summary class="section-summary">
             <span class="section-title">Surface Finish &amp; Reflectivity</span>
             <span class="section-state" id="finish-summary">Satin</span>
+            <button
+              type="button"
+              class="section-reset-btn"
+              data-reset="finish"
+              title="Reset Surface Finish &amp; Reflectivity"
+              aria-label="Reset Surface Finish and Reflectivity"
+            >${ICONS.reset}</button>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
@@ -527,6 +555,8 @@ export class AppShell {
     this.bindGroundColorControls();
     this.bindSurfaceFinishControls();
     this.bindSectionSummaryListeners();
+    this.bindPanelResets();
+    this.bindCanvasFocusReturn();
 
     this.syncSphereUI();
   }
@@ -601,6 +631,71 @@ export class AppShell {
     if (el && el.textContent !== text) {
       el.textContent = text;
     }
+  }
+
+  /** Shared by the time strip, its reset, and the two lighting-panel resets. */
+  private applyLightingPreset(preset: LightingPreset): void {
+    if (!this.viewport) return;
+    this.lastPreset = preset;
+    this.viewport.setPreset(preset);
+    // The preset carries its own haze amount and softness; pull every other
+    // control and the swatch ramp back in sync with it.
+    this.syncSphereUI();
+  }
+
+  /**
+   * Per-panel reset buttons in the collapsed headers. They stop the click from
+   * toggling the <details> they live in.
+   */
+  private bindPanelResets(): void {
+    this.root.querySelectorAll<HTMLButtonElement>('.section-reset-btn').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.viewport) return;
+
+        switch (button.dataset.reset) {
+          case 'spheres':
+            this.viewport.resetSpheres();
+            this.syncSphereUI();
+            break;
+          case 'sun':
+          case 'ground':
+            // Both lighting panels belong to the active time-of-day preset.
+            this.applyLightingPreset(this.lastPreset);
+            break;
+          case 'finish':
+            this.viewport.setSurfaceFinish(DEFAULT_SURFACE_FINISH);
+            break;
+        }
+      });
+
+      // Enter/Space must reset, not expand the section.
+      button.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.stopPropagation();
+        }
+      });
+    });
+  }
+
+  /**
+   * A UXP WebView owns the keyboard while the pointer is inside it. After a
+   * canvas drag, hand focus back to Photoshop so global shortcuts keep working
+   * without an extra click on the document.
+   */
+  private bindCanvasFocusReturn(): void {
+    const container = this.root.querySelector<HTMLElement>('#viewport-container');
+    if (!container) return;
+
+    const release = (): void => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+      window.setTimeout(() => this.bridge.focusPhotoshop(), 0);
+    };
+
+    container.addEventListener('pointerup', release);
+    container.addEventListener('pointercancel', release);
   }
 
   /**
@@ -958,12 +1053,7 @@ export class AppShell {
     const iconBtns = Array.from(this.root.querySelectorAll<HTMLButtonElement>('.time-icon-btn'));
 
     const applyPreset = (preset: LightingPreset) => {
-      if (!this.viewport) return;
-      this.lastPreset = preset;
-      this.viewport.setPreset(preset);
-      // The preset carries its own haze amount and softness; pull every other
-      // control and the swatch ramp back in sync with it.
-      this.syncSphereUI();
+      this.applyLightingPreset(preset);
     };
 
     iconBtns.forEach((btn) => {

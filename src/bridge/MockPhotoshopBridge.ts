@@ -82,6 +82,10 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
     window.open(url, '_blank', 'noopener');
   }
 
+  focusPhotoshop(): void {
+    // Browser dev has no Photoshop window to focus back.
+  }
+
   onStatusChange(callback: (status: string) => void): () => void {
     this._statusListeners.add(callback);
     callback(this._status);
