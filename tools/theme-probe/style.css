@@ -219,6 +219,26 @@ body {
   opacity: 0.6;
 }
 
+.hero-save {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid var(--probe-border);
+  color: var(--probe-muted);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+
+.hero-save.is-saved {
+  color: #7fd0a8;
+}
+
+@media (prefers-color-scheme: light) {
+  .hero-save.is-saved {
+    color: #1f6b45;
+  }
+}
+
 .hero-error {
   margin-top: 6px;
   padding: 5px 7px;

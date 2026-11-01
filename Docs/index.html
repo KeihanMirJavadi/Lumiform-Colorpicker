@@ -1397,21 +1397,22 @@ black / darkGray / mediumGray / lightGray token sets
             A throwaway UXP panel, not part of the product and sharing no code with <code>plugin/</code>. It reports
             <code>document.theme.getCurrent()</code>, live <code>onUpdated</code> values, every computed
             <code>--uxp-host-*</code> variable with a swatch, <code>app.appSkinInfo</code> colour roles, the
-            <code>prefers-color-scheme</code> result and Photoshop/UXP versions. It writes nothing.
+            <code>prefers-color-scheme</code> result and Photoshop/UXP versions.
           </p>
           <p style="font-size:13px; margin-bottom:0;">
-            Source: <code>tools/theme-probe/</code><br />
-            Package: <code>npm run probe:package</code><br />
+            It writes one <code>theme-&lt;name&gt;.json</code> snapshot per theme into its own
+            <code>PluginData</code> folder, so the palettes are frozen from exact values, not screenshots.<br />
+            Source: <code>tools/theme-probe/</code> · Package: <code>npm run probe:package</code> ·
             Output: <code>Lumiform-ThemeProbe-1.0.0.ccx</code>
           </p>
         </div>
         <div class="card">
           <h4>How to capture</h4>
           <ol style="font-size:13px; margin:0; padding-left:18px; color:#cbd5e1;">
-            <li>Float the probe panel at about 460 x 920.</li>
+            <li>Copy <code>tools/theme-probe/</code> into Photoshop's <code>Plug-ins</code> folder, or install the probe <code>.ccx</code>, then restart Photoshop.</li>
+            <li>Open <em>Plugins ▸ Lumiform Theme Probe</em> and float it at about 460 x 920.</li>
             <li>Open <em>Photoshop ▸ Settings ▸ Interface ▸ Color Theme</em>.</li>
-            <li>Select Black, Dark Gray, Medium Gray and Light Gray in turn.</li>
-            <li>Screenshot the probe in each theme; the change log should show a <code>live</code> entry.</li>
+            <li>Select Black, Dark Gray, Medium Gray and Light Gray in turn; each switch saves a JSON snapshot.</li>
           </ol>
           <p style="font-size:12px; color:#f59e0b; margin:10px 0 0;">
             The four palette columns stay <code>pending</code> until these captures land. They are not guessed.

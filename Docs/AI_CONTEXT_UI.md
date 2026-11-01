@@ -469,8 +469,9 @@ It is not part of the product and shares no code with `plugin/`.
 | Source | `tools/theme-probe/` - `manifest.json`, `index.html`, `style.css`, `main.js` |
 | Package | `npm run probe:package` -> `release/Lumiform-ThemeProbe-1.0.0.ccx` |
 | Reads | `document.theme.getCurrent()`, live `onUpdated` values, every computed `--uxp-host-*` variable (with a swatch), `app.appSkinInfo` colour roles, `prefers-color-scheme`, Photoshop/UXP versions and a timestamped change log |
-| Writes | Nothing. The probe never touches the document, the foreground colour or the product panel. |
-| Capture | Float the panel at roughly 460x920, open Photoshop Settings > Interface > Color Theme, switch through all four themes and screenshot each state |
+| Writes | `theme-<name>.json` plus `theme-latest.json` into the probe's own `PluginData` folder (`%APPDATA%\Adobe\UXP\PluginsStorage\PHSP\<version>\External\com.lumiform.themeprobe\PluginData`). No document, foreground-colour or product-panel writes. |
+| Install | Copy `tools/theme-probe/` into `C:\Program Files\Adobe\Adobe Photoshop 2025\Plug-ins\Lumiform Theme Probe` (admin), or install `release/Lumiform-ThemeProbe-1.0.0.ccx`. Restart Photoshop, then open Plugins > Lumiform Theme Probe. |
+| Capture | Switch Photoshop Settings > Interface > Color Theme through Black, Dark Gray, Medium Gray and Light Gray. Each switch writes one JSON automatically; screenshots are optional. |
 
 Why a separate plugin: `document.theme` is undocumented for Photoshop and may change shape. Keeping the probe out of
 `plugin/` means no diagnostic code can leak into a 1.2.0 build, and a broken probe cannot break the shipping panel.
@@ -478,6 +479,11 @@ Why a separate plugin: `document.theme` is undocumented for Photoshop and may ch
 The probe also accepts the older `onUpdated.add` / `.on` shapes and polls `getCurrent()` once per 1.2 s, so a build
 where the event never fires still reports changes. The change log labels each entry `live` (event) or `poll`
 (fallback); a `live` entry is the evidence for "a live change is observed".
+
+The JSON snapshot is the source of truth for the palettes. It carries the theme name, the full host-variable list
+with raw and hex values, `appSkinInfo`, the environment and the event log, so the four themes can be frozen by
+reading files rather than transcribing screenshots. The panel shows `Saved theme-<name>.json` when a write succeeds
+and the failure reason when `localFileSystem` is unavailable.
 
 The theme names Photoshop may report are `darkest`, `dark`, `medium`, `light` and `lightest` (the same vocabulary as
 the manifest icon `theme` arrays). The probe records which of those map to Black, Dark Gray, Medium Gray and Light
@@ -678,4 +684,4 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 | 2026-11-01 | Task 3.6 verified and marked Done. The full-panel guide takeover, GitHub row and https-only `open-url` bridge are implemented. |
 | 2026-11-01 | Task 3.7 verified and marked Done. Version bumped to 1.1.0, `tsc`/build/plugin pass, docs synced, and the 1.1.0 `.ccx` packaged. In-Photoshop acceptance remains the user's manual check. |
 | 2026-11-01 | V1.2 plan locked. The Photoshop reference sampled Medium Gray chrome; the four-theme host relay, flat native skin, line icons, Segoe UI, neutral selection and manual Appearance override were agreed. Stage 4 added with Task 4.1 current. |
-| 2026-11-01 | Task 4.1 probe built in `tools/theme-probe/` and packaged as `Lumiform-ThemeProbe-1.0.0.ccx`. It reports the theme name, live `onUpdated` events, `--uxp-host-*` colours and `app.appSkinInfo`. Four theme captures are the remaining 4.1 evidence; the palette table stays `pending` until then. |
+| 2026-11-01 | Task 4.1 probe built in `tools/theme-probe/` and packaged as `Lumiform-ThemeProbe-1.0.0.ccx`. It reports the theme name, live `onUpdated` events, `--uxp-host-*` colours and `app.appSkinInfo`, and saves one JSON snapshot per theme into its `PluginData` folder so palettes are frozen from exact values instead of screenshots. Installed into Photoshop's `Plug-ins` folder for the capture run. The palette table stays `pending` until the four snapshots land. |

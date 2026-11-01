@@ -75,8 +75,13 @@ const state = {
   environment: [],
   events: [],
   updateCount: 0,
+  saveStatus: "Report: waiting for a theme",
+  saveOk: false,
   defaultHint: "",
 };
+
+/** Serialises file writes so rapid theme switches cannot interleave. */
+let saveChain = Promise.resolve();
 
 const dom = {};
 
@@ -222,6 +227,23 @@ function getPhotoshop() {
   }
 }
 
+function getStorage() {
+  try {
+    return require("uxp").storage || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function safeFileName(value) {
+  const name = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return name.slice(0, 40) || "unknown";
+}
+
 function normalizeTheme(value) {
   if (typeof value === "string") return value.trim();
   if (!value || typeof value !== "object") return "";
@@ -310,9 +332,10 @@ function handleThemeUpdate(payload) {
   if (theme) state.theme = theme;
 
   // A live event is the strongest signal: refresh everything so the palette
-  // snapshot belongs to the new theme.
+  // snapshot belongs to the new theme, then persist it.
   refresh("onUpdated");
   renderEvents();
+  void queueSave("onUpdated");
 }
 
 /**
@@ -372,6 +395,7 @@ function pollTheme() {
   recordEvent(read.theme, "poll");
   refresh("poll");
   renderEvents();
+  void queueSave("poll");
 }
 
 /* -------------------------------------------------------------- host colours */
@@ -719,6 +743,7 @@ function render() {
   renderSkin();
   renderEnvironment();
   renderEvents();
+  renderSaveState();
 }
 
 /* ------------------------------------------------------------------ reports */
@@ -748,6 +773,55 @@ function buildSnapshot() {
   };
 }
 
+/**
+ * Writes the current snapshot into the probe's own PluginData folder. This is
+ * the primary export path: one JSON per theme means the palette can be frozen
+ * without reading values off a screenshot.
+ */
+async function writeSnapshot(reason) {
+  const storage = getStorage();
+  if (!storage) throw new Error("uxp.storage is unavailable");
+
+  const fileSystem = storage.localFileSystem;
+  if (!fileSystem || typeof fileSystem.getDataFolder !== "function") {
+    throw new Error("localFileSystem.getDataFolder is unavailable");
+  }
+
+  const folder = await fileSystem.getDataFolder();
+  if (!folder) throw new Error("PluginData folder is unavailable");
+
+  const text = JSON.stringify({ ...buildSnapshot(), reason }, null, 2);
+  const themeName = state.theme ? safeFileName(state.theme) : "no-theme";
+  const fileName = `theme-${themeName}.json`;
+
+  const file = await folder.createFile(fileName, { overwrite: true });
+  await file.write(text, { format: storage.formats.utf8 });
+
+  const latest = await folder.createFile("theme-latest.json", { overwrite: true });
+  await latest.write(text, { format: storage.formats.utf8 });
+
+  state.saveStatus = `Saved ${fileName} · ${state.hostVariables.length} host vars · ${nowTime()}`;
+  state.saveOk = true;
+  renderSaveState();
+}
+
+function queueSave(reason) {
+  saveChain = saveChain
+    .then(() => writeSnapshot(reason))
+    .catch((error) => {
+      state.saveStatus = `Report not saved: ${messageOf(error)}`;
+      state.saveOk = false;
+      renderSaveState();
+    });
+  return saveChain;
+}
+
+function renderSaveState() {
+  if (!dom.saveState) return;
+  dom.saveState.textContent = state.saveStatus;
+  dom.saveState.classList.toggle("is-saved", state.saveOk);
+}
+
 function flash(message) {
   if (!dom.copyState) return;
   dom.copyState.textContent = message;
@@ -758,6 +832,7 @@ function flash(message) {
 
 async function copyReport() {
   const text = JSON.stringify(buildSnapshot(), null, 2);
+  void queueSave("copy");
 
   try {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
@@ -806,6 +881,7 @@ function cacheDom() {
   dom.listenerState = document.getElementById("listenerState");
   dom.updateCount = document.getElementById("updateCount");
   dom.listenerError = document.getElementById("listenerError");
+  dom.saveState = document.getElementById("saveState");
   dom.hostVarCount = document.getElementById("hostVarCount");
   dom.hostVarList = document.getElementById("hostVarList");
   dom.hostVarEmpty = document.getElementById("hostVarEmpty");
@@ -826,7 +902,8 @@ function wireButtons() {
   if (dom.refreshButton) {
     dom.refreshButton.addEventListener("click", () => {
       refresh();
-      flash("Refreshed.");
+      void queueSave("manual");
+      flash("Refreshed and saved.");
     });
   }
   if (dom.copyButton) {
@@ -850,6 +927,7 @@ function init() {
     renderEvents();
   }
 
+  void queueSave("startup");
   window.setInterval(pollTheme, POLL_INTERVAL_MS);
 }
 
