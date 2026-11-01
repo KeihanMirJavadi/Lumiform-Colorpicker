@@ -49,6 +49,14 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
     return { ...this._currentColor };
   }
 
+  async openUrl(url: string): Promise<void> {
+    if (!/^https:\/\//i.test(url)) {
+      console.warn(`[MockBridge] Refusing to open a non-https URL: ${url}`);
+      return;
+    }
+    window.open(url, '_blank', 'noopener');
+  }
+
   onStatusChange(callback: (status: string) => void): () => void {
     this._statusListeners.add(callback);
     callback(this._status);

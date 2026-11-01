@@ -21,6 +21,11 @@ export interface IPhotoshopBridge {
   getForegroundColor(): Promise<RGBColor | null>;
 
   /**
+   * Opens an https URL in the system browser. The host rejects other schemes.
+   */
+  openUrl(url: string): Promise<void>;
+
+  /**
    * Subscribes to bridge status changes.
    */
   onStatusChange(callback: (status: string) => void): () => void;

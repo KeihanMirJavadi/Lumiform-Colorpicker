@@ -13,6 +13,8 @@ import {
 } from '../core/lighting';
 import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
 
+const LUMIFORM_GITHUB_URL = 'https://github.com/KeihanMirJavadi/Lumiform-Colorpicker';
+
 /** Icon-only time-of-day buttons (D7); names live in title/aria-label. */
 const TIME_OF_DAY_ICONS: Record<LightingPreset, string> = {
   'early-morning': '🌄',
@@ -51,9 +53,9 @@ export class AppShell {
       <header class="panel-header">
         <div class="title-group">
           <h1>Lumiform Colorpicker</h1>
-          <span class="badge">v1.0.0</span>
+          <span class="badge">v1.1.0</span>
         </div>
-        <!-- Task 3.6 wires this to the full-panel Controls Guide takeover. -->
+        <!-- Opens the full-panel Controls Guide takeover. -->
         <button
           type="button"
           class="panel-info-btn"
@@ -61,6 +63,8 @@ export class AppShell {
           title="Controls Guide"
           aria-label="Open Controls Guide"
           aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="guide-overlay"
         >i</button>
       </header>
 
@@ -330,6 +334,73 @@ export class AppShell {
       </main>
 
       <footer class="status-bar" id="status-bar-container"></footer>
+
+      <!-- Controls Guide takeover. Covers header, canvas, scroll area and status bar. -->
+      <div class="guide-overlay" id="guide-overlay" hidden>
+        <div class="guide-backdrop" id="guide-backdrop"></div>
+        <section
+          class="guide-window"
+          id="guide-window"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guide-title"
+          tabindex="-1"
+        >
+          <header class="guide-header">
+            <div class="guide-title-group">
+              <span class="guide-kicker">Lumiform Colorpicker</span>
+              <h2 id="guide-title">Controls Guide</h2>
+            </div>
+            <button type="button" class="guide-back" id="btn-guide-back">✕ Back</button>
+          </header>
+
+          <div class="guide-body">
+            <section class="guide-section">
+              <h3>Time of Day</h3>
+              <p>Click one of the seven icons or drag the slider. Each stop applies its calibrated sun, sky, ground and haze. Moving Orbit, Height, Terminator, Haze, Light or Ground turns the label into <strong>edited</strong>; <strong>↺</strong> restores the last preset without touching the spheres.</p>
+            </section>
+
+            <section class="guide-section">
+              <h3>5-Value Ramp</h3>
+              <p>The five tones are calculated from the selected sphere's surface and lighting. Click any swatch to paint with that tone. The header names the sphere and shows a dot of its albedo.</p>
+            </section>
+
+            <section class="guide-section">
+              <h3>Spheres</h3>
+              <p><strong>Near</strong>, <strong>Mid</strong> and <strong>Far</strong> carry visibility and selection: an off sphere enables and selects, an enabled sphere selects, and the selected sphere hides. The last sphere cannot be hidden, and hidden spheres remember their colour and size.</p>
+              <p>Link Colours and Link Size apply one edit to every enabled sphere. Click the albedo chip to send its exact hex to Photoshop, or open <strong>H · S · B</strong> for the sliders.</p>
+            </section>
+
+            <section class="guide-section">
+              <h3>Sun &amp; Atmosphere</h3>
+              <p><strong>Light</strong> sets the key colour. <strong>Orbit</strong> and <strong>Height</strong> move the sun, <strong>Terminator</strong> softens or hardens the shadow edge, and <strong>Haze</strong> sets aerial perspective. Editing any of them detaches the time preset.</p>
+            </section>
+
+            <section class="guide-section">
+              <h3>Ground &amp; Surface Finish</h3>
+              <p><strong>Ground</strong> sets the bounce colour and offers grass, studio grey, dirt and sand. <strong>Surface Finish</strong> switches Matte, Satin or Glossy, or exposes roughness and specular sliders.</p>
+            </section>
+
+            <section class="guide-section">
+              <h3>Canvas &amp; Brush</h3>
+              <p>Drag the circular reticle to sample the rendered colour under it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H · S · B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
+            </section>
+
+            <button
+              type="button"
+              class="guide-github-row"
+              id="btn-guide-github"
+              aria-label="Open the Lumiform Colorpicker GitHub repository"
+            >
+              <span class="guide-github-text">
+                <span class="guide-github-label">GitHub repository</span>
+                <span class="guide-github-url">github.com/KeihanMirJavadi/Lumiform-Colorpicker</span>
+              </span>
+              <span class="guide-github-arrow" aria-hidden="true">↗</span>
+            </button>
+          </div>
+        </section>
+      </div>
     `;
 
     // 1. Mount Viewport
@@ -405,7 +476,10 @@ export class AppShell {
       new StatusBar(statusBarContainer, this.bridge);
     }
 
-    // 5. Bridge color events (if any external source updates color)
+    // 5. Mount the Controls Guide takeover
+    this.bindGuide();
+
+    // 6. Bridge color events (if any external source updates color)
     this.bridge.onColorChange((_event: ColorChangeEvent) => {
       // Kept in sync
     });
@@ -496,6 +570,93 @@ export class AppShell {
     if (el && el.textContent !== text) {
       el.textContent = text;
     }
+  }
+
+  /**
+   * Full-panel Controls Guide takeover (D19-D20). It is an overlay, not a
+   * second UXP entrypoint, so it covers the header, canvas, scroll area and
+   * status bar and closes with Back, Esc or the backdrop.
+   */
+  private bindGuide(): void {
+    const overlay = this.root.querySelector<HTMLElement>('#guide-overlay');
+    const windowEl = this.root.querySelector<HTMLElement>('#guide-window');
+    const openBtn = this.root.querySelector<HTMLButtonElement>('#btn-open-guide');
+    const backBtn = this.root.querySelector<HTMLButtonElement>('#btn-guide-back');
+    const backdrop = this.root.querySelector<HTMLElement>('#guide-backdrop');
+    const githubBtn = this.root.querySelector<HTMLButtonElement>('#btn-guide-github');
+    if (!overlay || !windowEl || !openBtn || !backBtn) return;
+
+    const background = [
+      this.root.querySelector<HTMLElement>('.panel-header'),
+      this.root.querySelector<HTMLElement>('.panel-content'),
+      this.root.querySelector<HTMLElement>('.status-bar'),
+    ].filter((el): el is HTMLElement => el !== null);
+
+    const setBackgroundInert = (inert: boolean): void => {
+      for (const el of background) {
+        if (inert) {
+          el.setAttribute('inert', '');
+          el.setAttribute('aria-hidden', 'true');
+        } else {
+          el.removeAttribute('inert');
+          el.removeAttribute('aria-hidden');
+        }
+      }
+    };
+
+    const getFocusable = (): HTMLElement[] =>
+      Array.from(
+        windowEl.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute('hidden') && el.offsetParent !== null);
+
+    const closeGuide = (): void => {
+      if (overlay.hidden) return;
+      overlay.hidden = true;
+      openBtn.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('keydown', handleGuideKeyDown);
+      setBackgroundInert(false);
+      openBtn.focus();
+    };
+
+    function handleGuideKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeGuide();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    const openGuide = (): void => {
+      overlay.hidden = false;
+      openBtn.setAttribute('aria-expanded', 'true');
+      setBackgroundInert(true);
+      document.addEventListener('keydown', handleGuideKeyDown);
+      backBtn.focus();
+    };
+
+    openBtn.addEventListener('click', openGuide);
+    backBtn.addEventListener('click', closeGuide);
+    backdrop?.addEventListener('click', closeGuide);
+    githubBtn?.addEventListener('click', () => {
+      void this.bridge.openUrl(LUMIFORM_GITHUB_URL).catch((error) => {
+        console.warn('[Lumiform] Could not open the GitHub link:', error);
+      });
+    });
   }
 
   /**

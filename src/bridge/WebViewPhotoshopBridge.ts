@@ -13,10 +13,11 @@ import { IPhotoshopBridge, ColorChangeEvent } from './IPhotoshopBridge';
  */
 export interface WebToHostMessage {
   source: 'lumiform-web';
-  type: 'ready' | 'set-foreground' | 'get-foreground';
+  type: 'ready' | 'set-foreground' | 'get-foreground' | 'open-url';
   requestId?: number;
   rgb?: RGBColor;
   hex?: string;
+  url?: string;
 }
 
 export interface HostToWebMessage {
@@ -118,6 +119,14 @@ export class WebViewPhotoshopBridge implements IPhotoshopBridge {
 
     this.applyColor(rgb);
     this.post({ source: 'lumiform-web', type: 'set-foreground', rgb });
+  }
+
+  async openUrl(url: string): Promise<void> {
+    if (!/^https:\/\//i.test(url)) {
+      console.warn(`[UXPBridge] Refusing to open a non-https URL: ${url}`);
+      return;
+    }
+    this.post({ source: 'lumiform-web', type: 'open-url', url });
   }
 
   async getForegroundColor(): Promise<RGBColor | null> {

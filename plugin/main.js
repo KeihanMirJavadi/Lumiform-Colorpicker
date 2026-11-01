@@ -8,7 +8,7 @@
  * relays its color requests to Photoshop through the Photoshop DOM.
  *
  * Protocol (see src/bridge/WebViewPhotoshopBridge.ts):
- *   web  -> host : ready | set-foreground | get-foreground
+ *   web  -> host : ready | set-foreground | get-foreground | open-url
  *   host -> web  : status | foreground | error
  */
 
@@ -76,6 +76,20 @@ function sendStatus(status, connected) {
 function sendError(message) {
   send({ type: "error", message });
   log("Error:", message);
+}
+
+/**
+ * Opens an external link in the system browser. WebView `window.open` is not
+ * reliable, so every external link is relayed here (D22). Only https is
+ * accepted, both here and in the web bridge.
+ */
+async function openExternalUrl(url) {
+  try {
+    const uxp = require("uxp");
+    await uxp.shell.openExternal(url);
+  } catch (error) {
+    sendError(`Could not open the link: ${error.message || error}`);
+  }
 }
 
 function showLoading() {
@@ -253,6 +267,16 @@ function handleWebMessage(event) {
     } catch (error) {
       sendError(`Could not read the Photoshop foreground color: ${error.message || error}`);
     }
+    return;
+  }
+
+  if (data.type === "open-url") {
+    const url = typeof data.url === "string" ? data.url : "";
+    if (!/^https:\/\//i.test(url)) {
+      sendError("Refused to open a non-https URL.");
+      return;
+    }
+    void openExternalUrl(url);
   }
 }
 
