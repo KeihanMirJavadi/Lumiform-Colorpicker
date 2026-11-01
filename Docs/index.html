@@ -323,6 +323,11 @@
       100% { opacity: 0.8; }
     }
 
+    pre {
+      font-family: Consolas, "Courier New", monospace;
+      white-space: pre;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -365,6 +370,7 @@
       <button class="nav-btn" onclick="switchTab('color')">4. Color & Swatch Ramp</button>
       <button class="nav-btn" onclick="switchTab('roadmap')">5. Development Roadmap</button>
       <button class="nav-btn" onclick="switchTab('depth')">6. Depth & Atmosphere</button>
+      <button class="nav-btn" onclick="switchTab('ui')">7. V1.1 UI Design</button>
     </nav>
   </header>
 
@@ -426,7 +432,7 @@
           <p>
             Picking a sphere, swatch, or reticle posts the color to the UXP host, which writes Photoshop's
             <code>app.foregroundColor</code>. External brush changes flow back to the panel status bar.
-            <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In-Photoshop check pending</span>
+            <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Running in Photoshop</span>
           </p>
         </div>
       </div>
@@ -435,6 +441,20 @@
         double-click it through Creative Cloud, or load <code>plugin/manifest.json</code> through UXP Developer Tool.
         Full guide: <code>Docs/PHOTOSHOP.md</code>.
       </p>
+
+      <h3>V1.1 - UI Design <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span></h3>
+      <div class="card">
+        <p>
+          The v1.0 panel works, but its controls were assembled in development order. V1.1 restructures the panel
+          without touching the lighting engine: a fixed spine, four collapsible sections that start closed and show
+          live state, a single-row time-of-day strip with a snapping slider, Near / Mid / Far sphere toggles instead
+          of a count control and Delete, a sphere-labelled 5-value ramp, and a full-panel Controls Guide overlay.
+        </p>
+        <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
+          Decisions, onboarding and the Stage 3 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> -
+          see <a href="#" onclick="switchTab('ui'); return false;" style="color:#93c5fd;">tab 7</a>.
+        </p>
+      </div>
     </div>
 
     <!-- TAB 2: SPECS -->
@@ -830,13 +850,13 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">2.2 Photoshop Bridge Implementation (WebViewPhotoshopBridge)</div>
               <div class="task-desc">Connect color sampling to Photoshop's <code>app.foregroundColor</code>. The WebView-side bridge sends <code>ready</code>/<code>set-foreground</code>/<code>get-foreground</code> messages to <code>plugin/main.js</code>, which reads/writes a <code>SolidColor</code>, coalesces rapid eyedropper samples, and pushes external foreground changes back to the panel.</div>
-              <div class="task-criteria">Criteria: Clicking a sphere, swatch, or dragging the picker changes the active brush color with no visible lag; external Photoshop color changes update the panel status bar. The protocol harness passes; the in-Photoshop check remains.</div>
+              <div class="task-criteria">Criteria: Clicking a sphere, swatch, or dragging the picker changes the active brush color with no visible lag; external Photoshop color changes update the panel status bar. Protocol harness passes and the packaged panel runs in Photoshop.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -844,6 +864,80 @@
               <div class="task-name">2.3 End-to-End Photoshop Verification & Polish</div>
               <div class="task-desc">Load the packaged plugin in Adobe Photoshop 2025+ via UDT or the <code>.ccx</code>, test panel docking, resizing, high-DPI scaling, WebGL startup, and paint responsiveness.</div>
               <div class="task-criteria">Criteria: Plugin runs stably in Photoshop 2025+ with full bi-directional brush responsiveness and no panel-layout regressions.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STAGE 3 -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">Stage 3: V1.1 - UI Design (Panel Redesign)</div>
+          <span class="status-badge current" id="stage3-badge">In Progress</span>
+        </div>
+        <div class="task-list">
+
+          <div class="task-item" data-status="current">
+            <div class="task-info">
+              <div class="task-name">3.1 Panel spine, collapsible sections &amp; live headers</div>
+              <div class="task-desc">Rebuild the panel shell into the V1.1 spine: header, canvas, time of day, ramp, spheres, sun &amp; atmosphere, ground, surface finish, status bar. Replace section cards with <code>&lt;details&gt;</code> blocks that start closed, add the header info affordance and live collapsed-header summaries.</div>
+              <div class="task-criteria">Criteria: At 320/420/600 px the panel shows the new spine with four closed, correctly summarised sections; opening each reveals its controls; the status bar stays pinned.</div>
+            </div>
+            <span class="status-badge current">current</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">3.2 Time-of-day strip (icons + snapped slider + detach / &#8635;)</div>
+              <div class="task-desc">Seven icon buttons in one row above a snapping slider, chronological preset order (Early Morning first), live relighting, and the detach rule for all six lighting controls with the <code>&middot; edited &#8635;</code> reset label.</div>
+              <div class="task-criteria">Criteria: Clicking and dragging agree; crossing a stop relights immediately; moving any lighting control clears all buttons and shows <code>edited</code>; <code>&#8635;</code> restores the calibrated preset; one line at 320 px.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">3.3 Sphere model - Near / Mid / Far toggles, merged panel, size link</div>
+              <div class="task-desc">Rename spheres to Near / Mid / Far, replace the count control and Delete with three-state toggles, add the last-sphere guard, restore-on-re-enable, selection fallback Near &rarr; Mid &rarr; Far, Link Size, and the merged panel with size, albedo and the nested H/S/B disclosure.</div>
+              <div class="task-criteria">Criteria: Toggles enable / select / disable as specified; the last sphere cannot be disabled; re-enabling restores colour and size; link toggles equalise immediately; no count or Delete control remains.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">3.4 Ramp header, sphere indicator &amp; albedo dot</div>
+              <div class="task-desc">Retitle the ramp with a read-only Near / Mid / Far chip and an albedo dot; keep the grid, the recomputation triggers and click-to-paint behaviour.</div>
+              <div class="task-criteria">Criteria: Chip follows selection; dot matches albedo; swatches still update on lighting, haze and finish changes; clicks still write to Photoshop.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">3.5 Light row and live foreground streaming</div>
+              <div class="task-desc">Move the light chip into a labelled <code>Light</code> row in Sun &amp; Atmosphere, make the sphere albedo chip send on click, and stream H/S/B and hex edits at one write per animation frame.</div>
+              <div class="task-criteria">Criteria: The light chip is discoverable at 320 px; the albedo chip sets the Photoshop foreground; H/S/B dragging streams without flooding the host; light and ground edits detach the preset.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">3.6 Controls Guide takeover and GitHub row</div>
+              <div class="task-desc">Header info button opens a full-panel guide overlay with its own header and <strong>Back</strong>, rewrites the guide for the new UI, adds the GitHub row, and adds the <code>open-url</code> bridge message with an <code>uxp.shell.openExternal</code> host handler.</div>
+              <div class="task-criteria">Criteria: Overlay covers the whole panel; Esc, backdrop and Back return to the tool; the GitHub row opens the repository externally; non-https URLs are rejected.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">3.7 Verification, polish and documentation sync</div>
+              <div class="task-desc">Verify at 320/420/600 px and inside Photoshop across the detach, toggle and streaming paths; polish spacing, focus states and 320 px truncation; sync the three docs and rebuild the <code>.ccx</code>.</div>
+              <div class="task-criteria">Criteria: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; every earlier criterion is demonstrated; docs match the shipped UI.</div>
             </div>
             <span class="status-badge planned">planned</span>
           </div>
@@ -913,6 +1007,11 @@
         </tbody>
       </table>
 
+      <p style="font-size:12px; color:#f59e0b; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); padding:10px 12px; border-radius:6px;">
+        <strong>v1.0 behaviour.</strong> V1.1 replaces the count control, Delete and the separate selector row with
+        Near / Mid / Far toggles, adds Link Size and renames the spheres - see tab 7.
+      </p>
+
       <h3>Controls</h3>
       <table>
         <thead>
@@ -977,6 +1076,146 @@
           reads as one form instead of two colours. Each preset owns its calibrated Haze amount, and selecting it resets the slider.
           Picking reads the final framebuffer, which means the sampled color already includes haze. The analytical swatch ramp follows the
           selected sphere, including its depth haze.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 7: V1.1 UI DESIGN -->
+    <div id="ui" class="tab-content">
+      <h2>V1.1 - UI Design</h2>
+      <p>
+        V1.1 restructures the panel without touching the lighting engine, the atmosphere model or the swatch
+        mathematics. The goal is a panel where the preview is always visible, every section can be collapsed, and
+        the state of the scene is readable without opening anything.
+        <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span>
+      </p>
+
+      <div class="card" style="margin-bottom:20px;">
+        <h4>Panel Spine</h4>
+        <p style="font-size:13px; color:var(--text-muted);">
+          Whether a section is open or closed never changes the order. Everything marked collapsible starts closed.
+        </p>
+        <pre style="background:#191919; padding:16px; border-radius:6px; color:#38bdf8; font-size:12px; overflow-x:auto;">
++--------------------------------------------------------------+
+| HEADER   Lumiform Colorpicker        v1.0.0            [ i ] |
++--------------------------------------------------------------+
+| CANVAS   412:227, fixed camera, eyedropper reticle           |
++--------------------------------------------------------------+
+| TIME OF DAY   label row + 7 icon buttons + snapped slider    |
++--------------------------------------------------------------+
+| 5-VALUE RAMP   title + sphere chip + albedo dot              |
++--------------------------------------------------------------+
+| SPHERES                                     (collapsed)      |
++--------------------------------------------------------------+
+| SUN &amp; ATMOSPHERE                            (collapsed)      |
++--------------------------------------------------------------+
+| GROUND SURFACE &amp; COLOR                      (collapsed)      |
++--------------------------------------------------------------+
+| SURFACE FINISH &amp; REFLECTIVITY               (collapsed)      |
++--------------------------------------------------------------+
+| STATUS BAR   Photoshop connection                            |
++--------------------------------------------------------------+
+        </pre>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:0;">
+          Collapsed headers carry live state: <code>Spheres &middot; Near &middot; #E3E3E3</code>,
+          <code>Sun &amp; Atmosphere &middot; Midday &middot; edited</code>, <code>Ground &middot; #4A7C3F</code>,
+          <code>Surface Finish &middot; Matte</code>.
+        </p>
+      </div>
+
+      <h3>Design Decisions</h3>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Area</th><th>Decision</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>D1</td><td>Canvas</td><td>Keep 412:227. The 1:1 canvas is deferred; the framing contract is untouched.</td></tr>
+          <tr><td>D2</td><td>Spine</td><td>Header, canvas, time of day, ramp, spheres, sun &amp; atmosphere, ground, finish, status bar.</td></tr>
+          <tr><td>D3</td><td>Collapsing</td><td>Every collapsible section starts closed, including the nested H/S/B disclosure.</td></tr>
+          <tr><td>D4</td><td>Headers</td><td>Collapsed headers show live scene state, not static titles.</td></tr>
+          <tr><td>D5</td><td>Time of day</td><td>Chronological order: Early Morning, Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night.</td></tr>
+          <tr><td>D6</td><td>Time of day</td><td>The slider snaps to seven stops and relights as it crosses them.</td></tr>
+          <tr><td>D7</td><td>Time of day</td><td>Seven icon-only buttons in one row; names in tooltips and in the row label.</td></tr>
+          <tr><td>D8</td><td>Presets</td><td>Moving any of the six lighting controls clears all seven buttons; there is no Custom button.</td></tr>
+          <tr><td>D9</td><td>Presets</td><td>The label reads <code>&lt;Last preset&gt; &middot; edited &#8635;</code>; <code>&#8635;</code> re-applies the calibrated preset.</td></tr>
+          <tr><td>D10</td><td>Presets</td><td>That reset touches only the six lighting values, never sphere colour, size, links or selection.</td></tr>
+          <tr><td>D11</td><td>Naming</td><td>Near / Mid / Far everywhere user-facing; internal ids stay center / right / left.</td></tr>
+          <tr><td>D12</td><td>Spheres</td><td>Three-state toggles (off, on-unselected, on-selected) replace the count control, Delete and the selector row.</td></tr>
+          <tr><td>D13</td><td>Spheres</td><td>The last enabled sphere cannot be disabled; re-enabling restores that sphere's previous colour and size.</td></tr>
+          <tr><td>D14</td><td>Spheres</td><td>Disabling the selected sphere moves selection Near &rarr; Mid &rarr; Far.</td></tr>
+          <tr><td>D15</td><td>Spheres</td><td>Link Colors and Link Size adopt the selected sphere's value on enable; disabling keeps it.</td></tr>
+          <tr><td>D16</td><td>Spheres</td><td>Merged panel: toggles, links, size, albedo chip + hex, nested H &middot; S &middot; B disclosure.</td></tr>
+          <tr><td>D17</td><td>Ramp</td><td><code>5-VALUE RAMP</code> title, read-only sphere chip and albedo dot; no selector in the ramp.</td></tr>
+          <tr><td>D18</td><td>Light</td><td>The light colour chip moves into a labelled <code>Light</code> row in Sun &amp; Atmosphere.</td></tr>
+          <tr><td>D19</td><td>Guide</td><td>Full-panel takeover overlay opened from the header <code>i</code>, with its own header and <strong>Back</strong>.</td></tr>
+          <tr><td>D20</td><td>Guide</td><td>One row links to the GitHub repository and opens in the system browser.</td></tr>
+          <tr><td>D21</td><td>Writes</td><td>Albedo chip click sends immediately; H/S/B and hex stream at one write per animation frame.</td></tr>
+          <tr><td>D22</td><td>Bridge</td><td>New <code>open-url</code> message, https only, handled with <code>uxp.shell.openExternal</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Behaviour Rules</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>The detach model</h4>
+          <p style="font-size:13px;">
+            Presets are starting points, not modes. Clicking one applies it and moves every lighting slider to its
+            values. Moving <strong>any</strong> of Orbit, Height, Terminator, Haze, Light colour or Ground colour
+            clears all seven buttons - the state is custom, but no Custom button exists to represent it.
+            The label then reads <code>Near Sunset &middot; edited &#8635;</code> and the thumb stays parked.
+            <code>&#8635;</code> or any preset button re-applies the calibrated preset.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Sphere toggles</h4>
+          <p style="font-size:13px;">
+            <strong>Near</strong>, <strong>Mid</strong> and <strong>Far</strong> carry both visibility and
+            selection. Off &rarr; clicking enables and selects. On but unselected &rarr; clicking selects.
+            On and selected &rarr; clicking disables. The last remaining sphere refuses to turn off, and
+            re-enabling restores that sphere's own colour and size rather than resetting it.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Ramp indicator</h4>
+          <p style="font-size:13px;">
+            The ramp reports the sphere it is computed for with a read-only chip and an albedo dot, so two spheres
+            can be compared under identical lighting. The five values remain analytical - evaluated from surface
+            normals - never sampled from screen pixels.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Guide and writes</h4>
+          <p style="font-size:13px;">
+            The guide is a full-panel overlay, not a section: it covers header, canvas and status bar, and returns
+            via <strong>Back</strong>, Esc or the backdrop. It carries the GitHub row. Every external link goes
+            through the host bridge, because <code>window.open</code> is unreliable inside a plugin WebView.
+          </p>
+        </div>
+      </div>
+
+      <h3>Stage 3 Roadmap</h3>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>3.1 Panel spine, collapsible sections &amp; live headers</td><td><span class="status-badge current">current</span></td><td>New spine, four closed sections, live summaries.</td></tr>
+          <tr><td>3.2 Time-of-day strip</td><td><span class="status-badge planned">planned</span></td><td>Icon row, snapped slider, chronological order, detach + <code>&#8635;</code>.</td></tr>
+          <tr><td>3.3 Sphere model</td><td><span class="status-badge planned">planned</span></td><td>Near / Mid / Far toggles, merged panel, Link Size.</td></tr>
+          <tr><td>3.4 Ramp header</td><td><span class="status-badge planned">planned</span></td><td>Sphere chip and albedo dot.</td></tr>
+          <tr><td>3.5 Light row &amp; streaming</td><td><span class="status-badge planned">planned</span></td><td>Labelled Light row, clickable albedo, per-frame writes.</td></tr>
+          <tr><td>3.6 Guide takeover</td><td><span class="status-badge planned">planned</span></td><td>Full overlay, GitHub row, <code>open-url</code> bridge.</td></tr>
+          <tr><td>3.7 Verification &amp; polish</td><td><span class="status-badge planned">planned</span></td><td>320/420/600 px + Photoshop checks, docs sync, new <code>.ccx</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card">
+        <h4>Source of Truth</h4>
+        <p style="font-size:13px; margin-bottom:0;">
+          Full decisions, onboarding, gotchas and acceptance criteria:
+          <code>Docs/AI_CONTEXT_UI.md</code>. Architecture, lighting and the task-state protocol remain in
+          <code>Docs/AI_CONTEXT.md</code>. The v1.0 baseline is frozen on the
+          <code>release/1.0-uxp-plugin</code> branch.
         </p>
       </div>
     </div>

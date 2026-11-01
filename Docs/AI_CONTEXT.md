@@ -2,6 +2,10 @@
 
 > **AUDIENCE NOTICE**: This file is strictly for **AI Agents** working on this repository. It provides complete onboarding context, architectural specifications, and the exact protocol for step-by-step development.
 
+> **V1.1 UI PHASE:** The panel redesign - design decisions, onboarding and the Stage 3 roadmap - lives in
+> [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md). This file stays authoritative for the architecture, the lighting model,
+> the add-on runtime and the task-state protocol; that file owns the UI phase.
+
 ---
 
 ## 1. AI Agent Operating Protocol
@@ -112,7 +116,7 @@ The project follows a **two-phase dual-target architecture**:
   * `npm run plugin:package` zips the `plugin/` contents into `release/Lumiform-Colorpicker-<version>.ccx`.
   * `npm run plugin` runs both.
 * **Install paths:** end users double-click the `.ccx` (Creative Cloud/UPIA); developers load `plugin/manifest.json` through UXP Developer Tool; the plugin folder can also be copied into Photoshop's `Plug-ins` directory when UPIA is unavailable. Full instructions live in `Docs/PHOTOSHOP.md`.
-* **Current verification state:** The web build, inlined plugin page, bridge protocol harness, manifest structure, and `.ccx` contents are verified locally. In-Photoshop panel loading and brush updates are the remaining end-to-end check (Task 2.2/2.3).
+* **Current verification state:** The web build, inlined plugin page, bridge protocol harness, manifest structure, and `.ccx` contents are verified locally. The packaged panel now loads and runs inside Photoshop 26.8, which closes Task 2.2's in-Photoshop criterion; full docking/resize/high-DPI polish remains open as Task 2.3.
 
 ---
 
@@ -165,6 +169,11 @@ The project follows a **two-phase dual-target architecture**:
 * Clicking any swatch immediately applies it to the active brush color.
 
 ### 4.5 Depth, Atmosphere & Multi-Sphere Composition
+
+> **V1.1 CHANGE:** Stage 3 replaces the `1 / 2 / 3` count control, the Delete button and the separate
+> selector row with three-state Near / Mid / Far toggles, adds a Link Size toggle and renames the spheres
+> everywhere. Until Task 3.3 lands, the behaviour described below is what ships in v1.0. See
+> [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) for the target design.
 
 * **Three composition slots:** The scene supports up to three spheres in fixed depth slots:
   * **Center** — nearest to the camera, largest on screen.
@@ -252,12 +261,54 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
   * **Description:** Configure `manifest.json` with a dockable panel entry point, panel dimensions, Photoshop 2025+ host requirements, local WebView permissions, and a repeatable `.ccx` packaging script. Include panel icons and a single-file plugin web build.
   * **Acceptance Criteria:** Manifest follows the UXP v5 schema with a valid entry point and permissions; `npm run plugin` produces a `.ccx` whose root contains `manifest.json`, the panel shell, icons, and the inlined web app. UDT validation is rechecked when the plugin is first loaded in Photoshop.
 
-* [ ] **Task 2.2: Photoshop Bridge Implementation (WebViewPhotoshopBridge + UXP host)**
-  * **State:** `current`
+* [x] **Task 2.2: Photoshop Bridge Implementation (WebViewPhotoshopBridge + UXP host)**
+  * **State:** `Done`
   * **Description:** Implement the WebView-side `WebViewPhotoshopBridge` and the UXP host relay in `plugin/main.js`: `ready`/`set-foreground`/`get-foreground` messages in, `status`/`foreground`/`error` messages out, `app.foregroundColor` reads/writes, and coalesced eyedropper writes.
-  * **Acceptance Criteria:** Clicking a sphere, swatch, or dragging the picker inside the Photoshop panel updates the active brush color with no visible lag; external Photoshop foreground changes update the panel status bar. Bridge protocol is verified in a browser harness; the in-Photoshop check is the remaining step.
+  * **Acceptance Criteria:** Clicking a sphere, swatch, or dragging the picker inside the Photoshop panel updates the active brush color with no visible lag; external Photoshop foreground changes update the panel status bar. Bridge protocol is verified in a browser harness and the packaged panel is running in Photoshop.
 
 * [ ] **Task 2.3: End-to-End Photoshop Verification & Polish**
   * **State:** `planned`
   * **Description:** Load the packaged plugin into Adobe Photoshop 2025+ via UDT or the `.ccx`, test panel docking, resizing, high-DPI scaling, WebGL startup, and paint responsiveness.
-  * **Acceptance Criteria:** Plugin runs stably in Photoshop 2025+ with full bi-directional brush responsiveness and no panel-layout regressions.
+  * **Acceptance Criteria:** Plugin runs stably in Photoshop 2025+ with full bi-directional brush responsiveness and no panel-layout regressions. Deferred until after the V1.1 UI phase, then re-run against the redesigned panel.
+
+---
+
+### Stage 3: V1.1 - UI Design (Panel Redesign)
+
+Full design decisions, onboarding and the task breakdown live in **[AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md)**.
+States are mirrored here so the parent protocol keeps working.
+
+* [ ] **Task 3.1: Panel spine, collapsible sections & live headers**
+  * **State:** `current`
+  * **Description:** Rebuild the panel shell into the V1.1 spine (header, canvas, time of day, ramp, spheres, sun & atmosphere, ground, surface finish, status bar). Replace section cards with `<details>` blocks that start closed, add the header info affordance and live collapsed-header summaries.
+  * **Acceptance Criteria:** At 320/420/600 px the panel shows the new spine with four closed, correctly summarised sections; opening each reveals its controls; the status bar stays pinned.
+
+* [ ] **Task 3.2: Time-of-day strip (icons + snapped slider + detach/↺)**
+  * **State:** `planned`
+  * **Description:** Seven icon buttons in one row above a snapping slider, chronological preset order, live relighting, and the detach rule for all six lighting controls with the `· edited ↺` reset label.
+  * **Acceptance Criteria:** Clicking and dragging the strip agree; crossing a stop relights immediately; moving any lighting control clears all buttons and shows `edited`; `↺` restores the calibrated preset; one line at 320 px.
+
+* [ ] **Task 3.3: Sphere model - Near/Mid/Far toggles, merged panel, size link**
+  * **State:** `planned`
+  * **Description:** Rename spheres to Near/Mid/Far, replace the count control and Delete with three-state toggles, add the last-sphere guard, restore-on-re-enable, selection fallback, Link Size, and the merged sphere panel with size, albedo and the nested H/S/B disclosure.
+  * **Acceptance Criteria:** Toggles enable/select/disable as specified; the last sphere cannot be disabled; re-enabling restores colour and size; link toggles equalise immediately; no count or Delete control remains.
+
+* [ ] **Task 3.4: Ramp header, sphere indicator & albedo dot**
+  * **State:** `planned`
+  * **Description:** Retitle the ramp with a read-only Near/Mid/Far chip and an albedo dot; keep the grid, recomputation and click-to-paint behaviour.
+  * **Acceptance Criteria:** Chip follows selection; dot matches albedo; swatches still update on lighting, haze and finish changes; clicks still write to Photoshop.
+
+* [ ] **Task 3.5: Light row and live foreground streaming**
+  * **State:** `planned`
+  * **Description:** Move the light chip into a labelled `Light` row in Sun & Atmosphere, make the albedo chip send on click, and stream H/S/B and hex edits at one write per animation frame.
+  * **Acceptance Criteria:** The light chip is discoverable at 320 px; the albedo chip sets the foreground; H/S/B dragging streams without flooding the host; light and ground edits detach the preset.
+
+* [ ] **Task 3.6: Controls Guide takeover and GitHub row**
+  * **State:** `planned`
+  * **Description:** Header `i` opens a full-panel guide overlay with its own header and `✕ Back`, rewrites the guide for the new UI, adds the GitHub row, and adds the `open-url` bridge message with an `uxp.shell.openExternal` host handler.
+  * **Acceptance Criteria:** Overlay covers the whole panel; Esc, backdrop and `✕ Back` return to the tool; the GitHub row opens the repository externally; non-https URLs are rejected.
+
+* [ ] **Task 3.7: Verification, polish and documentation sync**
+  * **State:** `planned`
+  * **Description:** Verify at 320/420/600 px and inside Photoshop across detach, toggle and streaming paths; polish spacing, focus states and truncation; sync the three docs and rebuild the `.ccx`.
+  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; all earlier acceptance criteria demonstrated; docs match the shipped UI.
