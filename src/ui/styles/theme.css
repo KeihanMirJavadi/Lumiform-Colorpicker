@@ -79,6 +79,38 @@ html, body {
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
+/* Header info affordance: opens the Controls Guide takeover (Task 3.6). */
+.panel-info-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ps-border);
+  color: var(--ps-text-secondary);
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.panel-info-btn:hover {
+  color: var(--ps-text-primary);
+  background-color: var(--ps-bg-hover);
+  border-color: var(--ps-text-disabled);
+}
+
+.panel-info-btn:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
 /* Main Content Area */
 .panel-content {
   flex: 1;
@@ -87,7 +119,13 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px;
-  gap: 10px;
+  gap: 9px;
+}
+
+/* Sections keep their natural height; the panel scrolls instead of squeezing
+   open <details> bodies and clipping their controls. */
+.panel-content > * {
+  flex-shrink: 0;
 }
 
 /* Viewport Toolbar & Mesh Toggle */
@@ -124,8 +162,17 @@ html, body {
 
      The canvas fills the panel width (up to a cap) so the render is large
      enough to inspect; only the pixel count changes, never the framing,
-     because the aspect ratio and the vertical FOV both derive from it. */
-  max-width: 900px;
+     because the aspect ratio and the vertical FOV both derive from it.
+
+     V1.1 also caps the width by the available panel height: the first
+     screen must show the time strip, the ramp and all four collapsed
+     headers, so on a short wide panel the preview gives up width instead
+     of pushing the state below the fold. 566px covers the fixed height of the
+     header, status bar, time strip, ramp, four summaries, gaps and padding plus
+     a small safety margin for different WebView font metrics; the rest goes to
+     the canvas at 412:227. Revisit that constant when Task 3.2 replaces the
+     four-row preset grid with the compact icon strip. */
+  max-width: min(900px, max(220px, calc((100vh - 566px) * 412 / 227)));
   aspect-ratio: 412 / 227;
   height: auto;
   flex: 0 0 auto;
@@ -377,13 +424,121 @@ html, body {
   color: var(--ps-text-secondary);
 }
 
+/* --- V1.1 collapsible sections (Task 3.1) -------------------------------- */
+
+.section-state {
+  min-width: 0;
+  font-size: 10px;
+  color: var(--ps-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A <details> card is a bare container; the summary owns the header padding. */
+details.section-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.section-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 7px 12px;
+  cursor: pointer;
+  border-radius: var(--ps-radius-md);
+  transition: background-color 0.15s ease;
+}
+
+.section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-summary:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.section-summary:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: -1px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ps-text-secondary);
+  white-space: nowrap;
+}
+
+.section-summary .section-state {
+  margin-left: auto;
+  text-align: right;
+}
+
+.section-chevron {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-left: 2px;
+  border-right: 1.5px solid var(--ps-text-disabled);
+  border-bottom: 1.5px solid var(--ps-text-disabled);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+details[open] > .section-summary .section-chevron {
+  transform: rotate(45deg);
+}
+
+.section-body {
+  padding: 0 12px 12px;
+}
+
+.section-divider {
+  height: 1px;
+  background-color: var(--ps-border-subtle);
+  margin: 12px 0 10px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 2px 0 8px;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ps-text-secondary);
+}
+
+.sphere-color-block {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ps-border-subtle);
+}
+
+.finish-sliders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 /* Presets & Finish Segment Control */
 .preset-segmented-control {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
   gap: 4px;
   background-color: var(--ps-bg-input);
-  padding: 3px;
+  padding: 2px;
   border-radius: var(--ps-radius-sm);
   border: 1px solid var(--ps-border-subtle);
 }
@@ -394,7 +549,7 @@ html, body {
   color: var(--ps-text-secondary);
   font-size: 11px;
   font-weight: 500;
-  padding: 6px 4px;
+  padding: 4px 4px;
   border-radius: 3px;
   cursor: pointer;
   display: flex;

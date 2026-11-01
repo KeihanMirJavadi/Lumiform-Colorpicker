@@ -6,7 +6,7 @@ import { StatusBar } from './statusBar';
 import { ColorControls } from './colorControls';
 import { SwatchRamp } from './swatchRamp';
 import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX } from '../core/defaults';
-import { MAX_KEY_ANGULAR_RADIUS_DEG } from '../core/lighting';
+import { LIGHTING_PRESETS, MAX_KEY_ANGULAR_RADIUS_DEG } from '../core/lighting';
 import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
 
 export class AppShell {
@@ -15,6 +15,12 @@ export class AppShell {
   private viewport: Viewport | null = null;
   private colorControls: ColorControls | null = null;
   private swatchRamp: SwatchRamp | null = null;
+  /**
+   * Last preset the user applied. The engine reports `custom` as soon as a
+   * lighting control is moved, but the collapsed Sun summary still needs a
+   * name to show next to `edited` (D9).
+   */
+  private lastPreset: LightingPreset = 'midday';
 
   constructor(root: HTMLElement, bridge: IPhotoshopBridge) {
     this.root = root;
@@ -24,65 +30,31 @@ export class AppShell {
 
   private init(): void {
     this.root.innerHTML = `
-      <header class="app-header">
-        <span class="app-logo">Lumiform Colorpicker</span>
-        <span class="app-version">v1.0.0</span>
+      <header class="panel-header">
+        <div class="title-group">
+          <h1>Lumiform Colorpicker</h1>
+          <span class="badge">v1.0.0</span>
+        </div>
+        <!-- Task 3.6 wires this to the full-panel Controls Guide takeover. -->
+        <button
+          type="button"
+          class="panel-info-btn"
+          id="btn-open-guide"
+          title="Controls Guide"
+          aria-label="Open Controls Guide"
+          aria-haspopup="dialog"
+        >i</button>
       </header>
 
       <main class="panel-content">
-        <!-- Sphere Size (per selected sphere, bottom stays on the ground) -->
-        <div class="sun-slider-row mesh-scale-row">
-          <span class="sun-axis-name" style="width: 82px;">Size · <span id="size-target">Center</span></span>
-          <div class="slider-track-wrap">
-            <input type="range" class="ps-slider" id="slider-mesh-scale" min="20" max="100" value="100" />
-          </div>
-          <input type="number" class="ps-input-num" id="num-mesh-scale" min="20" max="100" value="100" />
-          <span class="slider-unit">%</span>
-        </div>
-
-        <!-- 3D Viewport -->
+        <!-- 1. Canvas: fixed 412:227 framing, eyedropper reticle -->
         <div class="viewport-card" id="viewport-container"></div>
 
-        <!-- Sphere depth staging -->
-        <div class="section-card">
+        <!-- 2. Time of Day (always open) -->
+        <section class="section-card" aria-labelledby="time-of-day-heading">
           <div class="section-header">
-            <h2>Spheres &amp; Depth</h2>
-            <div class="count-control" id="sphere-count-control">
-              <button class="count-btn" data-count="1">1</button>
-              <button class="count-btn" data-count="2">2</button>
-              <button class="count-btn active" data-count="3">3</button>
-            </div>
-          </div>
-
-          <div class="sphere-selector-row">
-            <button class="sphere-select-btn active" data-sphere="center">Center <span>Near</span></button>
-            <button class="sphere-select-btn" data-sphere="right">Right <span>Mid</span></button>
-            <button class="sphere-select-btn" data-sphere="left">Left <span>Far</span></button>
-            <button class="sphere-delete-btn" id="btn-delete-sphere" title="Delete the selected sphere">Delete</button>
-          </div>
-
-          <label class="link-colors-row">
-            <input type="checkbox" id="toggle-link-colors" />
-            <span>Link colors across all visible spheres</span>
-          </label>
-          <p class="section-note" id="sphere-hint">Select a sphere in the canvas or above to edit its color and size.</p>
-        </div>
-
-        <!-- Analytical 5-Value Swatch Ramp (Task 1.7) -->
-        <div class="section-card" id="swatch-ramp-container"></div>
-
-        <!-- In-Panel HSB & Hex Color Controls (Task 1.5) -->
-        <div class="section-card" id="color-controls-container"></div>
-
-        <!-- Time-of-Day Lighting Presets, Light Color & 2-Axis Sun Sliders -->
-        <div class="section-card">
-          <div class="section-header">
-            <h2>Sun Position & Light Color</h2>
-            <div class="hex-group" title="Key Light (Sun) Color">
-              <input type="color" id="picker-light-color" style="opacity:0; width:0; height:0; position:absolute;" value="#FFF2EF" />
-              <div class="albedo-swatch" id="swatch-light-color" style="background-color: #FFF2EF; cursor: pointer;" title="Click to choose light color"></div>
-              <input type="text" class="ps-input-hex" id="input-light-hex" maxlength="7" spellcheck="false" value="#FFF2EF" />
-            </div>
+            <h2 id="time-of-day-heading">Time of Day</h2>
+            <span class="section-state" id="time-of-day-state">Midday</span>
           </div>
           <div class="preset-segmented-control time-preset-control">
             <button class="preset-btn" data-preset="morning" id="btn-preset-morning">
@@ -107,147 +79,205 @@ export class AppShell {
               <span>🌄</span> Early Morning
             </button>
           </div>
+        </section>
 
-          <!-- Intuitive 2-Axis Sun Position Sliders (Orbit & Height) -->
-          <div class="sun-sliders-container">
-            <!-- Axis 1: Azimuth / Horizontal Orbit -->
-            <div class="sun-slider-row">
-              <span class="sun-axis-name">Orbit</span>
+        <!-- 3. Analytical 5-Value Swatch Ramp (always open) -->
+        <div class="section-card" id="swatch-ramp-container"></div>
+
+        <!-- 4. Spheres (collapsed by default) -->
+        <details class="section-card section-collapsible" id="section-spheres">
+          <summary class="section-summary">
+            <span class="section-title">Spheres</span>
+            <span class="section-state" id="spheres-summary">Near · #E3E3E3</span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body">
+            <!-- Sphere Size (per selected sphere, bottom stays on the ground) -->
+            <div class="sun-slider-row mesh-scale-row">
+              <span class="sun-axis-name" style="width: 82px;">Size · <span id="size-target">Near</span></span>
               <div class="slider-track-wrap">
-                <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="284" />
+                <input type="range" class="ps-slider" id="slider-mesh-scale" min="20" max="100" value="100" />
               </div>
-              <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="284" />
-              <span class="slider-unit">°</span>
-            </div>
-
-            <!-- Axis 2: Elevation / Vertical Height -->
-            <div class="sun-slider-row">
-              <span class="sun-axis-name">Height</span>
-              <div class="slider-track-wrap">
-                <input type="range" class="ps-slider sun-slider-yellow" id="slider-sun-elev" min="-89" max="89" value="58" />
-              </div>
-              <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="58" />
-              <span class="slider-unit">°</span>
-            </div>
-
-            <!-- Axis 3: Terminator / shadow edge hardness (key light angular size) -->
-            <div class="sun-slider-row">
-              <span class="sun-axis-name" style="width: 70px;" title="How sharply the lit side falls into shadow">Terminator</span>
-              <div class="slider-track-wrap">
-                <input type="range" class="ps-slider terminator-slider" id="slider-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
-              </div>
-              <input type="number" class="ps-input-num" id="num-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
-              <span class="slider-unit">°</span>
-            </div>
-          </div>
-          <p class="section-note" id="terminator-note">
-            0° gives a hard terminator, ${MAX_KEY_ANGULAR_RADIUS_DEG}° a broad softbox shadow. Choosing a preset restores its calibrated softness.
-          </p>
-        </div>
-
-        <!-- Ground Surface & Color (Default: Grass) -->
-        <div class="section-card">
-          <div class="section-header">
-            <h2>Ground Surface & Color</h2>
-            <div class="hex-group" title="Ground Surface Color">
-              <input type="color" id="picker-ground-color" style="opacity:0; width:0; height:0; position:absolute;" value="${DEFAULT_GROUND_HEX}" />
-              <div class="albedo-swatch" id="swatch-ground-color" style="background-color: ${DEFAULT_GROUND_HEX}; cursor: pointer;" title="Click to choose ground color"></div>
-              <input type="text" class="ps-input-hex" id="input-ground-hex" maxlength="7" spellcheck="false" value="${DEFAULT_GROUND_HEX}" />
-            </div>
-          </div>
-          <div class="preset-segmented-control" style="margin-top: 6px;">
-            <button class="ground-preset-btn active" data-color="${DEFAULT_GROUND_HEX}" id="btn-ground-grass">
-              <span>🌿</span> Grass
-            </button>
-            <button class="ground-preset-btn" data-color="#78726B" id="btn-ground-neutral">
-              <span>⚪</span> Studio Gray
-            </button>
-            <button class="ground-preset-btn" data-color="#6B4C35" id="btn-ground-dirt">
-              <span>🍂</span> Dirt
-            </button>
-            <button class="ground-preset-btn" data-color="#C2A676" id="btn-ground-sand">
-              <span>🏖️</span> Sand
-            </button>
-          </div>
-        </div>
-
-        <!-- Atmosphere -->
-        <div class="section-card">
-          <div class="section-header">
-            <h2>Atmosphere</h2>
-            <span class="section-note">Aerial perspective</span>
-          </div>
-          <div class="sun-slider-row" style="margin-top: 8px;">
-            <span class="sun-axis-name" style="width: 58px;">Haze</span>
-            <div class="slider-track-wrap">
-              <input type="range" class="ps-slider" id="slider-haze" min="0" max="100" value="50" />
-            </div>
-            <input type="number" class="ps-input-num" id="num-haze" min="0" max="100" value="50" />
-            <span class="slider-unit">%</span>
-          </div>
-          <p class="section-note" style="margin-top: 6px;">Depth fog: the near sphere stays clear while the mid and far spheres dissolve into the horizon haze. Selecting a time of day restores its calibrated Haze amount.</p>
-        </div>
-
-        <!-- Surface Finish Mode & Reflectivity Controls (Task 1.4 & Roughness / Specular Sliders) -->
-        <div class="section-card">
-          <div class="section-header">
-            <h2>Surface Finish & Reflectivity</h2>
-          </div>
-          <div class="preset-segmented-control">
-            <button class="finish-btn active" data-finish="matte" id="btn-finish-matte">
-              <span>⚪</span> Matte
-            </button>
-            <button class="finish-btn" data-finish="satin" id="btn-finish-satin">
-              <span>✨</span> Satin
-            </button>
-            <button class="finish-btn" data-finish="glossy" id="btn-finish-glossy">
-              <span>💎</span> Glossy
-            </button>
-          </div>
-
-          <!-- Direct Custom Sliders for Roughness and Specular Intensity -->
-          <div class="finish-sliders-container" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-            <!-- Roughness Slider -->
-            <div class="sun-slider-row">
-              <span class="sun-axis-name" style="width: 58px;">Roughness</span>
-              <div class="slider-track-wrap">
-                <input type="range" class="ps-slider finish-slider-roughness" id="slider-finish-roughness" min="0" max="100" value="45" />
-              </div>
-              <input type="number" class="ps-input-num" id="num-finish-roughness" min="0" max="100" value="45" />
+              <input type="number" class="ps-input-num" id="num-mesh-scale" min="20" max="100" value="100" />
               <span class="slider-unit">%</span>
             </div>
 
-            <!-- Specular Intensity Slider -->
-            <div class="sun-slider-row">
-              <span class="sun-axis-name" style="width: 58px;">Specular</span>
-              <div class="slider-track-wrap">
-                <input type="range" class="ps-slider finish-slider-specular" id="slider-finish-specular" min="0" max="100" value="40" />
+            <div class="field-row">
+              <span class="field-label">Visible spheres</span>
+              <div class="count-control" id="sphere-count-control">
+                <button class="count-btn" data-count="1">1</button>
+                <button class="count-btn" data-count="2">2</button>
+                <button class="count-btn active" data-count="3">3</button>
               </div>
-              <input type="number" class="ps-input-num" id="num-finish-specular" min="0" max="100" value="40" />
+            </div>
+
+            <div class="sphere-selector-row">
+              <button class="sphere-select-btn active" data-sphere="center">Center <span>Near</span></button>
+              <button class="sphere-select-btn" data-sphere="right">Right <span>Mid</span></button>
+              <button class="sphere-select-btn" data-sphere="left">Left <span>Far</span></button>
+              <button class="sphere-delete-btn" id="btn-delete-sphere" title="Delete the selected sphere">Delete</button>
+            </div>
+
+            <label class="link-colors-row">
+              <input type="checkbox" id="toggle-link-colors" />
+              <span>Link colors across all visible spheres</span>
+            </label>
+            <p class="section-note" id="sphere-hint">Select a sphere in the canvas or above to edit its color and size.</p>
+
+            <!-- In-Panel HSB & Hex Color Controls (Task 1.5) -->
+            <div class="sphere-color-block" id="color-controls-container"></div>
+          </div>
+        </details>
+
+        <!-- 5. Sun & Atmosphere (collapsed by default) -->
+        <details class="section-card section-collapsible" id="section-sun">
+          <summary class="section-summary">
+            <span class="section-title">Sun &amp; Atmosphere</span>
+            <span class="section-state" id="sun-summary">Midday</span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body">
+            <div class="field-row">
+              <span class="field-label">Light</span>
+              <div class="hex-group" title="Key Light (Sun) Color">
+                <input type="color" id="picker-light-color" style="opacity:0; width:0; height:0; position:absolute;" value="#FFF2EF" />
+                <div class="albedo-swatch" id="swatch-light-color" style="background-color: #FFF2EF; cursor: pointer;" title="Click to choose light color"></div>
+                <input type="text" class="ps-input-hex" id="input-light-hex" maxlength="7" spellcheck="false" value="#FFF2EF" />
+              </div>
+            </div>
+
+            <!-- Intuitive 2-Axis Sun Position Sliders (Orbit & Height) -->
+            <div class="sun-sliders-container">
+              <!-- Axis 1: Azimuth / Horizontal Orbit -->
+              <div class="sun-slider-row">
+                <span class="sun-axis-name">Orbit</span>
+                <div class="slider-track-wrap">
+                  <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="284" />
+                </div>
+                <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="284" />
+                <span class="slider-unit">°</span>
+              </div>
+
+              <!-- Axis 2: Elevation / Vertical Height -->
+              <div class="sun-slider-row">
+                <span class="sun-axis-name">Height</span>
+                <div class="slider-track-wrap">
+                  <input type="range" class="ps-slider sun-slider-yellow" id="slider-sun-elev" min="-89" max="89" value="58" />
+                </div>
+                <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="58" />
+                <span class="slider-unit">°</span>
+              </div>
+
+              <!-- Axis 3: Terminator / shadow edge hardness (key light angular size) -->
+              <div class="sun-slider-row">
+                <span class="sun-axis-name" style="width: 70px;" title="How sharply the lit side falls into shadow">Terminator</span>
+                <div class="slider-track-wrap">
+                  <input type="range" class="ps-slider terminator-slider" id="slider-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
+                </div>
+                <input type="number" class="ps-input-num" id="num-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
+                <span class="slider-unit">°</span>
+              </div>
+            </div>
+            <p class="section-note" id="terminator-note">
+              0° gives a hard terminator, ${MAX_KEY_ANGULAR_RADIUS_DEG}° a broad softbox shadow. Choosing a preset restores its calibrated softness.
+            </p>
+
+            <div class="section-divider"></div>
+
+            <!-- Aerial perspective -->
+            <div class="sun-slider-row">
+              <span class="sun-axis-name" style="width: 58px;">Haze</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider" id="slider-haze" min="0" max="100" value="50" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-haze" min="0" max="100" value="50" />
               <span class="slider-unit">%</span>
             </div>
+            <p class="section-note">Depth fog: the near sphere stays clear while the mid and far spheres dissolve into the horizon haze. Selecting a time of day restores its calibrated Haze amount.</p>
           </div>
+        </details>
 
-          <p id="finish-desc" style="margin-top: 8px; font-size: 11px; color: var(--ps-text-secondary);">
-            Matte: 100% Roughness, 0% Specular (pure diffuse Lambertian)
-          </p>
-        </div>
-
-        <!-- Interaction Guide Card -->
-        <div class="section-card">
-          <h2>Controls Guide</h2>
-          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ps-text-secondary);">
-            <p>• 🎨 <strong>5-Value Swatches</strong>: Click any swatch to paint with that calculated lighting tone.</p>
-            <p>• 🎯 <strong>Color Picker Target</strong>: Drag the circular reticle anywhere on a sphere, ground, or sky to sample lit colors.</p>
-            <p>• 🧭 <strong>Spheres &amp; Depth</strong>: Choose 1/2/3 spheres, then click a sphere (or use Center/Right/Left) to edit it.</p>
-            <p>• 📐 <strong>Sphere Size</strong>: The Size slider edits the selected sphere and keeps it grounded.</p>
-            <p>• 🔗 <strong>Link Colors</strong>: Apply one color change to every visible sphere at once.</p>
-            <p>• 🌫️ <strong>Haze</strong>: Distance-based atmosphere; far ground and spheres dissolve into the horizon.</p>
-            <p>• ☀️ <strong>Sun Position Controls</strong>: Use the Orbit/Height sliders or the Time-of-Day presets.</p>
-            <p>• 🌗 <strong>Terminator</strong>: 0° gives a hard lit-to-shadow edge, 45° a soft one. Presets restore their calibrated value.</p>
-            <p>• 🌿 <strong>Ground Plane</strong>: Grass floor by default; customize color to see bounce light and shadow shift in real time.</p>
+        <!-- 6. Ground Surface & Color (collapsed by default) -->
+        <details class="section-card section-collapsible" id="section-ground">
+          <summary class="section-summary">
+            <span class="section-title">Ground Surface &amp; Color</span>
+            <span class="section-state" id="ground-summary">${DEFAULT_GROUND_HEX}</span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body">
+            <div class="field-row">
+              <span class="field-label">Color</span>
+              <div class="hex-group" title="Ground Surface Color">
+                <input type="color" id="picker-ground-color" style="opacity:0; width:0; height:0; position:absolute;" value="${DEFAULT_GROUND_HEX}" />
+                <div class="albedo-swatch" id="swatch-ground-color" style="background-color: ${DEFAULT_GROUND_HEX}; cursor: pointer;" title="Click to choose ground color"></div>
+                <input type="text" class="ps-input-hex" id="input-ground-hex" maxlength="7" spellcheck="false" value="${DEFAULT_GROUND_HEX}" />
+              </div>
+            </div>
+            <div class="preset-segmented-control">
+              <button class="ground-preset-btn active" data-color="${DEFAULT_GROUND_HEX}" id="btn-ground-grass">
+                <span>🌿</span> Grass
+              </button>
+              <button class="ground-preset-btn" data-color="#78726B" id="btn-ground-neutral">
+                <span>⚪</span> Studio Gray
+              </button>
+              <button class="ground-preset-btn" data-color="#6B4C35" id="btn-ground-dirt">
+                <span>🍂</span> Dirt
+              </button>
+              <button class="ground-preset-btn" data-color="#C2A676" id="btn-ground-sand">
+                <span>🏖️</span> Sand
+              </button>
+            </div>
           </div>
-        </div>
+        </details>
+
+        <!-- 7. Surface Finish & Reflectivity (collapsed by default) -->
+        <details class="section-card section-collapsible" id="section-finish">
+          <summary class="section-summary">
+            <span class="section-title">Surface Finish &amp; Reflectivity</span>
+            <span class="section-state" id="finish-summary">Satin</span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body">
+            <div class="preset-segmented-control">
+              <button class="finish-btn" data-finish="matte" id="btn-finish-matte">
+                <span>⚪</span> Matte
+              </button>
+              <button class="finish-btn active" data-finish="satin" id="btn-finish-satin">
+                <span>✨</span> Satin
+              </button>
+              <button class="finish-btn" data-finish="glossy" id="btn-finish-glossy">
+                <span>💎</span> Glossy
+              </button>
+            </div>
+
+            <!-- Direct Custom Sliders for Roughness and Specular Intensity -->
+            <div class="finish-sliders-container">
+              <!-- Roughness Slider -->
+              <div class="sun-slider-row">
+                <span class="sun-axis-name" style="width: 58px;">Roughness</span>
+                <div class="slider-track-wrap">
+                  <input type="range" class="ps-slider finish-slider-roughness" id="slider-finish-roughness" min="0" max="100" value="45" />
+                </div>
+                <input type="number" class="ps-input-num" id="num-finish-roughness" min="0" max="100" value="45" />
+                <span class="slider-unit">%</span>
+              </div>
+
+              <!-- Specular Intensity Slider -->
+              <div class="sun-slider-row">
+                <span class="sun-axis-name" style="width: 58px;">Specular</span>
+                <div class="slider-track-wrap">
+                  <input type="range" class="ps-slider finish-slider-specular" id="slider-finish-specular" min="0" max="100" value="40" />
+                </div>
+                <input type="number" class="ps-input-num" id="num-finish-specular" min="0" max="100" value="40" />
+                <span class="slider-unit">%</span>
+              </div>
+            </div>
+
+            <p id="finish-desc" class="section-note">
+              Satin: 75% Roughness, 35% Specular (broad, diffused sheen)
+            </p>
+          </div>
+        </details>
       </main>
 
       <footer class="status-bar" id="status-bar-container"></footer>
@@ -308,6 +338,7 @@ export class AppShell {
             haze: this.viewport?.getHaze(),
             distance: this.viewport?.getSelectedSphereDistance(),
           });
+          this.updateSectionSummaries();
         },
       });
     }
@@ -334,8 +365,69 @@ export class AppShell {
     this.bindLightColorControls();
     this.bindGroundColorControls();
     this.bindSurfaceFinishControls();
+    this.bindSectionSummaryListeners();
 
     this.syncSphereUI();
+  }
+
+  /**
+   * Keeps the collapsed-header state lines live (D4). Both subscriptions fire
+   * once immediately, so the panel opens with correct summaries.
+   */
+  private bindSectionSummaryListeners(): void {
+    if (!this.viewport) return;
+
+    this.viewport.getLightingEngine().onEnvironmentChange(() => {
+      this.updateSectionSummaries();
+    });
+
+    this.viewport.onSurfaceFinishChange(() => {
+      this.updateSectionSummaries();
+    });
+  }
+
+  private updateSectionSummaries(): void {
+    if (!this.viewport) return;
+
+    // Spheres · <selected depth name> · <selected albedo>
+    const selectedId = this.viewport.getSelectedSphereId();
+    const selectedSlot = SPHERE_SLOTS.find((slot) => slot.id === selectedId);
+    this.setStateText(
+      '#spheres-summary',
+      `${selectedSlot?.depthLabel ?? 'Near'} · ${this.viewport.getSelectedSphereColor().toUpperCase()}`
+    );
+
+    // Sun & Atmosphere · <last preset> [· edited]
+    const env = this.viewport.getLightingEngine().getEnvironment();
+    if (env.preset !== 'custom') {
+      this.lastPreset = env.preset;
+    }
+    const presetState = `${LIGHTING_PRESETS[this.lastPreset].name}${
+      env.preset === 'custom' ? ' · edited' : ''
+    }`;
+    this.setStateText('#sun-summary', presetState);
+    this.setStateText('#time-of-day-state', presetState);
+
+    // Ground · <current ground albedo>
+    this.setStateText(
+      '#ground-summary',
+      `#${this.viewport.getGroundColor().getHexString().toUpperCase()}`
+    );
+
+    // Surface Finish · <finish name>
+    const finish = this.viewport.getSurfaceFinish();
+    const finishName =
+      finish === 'custom'
+        ? 'Custom'
+        : SURFACE_FINISHES[finish as Exclude<SurfaceFinish, 'custom'>]?.name ?? 'Matte';
+    this.setStateText('#finish-summary', finishName);
+  }
+
+  private setStateText(selector: string, text: string): void {
+    const el = this.root.querySelector<HTMLElement>(selector);
+    if (el && el.textContent !== text) {
+      el.textContent = text;
+    }
   }
 
   private bindSphereControls(): void {
@@ -427,7 +519,7 @@ export class AppShell {
     const sizeLabel = this.root.querySelector<HTMLElement>('#size-target');
     if (sizeLabel) {
       const slot = SPHERE_SLOTS.find((s) => s.id === selectedId);
-      sizeLabel.textContent = slot?.label ?? 'Center';
+      sizeLabel.textContent = slot?.depthLabel ?? 'Near';
     }
 
     const sizePct = Math.round(this.viewport.getSelectedSphereSize() * 100);
@@ -453,6 +545,8 @@ export class AppShell {
         distance: this.viewport.getSelectedSphereDistance(),
       });
     }
+
+    this.updateSectionSummaries();
   }
 
   private bindMeshScaleControl(): void {
