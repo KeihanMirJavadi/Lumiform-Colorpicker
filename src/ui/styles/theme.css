@@ -1891,3 +1891,54 @@ details.section-card {
 .active-brush-label {
   color: var(--ps-ink-secondary);
 }
+
+/* ==========================================================================
+   V1.2 line icons (Task 4.4)
+   ========================================================================== */
+
+.ui-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.preset-icon,
+.icon-slot {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.guide-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.guide-inline-icon {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin: 0 1px;
+}
+
+.guide-inline-icon .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.guide-github-arrow .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Narrow panels: keep segmented labels on one line. Four ground presets fall
+   to a 2x2 grid at 320 px; three finish presets still fit one row. */
+.preset-segmented-control {
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+}
+
+@media (max-width: 379px) {
+  /* Four ground presets: 2x2 below 380 px so labels stay on one line. */
+  #section-ground .preset-segmented-control {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

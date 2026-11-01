@@ -335,18 +335,18 @@ lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unc
   * **Description:** Replaced section cards with flat rows, 1 px dividers, no shadows and 2 px radii. Added the 28 px header, workspace matte around the unchanged 412:227 canvas and 24 px status bar. Added the four frozen palettes behind `data-ps-theme` (Dark Gray default) and neutralised the blue chrome. Preserved the V1.1 spine, closed `<details>` defaults and live summaries.
   * **Acceptance Criteria:** Met - at 320/420/600 there is no card look, the header is compact, the status bar is pinned, the four closed summaries remain live and the active palette is applied.
 
-* [ ] **Task 4.3: Control reskin**
-  * **State:** `current`
-  * **Description:** Restyle buttons, sphere toggles, links, checkboxes, hex/number fields, disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states and a 1 px focus outline. Leave the time-of-day control untouched.
-  * **Acceptance Criteria:** Every control is usable at 320 px; selected/active states use the sampled tint; no blue chrome or hover lift; the time gradient, thumb and geometry are unchanged.
+* [x] **Task 4.3: Control reskin**
+  * **State:** `Done`
+  * **Description:** Reskinned buttons, sphere toggles, links, a custom checkbox, hex/number fields, disclosures, swatches and sliders at 24 px with 2 px radii. Neutral selected states, 1 px ink focus, Segoe UI tabular numerals. Slider changes are scoped with `:not(.time-range)` so the time control is untouched.
+  * **Acceptance Criteria:** Met - every control fits at 320 px (ground presets reflow to 2x2), selected states use the sampled tint, no blue chrome or hover lift, and the time gradient, thumb and geometry are unchanged.
 
-* [ ] **Task 4.4: Typography and icon set**
-  * **State:** `planned`
+* [x] **Task 4.4: Typography and icon set**
+  * **State:** `Done`
   * **Description:** Use Segoe UI at 11 px, sentence-case section titles and tabular numerals. Replace the 14 emoji and the info/reset/close/external-link glyphs with 16 px, 1.5 px line SVGs using `currentColor`.
   * **Acceptance Criteria:** No emoji remains; icons are crisp at 16 px and inherit the theme colour; labels and aria text remain intact; the seven time icons stay on one line at 320 px.
 
 * [ ] **Task 4.5: Live theme linking and Appearance override**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Add the host `theme` relay, WebView `theme` message, URL bootstrap, four token sets and the guide's Appearance row with `localStorage` persistence. Add the mock theme source for browser development.
   * **Acceptance Criteria:** Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Dark Gray; no flash or loop.
 

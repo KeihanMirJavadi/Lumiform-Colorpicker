@@ -12,18 +12,19 @@ import {
   MAX_KEY_ANGULAR_RADIUS_DEG,
 } from '../core/lighting';
 import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
+import { ICONS } from './icons';
 
 const LUMIFORM_GITHUB_URL = 'https://github.com/KeihanMirJavadi/Lumiform-Colorpicker';
 
 /** Icon-only time-of-day buttons (D7); names live in title/aria-label. */
 const TIME_OF_DAY_ICONS: Record<LightingPreset, string> = {
-  'early-morning': '🌄',
-  morning: '🌤️',
-  midday: '☀️',
-  afternoon: '🌞',
-  'near-sunset': '🌇',
-  'golden-hour': '🌅',
-  night: '🌙',
+  'early-morning': ICONS.time['early-morning'],
+  morning: ICONS.time.morning,
+  midday: ICONS.time.midday,
+  afternoon: ICONS.time.afternoon,
+  'near-sunset': ICONS.time['near-sunset'],
+  'golden-hour': ICONS.time['golden-hour'],
+  night: ICONS.time.night,
 };
 
 export class AppShell {
@@ -53,7 +54,7 @@ export class AppShell {
       <header class="panel-header">
         <div class="title-group">
           <h1>Lumiform Colorpicker</h1>
-          <span class="badge">v1.1.0</span>
+          <span class="badge">v1.2.0</span>
         </div>
         <!-- Opens the full-panel Controls Guide takeover. -->
         <button
@@ -65,7 +66,7 @@ export class AppShell {
           aria-haspopup="dialog"
           aria-expanded="false"
           aria-controls="guide-overlay"
-        >i</button>
+        >${ICONS.info}</button>
       </header>
 
       <main class="panel-content">
@@ -81,7 +82,7 @@ export class AppShell {
             <h2 id="time-of-day-heading">Time of Day</h2>
             <div class="time-of-day-state" aria-live="polite">
               <span class="time-state-name" id="time-of-day-label">Midday</span>
-              <span class="time-state-edited" id="time-of-day-edited" hidden>· edited</span>
+              <span class="time-state-edited" id="time-of-day-edited" hidden>Â· edited</span>
               <button
                 type="button"
                 class="time-reset-btn"
@@ -89,7 +90,7 @@ export class AppShell {
                 title="Restore Midday"
                 aria-label="Restore Midday"
                 hidden
-              >↺</button>
+              >${ICONS.reset}</button>
             </div>
           </div>
           <div class="time-strip">
@@ -127,7 +128,7 @@ export class AppShell {
         <details class="section-card section-collapsible" id="section-spheres">
           <summary class="section-summary">
             <span class="section-title">Spheres</span>
-            <span class="section-state" id="spheres-summary">Near · #E3E3E3</span>
+            <span class="section-state" id="spheres-summary">Near Â· #E3E3E3</span>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
@@ -139,7 +140,7 @@ export class AppShell {
                 data-state="selected"
                 aria-pressed="true"
                 aria-current="true"
-                title="Near — selected. Click to hide."
+                title="Near â€” selected. Click to hide."
               >Near</button>
               <button
                 type="button"
@@ -147,7 +148,7 @@ export class AppShell {
                 data-sphere="right"
                 data-state="on"
                 aria-pressed="true"
-                title="Mid — enabled. Click to select."
+                title="Mid â€” enabled. Click to select."
               >Mid</button>
               <button
                 type="button"
@@ -155,7 +156,7 @@ export class AppShell {
                 data-sphere="left"
                 data-state="on"
                 aria-pressed="true"
-                title="Far — enabled. Click to select."
+                title="Far â€” enabled. Click to select."
               >Far</button>
             </div>
 
@@ -172,7 +173,7 @@ export class AppShell {
 
             <!-- Sphere Size (selected sphere, or all enabled when Link Size is on) -->
             <div class="sun-slider-row mesh-scale-row">
-              <span class="sun-axis-name" style="width: 82px;">Size · <span id="size-target">Near</span></span>
+              <span class="sun-axis-name" style="width: 82px;">Size Â· <span id="size-target">Near</span></span>
               <div class="slider-track-wrap">
                 <input type="range" class="ps-slider" id="slider-mesh-scale" min="20" max="100" value="100" />
               </div>
@@ -211,7 +212,7 @@ export class AppShell {
                   <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="284" />
                 </div>
                 <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="284" />
-                <span class="slider-unit">°</span>
+                <span class="slider-unit">Â°</span>
               </div>
 
               <!-- Axis 2: Elevation / Vertical Height -->
@@ -221,7 +222,7 @@ export class AppShell {
                   <input type="range" class="ps-slider sun-slider-yellow" id="slider-sun-elev" min="-89" max="89" value="58" />
                 </div>
                 <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="58" />
-                <span class="slider-unit">°</span>
+                <span class="slider-unit">Â°</span>
               </div>
 
               <!-- Axis 3: Terminator / shadow edge hardness (key light angular size) -->
@@ -231,11 +232,11 @@ export class AppShell {
                   <input type="range" class="ps-slider terminator-slider" id="slider-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
                 </div>
                 <input type="number" class="ps-input-num" id="num-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
-                <span class="slider-unit">°</span>
+                <span class="slider-unit">Â°</span>
               </div>
             </div>
             <p class="section-note" id="terminator-note">
-              0° gives a hard terminator, ${MAX_KEY_ANGULAR_RADIUS_DEG}° a broad softbox shadow. Choosing a preset restores its calibrated softness.
+              0Â° gives a hard terminator, ${MAX_KEY_ANGULAR_RADIUS_DEG}Â° a broad softbox shadow. Choosing a preset restores its calibrated softness.
             </p>
 
             <div class="section-divider"></div>
@@ -271,16 +272,16 @@ export class AppShell {
             </div>
             <div class="preset-segmented-control">
               <button class="ground-preset-btn active" data-color="${DEFAULT_GROUND_HEX}" id="btn-ground-grass">
-                <span>🌿</span> Grass
+                <span class="preset-icon" aria-hidden="true">${ICONS.ground.grass}</span> Grass
               </button>
               <button class="ground-preset-btn" data-color="#78726B" id="btn-ground-neutral">
-                <span>⚪</span> Studio Gray
+                <span class="preset-icon" aria-hidden="true">${ICONS.ground.neutral}</span> Studio Gray
               </button>
               <button class="ground-preset-btn" data-color="#6B4C35" id="btn-ground-dirt">
-                <span>🍂</span> Dirt
+                <span class="preset-icon" aria-hidden="true">${ICONS.ground.dirt}</span> Dirt
               </button>
               <button class="ground-preset-btn" data-color="#C2A676" id="btn-ground-sand">
-                <span>🏖️</span> Sand
+                <span class="preset-icon" aria-hidden="true">${ICONS.ground.sand}</span> Sand
               </button>
             </div>
           </div>
@@ -296,13 +297,13 @@ export class AppShell {
           <div class="section-body">
             <div class="preset-segmented-control">
               <button class="finish-btn" data-finish="matte" id="btn-finish-matte">
-                <span>⚪</span> Matte
+                <span class="preset-icon" aria-hidden="true">${ICONS.finish.matte}</span> Matte
               </button>
               <button class="finish-btn active" data-finish="satin" id="btn-finish-satin">
-                <span>✨</span> Satin
+                <span class="preset-icon" aria-hidden="true">${ICONS.finish.satin}</span> Satin
               </button>
               <button class="finish-btn" data-finish="glossy" id="btn-finish-glossy">
-                <span>💎</span> Glossy
+                <span class="preset-icon" aria-hidden="true">${ICONS.finish.glossy}</span> Glossy
               </button>
             </div>
 
@@ -354,13 +355,13 @@ export class AppShell {
               <span class="guide-kicker">Lumiform Colorpicker</span>
               <h2 id="guide-title">Controls Guide</h2>
             </div>
-            <button type="button" class="guide-back" id="btn-guide-back">✕ Back</button>
+            <button type="button" class="guide-back" id="btn-guide-back"><span class="icon-slot" aria-hidden="true">${ICONS.close}</span>Back</button>
           </header>
 
           <div class="guide-body">
             <section class="guide-section">
               <h3>Time of Day</h3>
-              <p>Click one of the seven icons or drag the slider. Each stop applies its calibrated sun, sky, ground and haze. Moving Orbit, Height, Terminator, Haze, Light or Ground turns the label into <strong>edited</strong>; <strong>↺</strong> restores the last preset without touching the spheres.</p>
+              <p>Click one of the seven icons or drag the slider. Each stop applies its calibrated sun, sky, ground and haze. Moving Orbit, Height, Terminator, Haze, Light or Ground turns the label into <strong>edited</strong>; <span class="guide-inline-icon" aria-hidden="true">${ICONS.reset}</span> restores the last preset without touching the spheres.</p>
             </section>
 
             <section class="guide-section">
@@ -371,7 +372,7 @@ export class AppShell {
             <section class="guide-section">
               <h3>Spheres</h3>
               <p><strong>Near</strong>, <strong>Mid</strong> and <strong>Far</strong> carry visibility and selection: an off sphere enables and selects, an enabled sphere selects, and the selected sphere hides. The last sphere cannot be hidden, and hidden spheres remember their colour and size.</p>
-              <p>Link Colours and Link Size apply one edit to every enabled sphere. Click the albedo chip to send its exact hex to Photoshop, or open <strong>H · S · B</strong> for the sliders.</p>
+              <p>Link Colours and Link Size apply one edit to every enabled sphere. Click the albedo chip to send its exact hex to Photoshop, or open <strong>H Â· S Â· B</strong> for the sliders.</p>
             </section>
 
             <section class="guide-section">
@@ -386,7 +387,7 @@ export class AppShell {
 
             <section class="guide-section">
               <h3>Canvas &amp; Brush</h3>
-              <p>Drag the circular reticle to sample the rendered colour under it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H · S · B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
+              <p>Drag the circular reticle to sample the rendered colour under it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H Â· S Â· B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
             </section>
 
             <button
@@ -399,7 +400,7 @@ export class AppShell {
                 <span class="guide-github-label">GitHub repository</span>
                 <span class="guide-github-url">github.com/KeihanMirJavadi/Lumiform-Colorpicker</span>
               </span>
-              <span class="guide-github-arrow" aria-hidden="true">↗</span>
+              <span class="guide-github-arrow" aria-hidden="true">${ICONS.external}</span>
             </button>
           </div>
         </section>
@@ -538,28 +539,28 @@ export class AppShell {
   private updateSectionSummaries(): void {
     if (!this.viewport) return;
 
-    // Spheres · <selected depth name> · <selected albedo>
+    // Spheres Â· <selected depth name> Â· <selected albedo>
     const selectedId = this.viewport.getSelectedSphereId();
     const selectedSlot = SPHERE_SLOTS.find((slot) => slot.id === selectedId);
     this.setStateText(
       '#spheres-summary',
-      `${selectedSlot?.label ?? 'Near'} · ${this.viewport.getSelectedSphereColor().toUpperCase()}`
+      `${selectedSlot?.label ?? 'Near'} Â· ${this.viewport.getSelectedSphereColor().toUpperCase()}`
     );
 
-    // Sun & Atmosphere · <last preset> [· edited]
+    // Sun & Atmosphere Â· <last preset> [Â· edited]
     const timeOfDay = this.getTimeOfDayState();
     this.setStateText(
       '#sun-summary',
-      `${timeOfDay.name}${timeOfDay.edited ? ' · edited' : ''}`
+      `${timeOfDay.name}${timeOfDay.edited ? ' Â· edited' : ''}`
     );
 
-    // Ground · <current ground albedo>
+    // Ground Â· <current ground albedo>
     this.setStateText(
       '#ground-summary',
       `#${this.viewport.getGroundColor().getHexString().toUpperCase()}`
     );
 
-    // Surface Finish · <finish name>
+    // Surface Finish Â· <finish name>
     const finish = this.viewport.getSurfaceFinish();
     const finishName =
       finish === 'custom'
@@ -784,11 +785,11 @@ export class AppShell {
       const lastOne = active && activeCount <= 1;
       btn.title = selected
         ? lastOne
-          ? `${name} — selected. At least one sphere must stay visible.`
-          : `${name} — selected. Click to hide.`
+          ? `${name} â€” selected. At least one sphere must stay visible.`
+          : `${name} â€” selected. Click to hide.`
         : active
-          ? `${name} — enabled. Click to select.`
-          : `${name} — hidden. Click to show and select.`;
+          ? `${name} â€” enabled. Click to select.`
+          : `${name} â€” hidden. Click to show and select.`;
       btn.setAttribute('aria-label', btn.title);
     });
 
@@ -902,7 +903,7 @@ export class AppShell {
       applyPreset(LIGHTING_PRESET_ORDER[index]);
     });
 
-    // `↺` re-applies only the last preset's six lighting values (D10).
+    // `â†º` re-applies only the last preset's six lighting values (D10).
     resetBtn.addEventListener('click', () => {
       applyPreset(this.lastPreset);
     });
@@ -1272,3 +1273,4 @@ export class AppShell {
     this.swatchRamp = null;
   }
 }
+

@@ -12,12 +12,12 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.3 current) |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.5 current) |
 | Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.1.0 - `release/Lumiform-Colorpicker-1.1.0.ccx` |
-| Next release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (planned) |
-| Current task | **4.3 - Control reskin** |
+| Next release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built, awaiting install/review) |
+| Current task | **4.5 - Live theme linking and Appearance override** |
 | Renderer changes | None across V1.1/V1.2. `src/core/framing.ts` and the shaders stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for both UI phases. |
@@ -581,7 +581,7 @@ Rules:
 
 ### 10.5 Stage 4 roadmap
 
-States follow the parent protocol. Only **4.3** is `current`.
+States follow the parent protocol. Only **4.5** is `current`.
 
 * [x] **Task 4.1: Theme probe, reference freeze and token foundation**
   * **State:** `Done`
@@ -606,23 +606,24 @@ States follow the parent protocol. Only **4.3** is `current`.
     24 px and pinned, all four closed summaries remain live (24 px rows), and the active palette is applied for all
     four themes. Verified with computed styles and width sweeps; no horizontal control overflow.
 
-* [ ] **Task 4.3: Control reskin**
-  * **State:** `current`
-  * **Description:** Restyle buttons, three-state sphere toggles, link rows, checkboxes, hex/number fields,
-    disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states, a 1 px
-    focus outline and no transforms or glow. Leave the time-of-day control untouched.
-  * **Acceptance Criteria:** Every control is usable at 320 px; selected/active states use the sampled tint; no
-    blue chrome; no hover lift or glow; the time gradient, thumb and geometry are byte-for-byte unchanged.
+* [x] **Task 4.3: Control reskin**
+  * **State:** `Done`
+  * **Description:** Reskinned buttons, three-state sphere toggles, link rows, a custom checkbox, hex/number fields,
+    disclosures, swatches and sliders at 24 px with 2 px radii. Selected states use the neutral token, hover has no
+    lift or glow, focus is a 1 px ink outline, and fields use Segoe UI with tabular numerals. Slider rules are
+    scoped with `:not(.time-range)`, leaving the time gradient, thumb and geometry untouched.
+  * **Acceptance Criteria:** Met - no clipped controls at 320 px (ground presets reflow to 2x2), selected states use
+    the sampled tint, no blue chrome, no hover lift, and the time control geometry is unchanged.
 
-* [ ] **Task 4.4: Typography and icon set**
-  * **State:** `planned`
-  * **Description:** Move to Segoe UI at 11 px, sentence-case section titles and tabular numerals. Replace the 14
-    emoji and the info/reset/close/external-link glyphs with 16 px, 1.5 px line SVGs using `currentColor`.
-  * **Acceptance Criteria:** No emoji remains; icons are crisp at 16 px and inherit the theme colour; labels and
-    aria text remain intact; the seven time icons stay on one line at 320 px.
+* [x] **Task 4.4: Typography and icon set**
+  * **State:** `Done`
+  * **Description:** Segoe UI at 11 px, sentence-case section titles and tabular numerals. Replaced all 14 emoji and
+    the info/reset/close/external-link glyphs with 19 inline SVGs on a 16x16 grid, 1.5 px stroke, `currentColor`.
+  * **Acceptance Criteria:** Met - no emoji remains in the DOM, icons render at 16 px (14 px inline) and inherit the
+    theme ink, labels and aria text are intact, and the seven time icons stay on one row at 320 px.
 
 * [ ] **Task 4.5: Live theme linking and Appearance override**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Add the host `theme` relay, the WebView `theme` message, the URL bootstrap, the four token
     sets and the guide's Appearance row with `localStorage` persistence. Add the mock theme source for browser
     development.
@@ -727,4 +728,5 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 | 2026-11-01 | Task 4.1 probe built in `tools/theme-probe/` and packaged as `Lumiform-ThemeProbe-1.0.0.ccx`. It reports the theme name, live `onUpdated` events, `--uxp-host-*` colours and `app.appSkinInfo`, and saves one JSON snapshot per theme into its `PluginData` folder so palettes are frozen from exact values instead of screenshots. Installed into Photoshop's `Plug-ins` folder for the capture run. |
 | 2026-11-01 | Task 4.1 Done. The probe confirmed live `document.theme` changes but found no `--uxp-host-*` variables and no `app.appSkinInfo` in a third-party panel. Photoshop's own `host-theme.css`, `DesignAppColorThemesV5.xml` and `UIColors.txt` supplied the authoritative four-theme palette. A controlled Black -> Dark Gray -> Medium Gray -> Light Gray pass confirmed `darkest` / `dark` / `light` / `lightest`. The reference was re-identified as **Dark Gray**, not Medium Gray, and the sampled header/status greys were found not to be theme tokens. The four palettes and the semantic token sheet are frozen in 10.3.1. Task 4.2 is current. |
 | 2026-11-01 | Task 4.2 Done. Flat surfaces replace the card stack: 28 px header, 1 px dividers, workspace matte around the unchanged canvas, 24 px status bar and no decorative shadows. The four frozen palettes live behind `data-ps-theme` with Dark Gray as the P5/P24 fallback; the legacy V1.1 tokens alias the new semantic ones. Verified at 320/420/600 with no control overflow. Task 4.3 is current. |
-| 2026-11-01 | Task 4.3 implemented. Controls now use 24 px rows, 2 px radii, a custom neutral checkbox, Segoe UI tabular numerals in hex/number fields, and neutral hover/selected states with no lift or glow. Slider changes are scoped with `:not(.time-range)`, so the time-of-day gradient, thumb and geometry remain untouched. Awaiting visual review. |
+| 2026-11-01 | Task 4.3 Done. Controls use 24 px rows, 2 px radii, a custom neutral checkbox, Segoe UI tabular numerals in hex/number fields, and neutral hover/selected states with no lift or glow. Slider changes are scoped with `:not(.time-range)`, so the time-of-day gradient, thumb and geometry remain untouched. Ground presets reflow to 2x2 below 380 px; no controls clip at 320. |
+| 2026-11-01 | Task 4.4 Done. All 14 emoji and the info/reset/close/external glyphs are replaced by 19 inline 16 px line SVGs (1.5 px stroke, `currentColor`); the seven time icons stay on one row at 320 px and labels/aria text are unchanged. Version bumped to 1.2.0 and `release/Lumiform-Colorpicker-1.2.0.ccx` packaged for the first in-Photoshop review. Task 4.5 is current. |

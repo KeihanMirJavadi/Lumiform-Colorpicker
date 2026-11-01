@@ -995,31 +995,31 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">4.3 Control reskin</div>
-              <div class="task-desc">Restyle buttons, sphere toggles, links, checkboxes, hex/number fields, disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states and a 1 px focus outline. Leave the time-of-day control untouched.</div>
-              <div class="task-criteria">Criteria: Every control is usable at 320 px; selected/active states use the sampled tint; no blue chrome or hover lift; the time gradient, thumb and geometry are unchanged.</div>
+              <div class="task-desc">Reskinned buttons, sphere toggles, links, a custom checkbox, hex/number fields, disclosures, swatches and sliders at 24 px with 2 px radii. Neutral selected states, 1 px ink focus, Segoe UI tabular numerals. Slider changes are scoped with <code>:not(.time-range)</code>.</div>
+              <div class="task-criteria">Criteria met: every control fits at 320 px (ground presets reflow to 2x2), selected states use the sampled tint, no blue chrome or hover lift, and the time control is unchanged.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">4.4 Typography and icon set</div>
-              <div class="task-desc">Use Segoe UI at 11 px, sentence-case section titles and tabular numerals. Replace the 14 emoji and the info/reset/close/external-link glyphs with 16 px, 1.5 px line SVGs using <code>currentColor</code>.</div>
-              <div class="task-criteria">Criteria: No emoji remains; icons are crisp at 16 px and inherit the theme colour; labels and aria text remain intact; the seven time icons stay on one line at 320 px.</div>
+              <div class="task-desc">Segoe UI at 11 px, sentence-case section titles and tabular numerals. All 14 emoji and the info/reset/close/external glyphs are replaced with 19 inline 16 px line SVGs (1.5 px stroke, <code>currentColor</code>).</div>
+              <div class="task-criteria">Criteria met: no emoji remains, icons render at 16 px and inherit the theme ink, labels and aria text are intact, and the seven time icons stay on one row at 320 px.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">4.5 Live theme linking and Appearance override</div>
               <div class="task-desc">Add the host <code>theme</code> relay, WebView <code>theme</code> message, URL bootstrap, four token sets and the guide's Appearance row with <code>localStorage</code> persistence. Add the mock theme source for browser development.</div>
               <div class="task-criteria">Criteria: Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Dark Gray; no flash or loop.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -1460,9 +1460,9 @@ black / darkGray / mediumGray / lightGray token sets
         <tbody>
           <tr><td>4.1 Theme probe, reference freeze and token foundation</td><td><span class="status-badge done">Done</span></td><td>Theme API confirmed live; four palettes and token sheet frozen from Adobe's files.</td></tr>
           <tr><td>4.2 Flat shell, compact header and status bar</td><td><span class="status-badge done">Done</span></td><td>Flat surfaces, 28 px header, 24 px status bar, four palettes.</td></tr>
-          <tr><td>4.3 Control reskin</td><td><span class="status-badge current">current</span></td><td>22-24 px native controls; time gradient untouched.</td></tr>
-          <tr><td>4.4 Typography and icon set</td><td><span class="status-badge planned">planned</span></td><td>Segoe UI, sentence case, 14 line icons.</td></tr>
-          <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge planned">planned</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
+          <tr><td>4.3 Control reskin</td><td><span class="status-badge done">Done</span></td><td>24 px native controls; time gradient untouched.</td></tr>
+          <tr><td>4.4 Typography and icon set</td><td><span class="status-badge done">Done</span></td><td>Segoe UI, sentence case, 19 line icons.</td></tr>
+          <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge current">current</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
           <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge planned">planned</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
           <tr><td>4.7 Verification, documentation and release</td><td><span class="status-badge planned">planned</span></td><td>Four-theme checks, docs sync, 1.2.0 <code>.ccx</code>.</td></tr>
         </tbody>
