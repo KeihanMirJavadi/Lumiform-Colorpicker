@@ -5,6 +5,17 @@ export interface ColorChangeEvent {
   hex: string;
 }
 
+/** A key press forwarded from the WebView to the Photoshop host. */
+export interface ShortcutPayload {
+  key: string;
+  code: string;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+  repeat: boolean;
+}
+
 export interface IPhotoshopBridge {
   readonly name: string;
   readonly isConnected: boolean;
@@ -33,6 +44,12 @@ export interface IPhotoshopBridge {
    * clicks the document. The host calls `app.bringToFront()` to hand focus back.
    */
   focusPhotoshop(): void;
+
+  /**
+   * Forwards a Photoshop shortcut from the WebView to the host. On Windows a
+   * WebView keeps keyboard focus, so the host re-executes the action directly.
+   */
+  sendShortcut(payload: ShortcutPayload): void;
 
   /**
    * Subscribes to bridge status changes.
