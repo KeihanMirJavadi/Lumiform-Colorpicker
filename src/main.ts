@@ -1,11 +1,11 @@
 import './ui/styles/theme.css';
 import { getPhotoshopBridge } from './bridge';
 import { AppShell } from './ui/shell';
-import { applyTheme, DEFAULT_THEME } from './ui/theme';
+import { applyTheme, initialTheme } from './ui/theme';
 
-// V1.2: paint in the fallback theme immediately; task 4.5 replaces this with
-// the host relay and the URL bootstrap before the shell renders.
-applyTheme(DEFAULT_THEME);
+// First paint: a saved manual choice wins, otherwise the host's `?theme=`
+// bootstrap, otherwise Dark Gray. The shell then follows live host changes.
+applyTheme(initialTheme());
 
 function escapeHtml(value: string): string {
   return value.replace(

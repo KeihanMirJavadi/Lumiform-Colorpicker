@@ -1013,22 +1013,22 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">4.5 Live theme linking and Appearance override</div>
-              <div class="task-desc">Add the host <code>theme</code> relay, WebView <code>theme</code> message, URL bootstrap, four token sets and the guide's Appearance row with <code>localStorage</code> persistence. Add the mock theme source for browser development.</div>
-              <div class="task-criteria">Criteria: Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Dark Gray; no flash or loop.</div>
+              <div class="task-desc">The host relays <code>document.theme</code> live and appends <code>?theme=</code> to the WebView URL; the bridge exposes <code>onThemeChange</code>; the guide's Appearance row offers Auto plus the four themes and persists the choice in <code>localStorage</code>. The mock mirrors the host for browser development.</div>
+              <div class="task-criteria">Criteria met in the browser: Auto follows simulated host switches, a pinned choice survives reloads and ignores host changes, Auto resumes, the fallback is Dark Gray, no loop. In-Photoshop live check is part of 4.7.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">4.6 Guide and UXP host shell</div>
               <div class="task-desc">Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub. Restyle the loading/error shell with <code>--uxp-host-*</code> and a neutral spinner.</div>
               <div class="task-criteria">Criteria: The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still work; the GitHub row still opens externally; the host shell matches the active theme with no blue accent.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -1462,8 +1462,8 @@ black / darkGray / mediumGray / lightGray token sets
           <tr><td>4.2 Flat shell, compact header and status bar</td><td><span class="status-badge done">Done</span></td><td>Flat surfaces, 28 px header, 24 px status bar, four palettes.</td></tr>
           <tr><td>4.3 Control reskin</td><td><span class="status-badge done">Done</span></td><td>24 px native controls; time gradient untouched.</td></tr>
           <tr><td>4.4 Typography and icon set</td><td><span class="status-badge done">Done</span></td><td>Segoe UI, sentence case, 19 line icons.</td></tr>
-          <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge current">current</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
-          <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge planned">planned</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
+          <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge done">Done</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
+          <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge current">current</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
           <tr><td>4.7 Verification, documentation and release</td><td><span class="status-badge planned">planned</span></td><td>Four-theme checks, docs sync, 1.2.0 <code>.ccx</code>.</td></tr>
         </tbody>
       </table>

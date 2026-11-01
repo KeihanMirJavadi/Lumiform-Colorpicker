@@ -10,6 +10,31 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
   private _currentColor: RGBColor = hexToRgb(DEFAULT_ALBEDO_HEX) ?? { r: 227, g: 227, b: 227 };
   private _statusListeners: Set<(status: string) => void> = new Set();
   private _colorListeners: Set<(event: ColorChangeEvent) => void> = new Set();
+  private _themeListeners: Set<(hostTheme: string | null) => void> = new Set();
+  private _hostTheme: string | null = 'dark';
+
+  constructor() {
+    // Browser dev mirrors the host: ?theme=<token> bootstraps the simulation,
+    // and Dark Gray is the default when no parameter is present.
+    try {
+      const bootstrap = new URLSearchParams(window.location.search).get('theme');
+      if (bootstrap && bootstrap.trim()) this._hostTheme = bootstrap.trim();
+    } catch (error) {
+      // Keep the default.
+    }
+
+    // Browser-dev hook: simulate Photoshop theme switches without Photoshop.
+    const devWindow = window as Window & {
+      __lumiformMockTheme?: (theme: string | null) => void;
+    };
+    devWindow.__lumiformMockTheme = (theme) => this.setHostTheme(theme);
+  }
+
+  /** Updates the simulated host token; used by browser development. */
+  setHostTheme(theme: string | null): void {
+    this._hostTheme = theme;
+    this._themeListeners.forEach((cb) => cb(theme));
+  }
 
   get isConnected(): boolean {
     return this._isConnected;
@@ -73,6 +98,14 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
     });
     return () => {
       this._colorListeners.delete(callback);
+    };
+  }
+
+  onThemeChange(callback: (hostTheme: string | null) => void): () => void {
+    this._themeListeners.add(callback);
+    callback(this._hostTheme);
+    return () => {
+      this._themeListeners.delete(callback);
     };
   }
 }

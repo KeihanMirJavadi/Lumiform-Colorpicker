@@ -1942,3 +1942,59 @@ details.section-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ==========================================================================
+   V1.2 Appearance row (Task 4.5)
+   ========================================================================== */
+
+.guide-note {
+  margin: 0 0 6px;
+  font-size: 10px;
+  color: var(--ps-ink-secondary);
+}
+
+.appearance-row {
+  display: grid;
+  /* 3 columns at 320 px, 5 at wider guides; labels never ellipsize. */
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.appearance-btn {
+  min-width: 0;
+  min-height: 24px;
+  padding: 0 4px;
+  overflow: hidden;
+  border: 1px solid var(--ps-line);
+  border-radius: 2px;
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+  font-family: inherit;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.appearance-btn:hover {
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+.appearance-btn.active {
+  background-color: var(--ps-selected);
+  border-color: var(--ps-line-strong);
+  color: var(--ps-ink);
+}
+
+.appearance-btn:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+.appearance-state {
+  margin: 6px 0 0;
+  font-size: 10px;
+  color: var(--ps-ink-secondary);
+}

@@ -34,4 +34,11 @@ export interface IPhotoshopBridge {
    * Subscribes to color updates dispatched through the bridge.
    */
   onColorChange(callback: (event: ColorChangeEvent) => void): () => void;
+
+  /**
+   * Subscribes to the host's Photoshop theme token (`darkest`, `dark`,
+   * `light`, `lightest`). The callback receives the current value immediately,
+   * or null when the host has not reported one.
+   */
+  onThemeChange(callback: (hostTheme: string | null) => void): () => void;
 }

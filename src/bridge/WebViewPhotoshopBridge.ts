@@ -22,13 +22,14 @@ export interface WebToHostMessage {
 
 export interface HostToWebMessage {
   source: 'lumiform-host';
-  type: 'status' | 'foreground' | 'error';
+  type: 'status' | 'foreground' | 'error' | 'theme';
   status?: string;
   connected?: boolean;
   requestId?: number;
   rgb?: RGBColor;
   hex?: string;
   message?: string;
+  theme?: string;
 }
 
 interface UxpHost {
@@ -49,6 +50,16 @@ export function isUxpWebView(): boolean {
 
 function clampChannel(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+/** The host appends `?theme=<token>` so the first paint is already correct. */
+function readBootstrapTheme(): string | null {
+  try {
+    const value = new URLSearchParams(window.location.search).get('theme');
+    return value && value.trim() ? value.trim() : null;
+  } catch (error) {
+    return null;
+  }
 }
 
 function normalizeRgb(color: RGBColor | string): RGBColor | null {
@@ -82,6 +93,8 @@ export class WebViewPhotoshopBridge implements IPhotoshopBridge {
   private _currentColor: RGBColor = hexToRgb(DEFAULT_ALBEDO_HEX) ?? { r: 227, g: 227, b: 227 };
   private _statusListeners: Set<(status: string) => void> = new Set();
   private _colorListeners: Set<(event: ColorChangeEvent) => void> = new Set();
+  private _themeListeners: Set<(hostTheme: string | null) => void> = new Set();
+  private _currentHostTheme: string | null = readBootstrapTheme();
   private _pendingReads: Map<number, (color: RGBColor | null) => void> = new Map();
   private _nextRequestId = 1;
   private _handshakeTimer: number | null = null;
@@ -166,6 +179,14 @@ export class WebViewPhotoshopBridge implements IPhotoshopBridge {
     };
   }
 
+  onThemeChange(callback: (hostTheme: string | null) => void): () => void {
+    this._themeListeners.add(callback);
+    callback(this._currentHostTheme);
+    return () => {
+      this._themeListeners.delete(callback);
+    };
+  }
+
   private post(message: WebToHostMessage): void {
     if (!this.host) return;
     try {
@@ -189,6 +210,12 @@ export class WebViewPhotoshopBridge implements IPhotoshopBridge {
     if (data.type === 'error') {
       this.clearHandshake();
       this.setStatus(data.message ?? 'Photoshop bridge error', false);
+      return;
+    }
+
+    if (data.type === 'theme') {
+      this._currentHostTheme = typeof data.theme === 'string' && data.theme.trim() ? data.theme.trim() : null;
+      this._themeListeners.forEach((cb) => cb(this._currentHostTheme));
       return;
     }
 

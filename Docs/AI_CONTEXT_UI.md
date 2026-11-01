@@ -12,12 +12,12 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.5 current) |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.6 current) |
 | Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.1.0 - `release/Lumiform-Colorpicker-1.1.0.ccx` |
 | Next release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built, awaiting install/review) |
-| Current task | **4.5 - Live theme linking and Appearance override** |
+| Current task | **4.6 - Guide and UXP host shell** |
 | Renderer changes | None across V1.1/V1.2. `src/core/framing.ts` and the shaders stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for both UI phases. |
@@ -581,7 +581,7 @@ Rules:
 
 ### 10.5 Stage 4 roadmap
 
-States follow the parent protocol. Only **4.5** is `current`.
+States follow the parent protocol. Only **4.6** is `current`.
 
 * [x] **Task 4.1: Theme probe, reference freeze and token foundation**
   * **State:** `Done`
@@ -622,17 +622,18 @@ States follow the parent protocol. Only **4.5** is `current`.
   * **Acceptance Criteria:** Met - no emoji remains in the DOM, icons render at 16 px (14 px inline) and inherit the
     theme ink, labels and aria text are intact, and the seven time icons stay on one row at 320 px.
 
-* [ ] **Task 4.5: Live theme linking and Appearance override**
-  * **State:** `current`
-  * **Description:** Add the host `theme` relay, the WebView `theme` message, the URL bootstrap, the four token
-    sets and the guide's Appearance row with `localStorage` persistence. Add the mock theme source for browser
-    development.
-  * **Acceptance Criteria:** Switching Photoshop through all four themes switches Lumiform live; a manual choice
-    sticks across reloads; selecting Auto resumes following the host; the fallback default is Dark Gray; no
-    flash or update loop.
+* [x] **Task 4.5: Live theme linking and Appearance override**
+  * **State:** `Done`
+  * **Description:** The UXP host reads `document.theme` and relays `{ type: "theme" }` on ready and on every
+    `onUpdated`; the WebView URL carries `?theme=<token>` for first paint. The bridge exposes `onThemeChange`, and
+    the guide gains an `Auto / Black / Dark Gray / Medium Gray / Light Gray` row persisted in
+    `localStorage`. The mock bridge mirrors the host for browser development.
+  * **Acceptance Criteria:** Met - a simulated host switch changes the panel live in Auto, a pinned choice survives
+    reloads and ignores host changes, Auto resumes following the host, the fallback is Dark Gray, and there is no
+    update loop. The in-Photoshop live check is part of 4.7.
 
 * [ ] **Task 4.6: Guide and UXP host shell**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub.
     Restyle the loading/error shell with `--uxp-host-*` and a neutral spinner.
   * **Acceptance Criteria:** The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still
@@ -688,7 +689,9 @@ States follow the parent protocol. Only **4.5** is `current`.
 * **Probe:** temporary plugin with theme name, host-variable scan, environment and one JSON snapshot per theme.
 * **Icons:** sunrise, sun-behind-cloud, sun, high sun, sunset, golden sun, crescent moon; grass/leaf, neutral
   circle, soil, sand; matte circle, satin sparkle, glossy diamond; plus info, reset, close and external-link.
-* **Browser dev:** defaults to Dark Gray; the Appearance row previews all four themes.
+* **Browser dev:** defaults to Dark Gray; `?theme=<token>` bootstraps the mock and
+  `window.__lumiformMockTheme('lightest')` simulates a live host switch. The Appearance row previews all four
+  themes.
 
 ### 10.9 Definition of done
 
@@ -730,3 +733,4 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 | 2026-11-01 | Task 4.2 Done. Flat surfaces replace the card stack: 28 px header, 1 px dividers, workspace matte around the unchanged canvas, 24 px status bar and no decorative shadows. The four frozen palettes live behind `data-ps-theme` with Dark Gray as the P5/P24 fallback; the legacy V1.1 tokens alias the new semantic ones. Verified at 320/420/600 with no control overflow. Task 4.3 is current. |
 | 2026-11-01 | Task 4.3 Done. Controls use 24 px rows, 2 px radii, a custom neutral checkbox, Segoe UI tabular numerals in hex/number fields, and neutral hover/selected states with no lift or glow. Slider changes are scoped with `:not(.time-range)`, so the time-of-day gradient, thumb and geometry remain untouched. Ground presets reflow to 2x2 below 380 px; no controls clip at 320. |
 | 2026-11-01 | Task 4.4 Done. All 14 emoji and the info/reset/close/external glyphs are replaced by 19 inline 16 px line SVGs (1.5 px stroke, `currentColor`); the seven time icons stay on one row at 320 px and labels/aria text are unchanged. Version bumped to 1.2.0 and `release/Lumiform-Colorpicker-1.2.0.ccx` packaged for the first in-Photoshop review. Task 4.5 is current. |
+| 2026-11-01 | Task 4.5 Done. The host relays `document.theme` live and appends `?theme=` to the WebView URL; the bridge exposes `onThemeChange`; the guide's Appearance row offers Auto plus the four themes and persists the choice in `localStorage`. Verified in the browser with the mock: Auto follows simulated host switches, a pinned theme survives reloads and ignores host changes, and the URL bootstrap paints the right palette before the shell renders. The 1.2.0 package was rebuilt with the relay. Task 4.6 is current. |

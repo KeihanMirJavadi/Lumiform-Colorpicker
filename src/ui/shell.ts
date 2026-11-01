@@ -13,6 +13,16 @@ import {
 } from '../core/lighting';
 import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
 import { ICONS } from './icons';
+import {
+  applyTheme,
+  isPhotoshopTheme,
+  readThemePreference,
+  resolveTheme,
+  saveThemePreference,
+  THEME_LABELS,
+  THEME_ORDER,
+  ThemePreference,
+} from './theme';
 
 const LUMIFORM_GITHUB_URL = 'https://github.com/KeihanMirJavadi/Lumiform-Colorpicker';
 
@@ -42,6 +52,9 @@ export class AppShell {
   /** Latest colour waiting for the next animation frame (D21). */
   private pendingForegroundHex: string | null = null;
   private foregroundFrameId: number | null = null;
+  /** V1.2 appearance: Auto follows the host; a pinned theme wins (4.5). */
+  private themePreference: ThemePreference = readThemePreference();
+  private hostTheme: string | null = null;
 
   constructor(root: HTMLElement, bridge: IPhotoshopBridge) {
     this.root = root;
@@ -390,6 +403,19 @@ export class AppShell {
               <p>Drag the circular reticle to sample the rendered colour under it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H Â· S Â· B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
             </section>
 
+            <section class="guide-section">
+              <h3>Appearance</h3>
+              <p class="guide-note">Follow Photoshop's Color Theme, or pin one. A pinned theme stays until Auto is selected.</p>
+              <div class="appearance-row" role="group" aria-label="Appearance theme">
+                <button type="button" class="appearance-btn" data-theme-pref="auto" aria-pressed="true">Auto</button>
+                ${THEME_ORDER.map(
+                  (theme) =>
+                    `<button type="button" class="appearance-btn" data-theme-pref="${theme}" aria-pressed="false">${THEME_LABELS[theme]}</button>`
+                ).join('')}
+              </div>
+              <p class="appearance-state" id="appearance-state" aria-live="polite"></p>
+            </section>
+
             <button
               type="button"
               class="guide-github-row"
@@ -480,8 +506,9 @@ export class AppShell {
       new StatusBar(statusBarContainer, this.bridge);
     }
 
-    // 5. Mount the Controls Guide takeover
+    // 5. Mount the Controls Guide takeover and the appearance state
     this.bindGuide();
+    this.bindTheme();
 
     // 6. Bridge color events (if any external source updates color)
     this.bridge.onColorChange((_event: ColorChangeEvent) => {
@@ -581,6 +608,60 @@ export class AppShell {
    * second UXP entrypoint, so it covers the header, canvas, scroll area and
    * status bar and closes with Back, Esc or the backdrop.
    */
+  /**
+   * V1.2 theme linking (4.5). Auto follows the host token relayed by the UXP
+   * panel; a pinned choice wins and survives reloads. The URL bootstrap in
+   * `main.ts` already painted the right palette, so this only reacts to
+   * changes and keeps the Appearance row in sync.
+   */
+  private bindTheme(): void {
+    this.bridge.onThemeChange((hostTheme) => {
+      this.hostTheme = hostTheme;
+      if (this.themePreference === 'auto') {
+        applyTheme(resolveTheme('auto', hostTheme));
+      }
+      this.syncAppearance();
+    });
+
+    this.root.querySelectorAll<HTMLButtonElement>('.appearance-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        const preference = button.dataset.themePref;
+        if (!preference) return;
+
+        const next: ThemePreference =
+          preference === 'auto' ? 'auto' : isPhotoshopTheme(preference) ? preference : 'auto';
+
+        this.themePreference = next;
+        saveThemePreference(next);
+        applyTheme(resolveTheme(next, this.hostTheme));
+        this.syncAppearance();
+      });
+    });
+
+    applyTheme(resolveTheme(this.themePreference, this.hostTheme));
+    this.syncAppearance();
+  }
+
+  private syncAppearance(): void {
+    const effective = resolveTheme(this.themePreference, this.hostTheme);
+
+    this.root.querySelectorAll<HTMLButtonElement>('.appearance-btn').forEach((button) => {
+      const active = button.dataset.themePref === this.themePreference;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+
+    const state = this.root.querySelector<HTMLElement>('#appearance-state');
+    if (!state) return;
+
+    state.textContent =
+      this.themePreference === 'auto'
+        ? this.hostTheme
+          ? `Auto · Photoshop: ${THEME_LABELS[effective]}`
+          : `Auto · no host signal, using ${THEME_LABELS[effective]}`
+        : `Pinned to ${THEME_LABELS[effective]}`;
+  }
+
   private bindGuide(): void {
     const overlay = this.root.querySelector<HTMLElement>('#guide-overlay');
     const windowEl = this.root.querySelector<HTMLElement>('#guide-window');

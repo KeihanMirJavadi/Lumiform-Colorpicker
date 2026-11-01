@@ -345,13 +345,13 @@ lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unc
   * **Description:** Use Segoe UI at 11 px, sentence-case section titles and tabular numerals. Replace the 14 emoji and the info/reset/close/external-link glyphs with 16 px, 1.5 px line SVGs using `currentColor`.
   * **Acceptance Criteria:** No emoji remains; icons are crisp at 16 px and inherit the theme colour; labels and aria text remain intact; the seven time icons stay on one line at 320 px.
 
-* [ ] **Task 4.5: Live theme linking and Appearance override**
-  * **State:** `current`
-  * **Description:** Add the host `theme` relay, WebView `theme` message, URL bootstrap, four token sets and the guide's Appearance row with `localStorage` persistence. Add the mock theme source for browser development.
-  * **Acceptance Criteria:** Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Dark Gray; no flash or loop.
+* [x] **Task 4.5: Live theme linking and Appearance override**
+  * **State:** `Done`
+  * **Description:** The host relays `document.theme` live and appends `?theme=` to the WebView URL; the bridge exposes `onThemeChange`; the guide's Appearance row offers Auto plus the four themes and persists the choice in `localStorage`. The mock bridge mirrors the host for browser development.
+  * **Acceptance Criteria:** Met in the browser: Auto follows simulated host switches, a pinned choice survives reloads and ignores host changes, Auto resumes, the fallback is Dark Gray, and there is no update loop. The in-Photoshop live check remains for 4.7.
 
 * [ ] **Task 4.6: Guide and UXP host shell**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub. Restyle the loading/error shell with `--uxp-host-*` and a neutral spinner.
   * **Acceptance Criteria:** The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still work; the GitHub row still opens externally; the host shell matches the active theme with no blue accent.
 

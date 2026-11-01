@@ -22,6 +22,7 @@ let errorOverlay = null;
 let errorTitle = null;
 let errorMessage = null;
 let reloadButton = null;
+let themeListenerAttached = false;
 
 let photoshopApp = null;
 let photoshopCore = null;
@@ -76,6 +77,62 @@ function sendStatus(status, connected) {
 function sendError(message) {
   send({ type: "error", message });
   log("Error:", message);
+}
+
+/**
+ * Reads Photoshop's undocumented theme token. Values observed on 26.8:
+ * `darkest`, `dark`, `light`, `lightest` (Black, Dark Gray, Medium Gray,
+ * Light Gray). Returns null when the API is unavailable.
+ */
+function readHostTheme() {
+  try {
+    const theme = document.theme;
+    if (!theme || typeof theme.getCurrent !== "function") return null;
+    const value = theme.getCurrent();
+    return typeof value === "string" && value.trim() ? value.trim() : null;
+  } catch (error) {
+    log("Could not read the Photoshop theme:", error);
+    return null;
+  }
+}
+
+function sendTheme() {
+  const theme = readHostTheme();
+  if (theme) send({ type: "theme", theme });
+}
+
+/** Relays live theme changes; safe to call more than once. */
+function attachThemeListener() {
+  if (themeListenerAttached) return;
+  try {
+    const theme = document.theme;
+    if (!theme || !theme.onUpdated || typeof theme.onUpdated.addListener !== "function") {
+      return;
+    }
+    theme.onUpdated.addListener((payload) => {
+      const value =
+        typeof payload === "string"
+          ? payload
+          : payload && typeof payload === "object"
+            ? payload.theme || payload.colorTheme
+            : "";
+      if (typeof value === "string" && value.trim()) {
+        send({ type: "theme", theme: value.trim() });
+      }
+    });
+    themeListenerAttached = true;
+  } catch (error) {
+    log("Could not subscribe to Photoshop theme changes:", error);
+  }
+}
+
+/** WebView URL with the theme bootstrap, so the first paint is correct. */
+function buildWebUrl(cacheBuster) {
+  const query = [];
+  const theme = readHostTheme();
+  if (theme) query.push(`theme=${encodeURIComponent(theme)}`);
+  if (cacheBuster) query.push(`reload=${cacheBuster}`);
+  return `plugin:/web/index.html${query.length ? `?${query.join("&")}` : ""}`;
 }
 
 /**
@@ -229,6 +286,9 @@ function announceReady() {
     log("WebView bridge ready");
   }
 
+  attachThemeListener();
+  sendTheme();
+
   if (!photoshopApp) {
     sendStatus("Photoshop API unavailable", false);
     return;
@@ -323,12 +383,17 @@ function bindView() {
       if (!photoshopApp) {
         connectPhotoshop();
       }
-      webview.src = `plugin:/web/index.html?reload=${Date.now()}`;
+      webview.src = buildWebUrl(Date.now());
     });
   }
 
   window.addEventListener("message", handleWebMessage);
   window.addEventListener("unload", stopPolling);
+
+  // The theme query parameter is resolved before the first load so the
+  // WebView never paints the wrong palette (P22).
+  attachThemeListener();
+  webview.src = buildWebUrl();
 
   // If the WebView never reports in, do not leave the panel covered forever.
   window.setTimeout(() => {
