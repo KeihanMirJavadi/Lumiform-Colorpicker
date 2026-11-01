@@ -12,14 +12,14 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.1 current) |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.2 current) |
 | Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.1.0 - `release/Lumiform-Colorpicker-1.1.0.ccx` |
 | Next release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (planned) |
-| Current task | **4.1 - Theme probe, reference freeze and token foundation** |
+| Current task | **4.2 - Flat shell, compact header and status bar** |
 | Renderer changes | None across V1.1/V1.2. `src/core/framing.ts` and the shaders stay untouched. |
-| Reference | `_UI/ps-references/ps-reference.png` - the Photoshop chrome capture sampled in section 10.3 |
+| Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for both UI phases. |
 
 The V1.1 panel is built and packaged. V1.2 restyles its chrome to Photoshop's four built-in themes; it does not
@@ -399,9 +399,9 @@ V1.1 is shipped. V1.2 is a **chrome-only** reskin that makes the panel read as a
 Photoshop's four built-in themes. It does not touch the renderer, camera framing, lighting, atmosphere or swatch
 mathematics. The only intentional non-Photoshop element is the time-of-day gradient, which stays exactly as it is.
 
-The reference is `_UI/ps-references/ps-reference.png`, a native-resolution capture of the Photoshop window. Its
-chrome samples as Photoshop's **Medium Gray** theme. The exact values are in 10.3; the probe in 4.1 confirms the
-name and captures the other three themes.
+The reference is `_UI/ps-references/ps-reference.png`, a native-resolution capture of the Photoshop window. Task 4.1
+verified that its chrome is Photoshop's **Dark Gray** theme, not Medium Gray as first assumed. The exact values and
+the frozen four-theme palettes are in 10.3 and 10.3.1.
 
 ### 10.1 Non-goals
 
@@ -441,23 +441,31 @@ name and captures the other three themes.
 | P23 | Unsupported | Custom `UIColors.txt` themes and Gray/Blue Highlight detection are out of scope; the neutral reference selection is the default. |
 | P24 | Dev preview | Browser dev defaults to Medium Gray; the Appearance row previews all four themes without Photoshop. |
 
-### 10.3 Sampled reference palette (Medium Gray)
+### 10.3 Reference palette (Dark Gray sample)
 
-| Role | Sampled value |
-|---|---|
-| Workspace / document surround | `#333333` |
-| Panel body | `#535353` |
-| Panel header / toolbar | `#424242` |
-| Field / dropdown | `#454545` |
-| Hover / selected row | `#6B6B6B` |
-| Border / divider | `#383838` / `#474747` |
-| Primary text | `#F0F0F0` |
-| Secondary text | `#A0A0A0` / `#969696` |
-| Muted text | `#787878` |
-| Status bar | `#696969` with dark `#4A4A4A` text |
+`_UI/ps-references/ps-reference.png` samples as Photoshop's **Dark Gray** theme. The controlled 4.1 pass confirmed
+it: workspace `#333333`, panel `#535353` and field `#454545` are exactly Adobe's Dark Gray values. The earlier
+"Medium Gray" label was an assumption and was wrong; Medium Gray is the third (`light`) token and looks lighter.
 
-The current Lumiform is `#1E1E1E / #262626 / #3B82F6`. It is both too dark and too blue for this theme.
-The reference confirms the selected row is neutral; there is no blue chrome to reproduce.
+| Role | Sampled value | Status |
+|---|---|---|
+| Workspace / document surround | `#333333` | Matches `ApplicationBackground` exactly |
+| Panel body | `#535353` | Matches `ContentBackground` exactly |
+| Field / dropdown | `#454545` | Matches `TextFieldBackgroundDefault` exactly |
+| Hover / selected row | `#6B6B6B` | Matches the host `toggle-selected` token |
+| Panel header | `#424242` | Not a theme token - toolbar chrome |
+| Border / divider | `#383838` / `#474747` | Between the host `border` and `border-strong` tokens |
+| Primary text | `#F0F0F0` | Approximate; the host token is `#FFFFFF` |
+| Secondary text | `#A0A0A0` / `#969696` | Approximate; the host token is `#E5E5E5` |
+| Muted text | `#787878` | Not a theme token; the disabled token is `#747474` |
+| Status bar | `#696969` with `#4A4A4A` text | Not a theme token - application chrome |
+
+Panel, field and workspace are authoritative. The header, status bar and the sampled text greys are **not** part of
+Adobe's four-theme palette - they appear in neither `host-theme.css`, `DesignAppColorThemesV5.xml` nor
+`UIColors.txt` - so 10.3.1 uses host tokens and flat dividers instead of inventing values per theme.
+
+The current Lumiform is `#1E1E1E / #262626 / #3B82F6`. It is both too dark and too blue for Dark Gray.
+The reference confirms the selection is neutral; there is no blue chrome to reproduce.
 
 ### 10.3.1 Theme probe (temporary, task 4.1)
 
@@ -469,6 +477,7 @@ It is not part of the product and shares no code with `plugin/`.
 | Source | `tools/theme-probe/` - `manifest.json`, `index.html`, `style.css`, `main.js` |
 | Package | `npm run probe:package` -> `release/Lumiform-ThemeProbe-1.0.0.ccx` |
 | Reads | `document.theme.getCurrent()`, live `onUpdated` values, every computed `--uxp-host-*` variable (with a swatch), `app.appSkinInfo` colour roles, `prefers-color-scheme`, Photoshop/UXP versions and a timestamped change log |
+| Result (PS 26.8 / UXP 8.3) | `document.theme` works and fires live; the four tokens are `darkest`, `dark`, `light`, `lightest`. No `--uxp-host-*` variable resolves in a third-party panel, `app.appSkinInfo` is unavailable, `app.version` is undefined and `matchMedia` does not exist. |
 | Writes | `theme-<name>.json` plus `theme-latest.json` into the probe's own `PluginData` folder (`%APPDATA%\Adobe\UXP\PluginsStorage\PHSP\<version>\External\com.lumiform.themeprobe\PluginData`). No document, foreground-colour or product-panel writes. |
 | Install | Copy `tools/theme-probe/` into `C:\Program Files\Adobe\Adobe Photoshop 2025\Plug-ins\Lumiform Theme Probe` (admin), or install `release/Lumiform-ThemeProbe-1.0.0.ccx`. Restart Photoshop, then open Plugins > Lumiform Theme Probe. |
 | Capture | Switch Photoshop Settings > Interface > Color Theme through Black, Dark Gray, Medium Gray and Light Gray. Each switch writes one JSON automatically; screenshots are optional. |
@@ -485,31 +494,56 @@ with raw and hex values, `appSkinInfo`, the environment and the event log, so th
 reading files rather than transcribing screenshots. The panel shows `Saved theme-<name>.json` when a write succeeds
 and the failure reason when `localFileSystem` is unavailable.
 
-The theme names Photoshop may report are `darkest`, `dark`, `medium`, `light` and `lightest` (the same vocabulary as
-the manifest icon `theme` arrays). The probe records which of those map to Black, Dark Gray, Medium Gray and Light
-Gray; the mapping is only frozen once all four captures exist.
+A controlled pass - Black, then Dark Gray, then Medium Gray, then Light Gray - produced the four tokens in exactly
+that order, so the mapping is confirmed:
 
-#### Frozen palettes and semantic tokens (target of 4.1)
+| Photoshop label | `document.theme` | Panel |
+|---|---|---|
+| Black | `darkest` | `#323232` |
+| Dark Gray | `dark` | `#535353` |
+| Medium Gray | `light` | `#B8B8B8` |
+| Light Gray | `lightest` | `#F0F0F0` |
 
-Medium Gray is sampled from `ps-reference.png`. The other three columns stay blank until the probe captures them -
-they are not guesses.
+`medium` also exists in the manifest icon vocabulary but Photoshop 26.8 never reports it.
 
-| Token | Black | Dark Gray | Medium Gray | Light Gray |
+#### Frozen palettes and semantic tokens
+
+Every value below comes from Adobe's own files, not from a guess:
+
+* **`Required/UXP/host-theme.css`** - the palette UXP intends plugins to use for panel, text, secondary text,
+  border, hover and selected states.
+* **`xml/DesignAppColorThemesV5.xml`** - Photoshop's Drover theme roles: `ApplicationBackground` (workspace),
+  `ContentBackground` (panel), `TextFieldBackgroundDefault` (field), `ControlTextDefault`, `StaticTextDefault`,
+  `StaticTextDisabled`.
+* **`Required/UIColors.txt`** - cross-check: `PaletteFill` is 240 / 184 / 83 / 50, the same four panel values.
+
+| Token | Black `darkest` | Dark Gray `dark` | Medium Gray `light` | Light Gray `lightest` |
 |---|---|---|---|---|
-| `--ps-workspace` | pending | pending | `#333333` | pending |
-| `--ps-panel` | pending | pending | `#535353` | pending |
-| `--ps-header` | pending | pending | `#424242` | pending |
-| `--ps-field` | pending | pending | `#454545` | pending |
-| `--ps-hover` | pending | pending | `#6B6B6B` (sampled means selected; hover to confirm) | pending |
-| `--ps-selected` | pending | pending | `#6B6B6B` | pending |
-| `--ps-border` | pending | pending | `#383838` | pending |
-| `--ps-border-strong` | pending | pending | `#474747` | pending |
-| `--ps-text` | pending | pending | `#F0F0F0` | pending |
-| `--ps-text-secondary` | pending | pending | `#A0A0A0` | pending |
-| `--ps-text-muted` | pending | pending | `#787878` | pending |
-| `--ps-status-bg` | pending | pending | `#696969` | pending |
-| `--ps-status-text` | pending | pending | `#4A4A4A` | pending |
-| `--ps-focus` | pending | pending | `#F0F0F0` at 60% | pending |
+| `--ps-workspace` | `#1A1A1A` | `#333333` | `#A7A7A7` | `#DCDCDC` |
+| `--ps-panel` | `#323232` | `#535353` | `#B8B8B8` | `#F0F0F0` |
+| `--ps-header` | `#323232` | `#535353` | `#B8B8B8` | `#F0F0F0` |
+| `--ps-field` | `#262626` | `#454545` | `#E2E2E2` | `#FFFFFF` |
+| `--ps-hover` | `#3D3D3D` | `#5B5B5B` | `#9D9D9D` | `#CECECE` |
+| `--ps-selected` | `#474747` | `#6B6B6B` | `#A5A5A5` | `#BFBFBF` |
+| `--ps-border` | `#292929` | `#454545` | `#9C9C9C` | `#D1D1D1` |
+| `--ps-border-strong` | `#494949` | `#5A5A5A` | `#CACACA` | `#D3D3D3` |
+| `--ps-text` | `#FFFFFF` | `#FFFFFF` | `#424242` | `#4B4B4B` |
+| `--ps-text-secondary` | `#9B9B9B` | `#E5E5E5` | `#424242` | `#606060` |
+| `--ps-text-muted` | `#525252` | `#747474` | `#8E8E8E` | `#BDBDBD` |
+| `--ps-status-bg` | `#323232` | `#535353` | `#B8B8B8` | `#F0F0F0` |
+| `--ps-status-text` | `#9B9B9B` | `#E5E5E5` | `#424242` | `#606060` |
+| `--ps-focus` | `#FFFFFF` | `#FFFFFF` | `#424242` | `#4B4B4B` |
+
+Notes:
+
+* **Header and status bars use the panel surface** with 1 px dividers. Photoshop exposes no separate token for them,
+  and the sampled `#424242` / `#696969` are toolbar/app chrome, not panel roles. Keeping them flat is P6-compliant
+  and avoids inventing four more values.
+* **Muted text is Adobe's disabled colour.** On the two light themes it fails 4.5:1 as hint text (`#8E8E8E` on
+  `#B8B8B8`, `#BDBDBD` on `#F0F0F0`). Task 4.3 darkens it only where it is used for readable hints, which is the
+  P17 accessibility deviation.
+* **Selection stays neutral.** `#6B6B6B` on Dark Gray is the sampled reference selection; there is no blue in the
+  chrome on any theme.
 
 ### 10.4 Theme architecture
 
@@ -533,10 +567,10 @@ Rules:
 2. **Host relay.** The host sends `{ source: 'lumiform-host', type: 'theme', theme }` on `ready` and on every
    change. It also appends `?theme=<name>` to the WebView URL so the first paint is correct.
 3. **WebView mapping.** The bridge exposes the theme to the shell; the shell sets `data-ps-theme` on the root.
-   Provisional mapping: `darkest` -> Black, `dark` -> Dark Gray, `light` -> Medium Gray, `lightest` -> Light Gray.
-   `medium` may also appear. Task 4.1 replaces this provisional list with the probe's four observed names.
-4. **Token sets.** Each theme defines workspace, panel, header, field, hover, selected, border, text, status and
-   focus tokens. The reference populates Medium Gray; the probe populates the other three.
+   Confirmed by the 4.1 controlled pass: `darkest` -> Black, `dark` -> Dark Gray, `light` -> Medium Gray,
+   `lightest` -> Light Gray. `medium` exists in the manifest icon vocabulary but Photoshop 26.8 never reports it.
+4. **Token sets.** Each theme defines workspace, panel, header, field, hover, selected, border, border-strong,
+   text, text-secondary, text-muted, status and focus tokens; the frozen values are in 10.3.1.
 5. **Manual override.** The guide's Appearance row offers `Auto / Black / Dark Gray / Medium Gray / Light Gray`.
    Auto follows the host; a manual choice wins until Auto is selected. Persist in `localStorage`.
 6. **Host shell.** The UXP loading/error overlay uses `--uxp-host-*` and `@media (prefers-color-scheme)` directly;
@@ -547,20 +581,23 @@ Rules:
 
 ### 10.5 Stage 4 roadmap
 
-States follow the parent protocol. Only **4.1** is `current`.
+States follow the parent protocol. Only **4.2** is `current`.
 
-* [ ] **Task 4.1: Theme probe, reference freeze and token foundation**
-  * **State:** `current`
-  * **Description:** Add a temporary UXP theme probe (`tools/theme-probe/`, packaged with
-    `npm run probe:package`) that displays `document.theme.getCurrent()`, live updates, the computed
-    `--uxp-host-*` colours and `app.appSkinInfo`. Capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the
-    four palettes and the semantic token sheet in 10.3.1.
-  * **Acceptance Criteria:** The probe reports a theme name for each of the four Photoshop themes; a live change
-    is observed; the four palettes are documented; the token sheet covers every role; no reskin behaviour ships
-    from this task.
+* [x] **Task 4.1: Theme probe, reference freeze and token foundation**
+  * **State:** `Done`
+  * **Description:** Added the temporary UXP theme probe (`tools/theme-probe/`, packaged with
+    `npm run probe:package`) reporting `document.theme.getCurrent()`, live updates, `--uxp-host-*`,
+    `app.appSkinInfo`, environment and a timestamped log, with one JSON snapshot per theme. The controlled pass
+    confirmed Black/Dark Gray/Medium Gray/Light Gray -> `darkest`/`dark`/`light`/`lightest`; the four palettes and
+    the semantic token sheet were frozen in 10.3.1 from Adobe's `host-theme.css`, `DesignAppColorThemesV5.xml` and
+    `UIColors.txt`. No reskin behaviour shipped.
+  * **Acceptance Criteria:** Met - a theme name was captured for each of the four Photoshop themes, live changes
+    were observed (`onUpdated`), the four palettes and token sheet are documented, and no reskin code shipped.
+  * **Evidence:** probe captures at 18:12 and the controlled pass at 18:34-18:35; `theme-d/darkest/light/lightest.json`
+    and `theme-latest.json` in the probe's `PluginData` folder.
 
 * [ ] **Task 4.2: Flat shell, compact header and status bar**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Replace section cards with flat rows on the panel background, 1 px dividers, no shadows or
     oversized radii. Add the compact Photoshop-like header, the workspace-coloured canvas frame and the 22-24 px
     status bar. Preserve the V1.1 spine, closed `<details>` defaults and live summaries.
@@ -623,11 +660,12 @@ States follow the parent protocol. Only **4.1** is `current`.
 
 ### 10.7 Risks and fallbacks
 
-1. **`document.theme` is undocumented for Photoshop.** The probe is the de-risking step; the manual Appearance
-   row is the fallback.
-2. **Exact grays for four themes.** The probe captures them; the reference gives Medium Gray now.
-3. **Light Gray contrast.** Adjust Photoshop grays slightly where text would fail; this is the approved
-   deviation.
+1. **`document.theme` is undocumented for Photoshop.** Resolved for 26.8: `getCurrent()` and `onUpdated` both work.
+   Keep the manual Appearance row as the fallback for other builds.
+2. **Exact grays for four themes.** Resolved in 4.1 from Adobe's files; the probe cannot read them directly
+   because third-party panels get no host variables and no `appSkinInfo`.
+3. **Light Gray contrast.** Adobe's disabled colour fails 4.5:1 as hint text on the light themes; darken only the
+   hint usage, which is the approved P17 deviation.
 4. **Time gradient on light themes.** It is the one intentional exception; keep it exactly and test the
    surrounding flat row in all four themes.
 5. **Host variables are fragile.** Use them for the host shell and probe calibration, not as the WebView's
@@ -639,12 +677,12 @@ States follow the parent protocol. Only **4.1** is `current`.
 
 ### 10.8 Assumed defaults
 
-* **Status bar:** match the sampled lighter Photoshop status bar (`#696969` with dark text); muted neutral
-  connection dot; red only on error.
-* **Focus ring:** 1 px light outline (`#F0F0F0` at ~60%), no glow.
+* **Status bar:** panel surface with a 1 px top divider and secondary text; muted neutral connection dot; red only
+  on error. The sampled `#696969` is application chrome, not a panel token.
+* **Focus ring:** 1 px text-colour outline at ~60%, no glow.
 * **Time slider:** keep the entire current control exactly.
 * **Appearance row:** in the guide, directly above GitHub.
-* **Probe:** temporary overlay with theme name and sampled host colours; four screenshots.
+* **Probe:** temporary plugin with theme name, host-variable scan, environment and one JSON snapshot per theme.
 * **Icons:** sunrise, sun-behind-cloud, sun, high sun, sunset, golden sun, crescent moon; grass/leaf, neutral
   circle, soil, sand; matte circle, satin sparkle, glossy diamond; plus info, reset, close and external-link.
 * **Browser dev:** defaults to Medium Gray; the Appearance row previews all four themes.
@@ -684,4 +722,5 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 | 2026-11-01 | Task 3.6 verified and marked Done. The full-panel guide takeover, GitHub row and https-only `open-url` bridge are implemented. |
 | 2026-11-01 | Task 3.7 verified and marked Done. Version bumped to 1.1.0, `tsc`/build/plugin pass, docs synced, and the 1.1.0 `.ccx` packaged. In-Photoshop acceptance remains the user's manual check. |
 | 2026-11-01 | V1.2 plan locked. The Photoshop reference sampled Medium Gray chrome; the four-theme host relay, flat native skin, line icons, Segoe UI, neutral selection and manual Appearance override were agreed. Stage 4 added with Task 4.1 current. |
-| 2026-11-01 | Task 4.1 probe built in `tools/theme-probe/` and packaged as `Lumiform-ThemeProbe-1.0.0.ccx`. It reports the theme name, live `onUpdated` events, `--uxp-host-*` colours and `app.appSkinInfo`, and saves one JSON snapshot per theme into its `PluginData` folder so palettes are frozen from exact values instead of screenshots. Installed into Photoshop's `Plug-ins` folder for the capture run. The palette table stays `pending` until the four snapshots land. |
+| 2026-11-01 | Task 4.1 probe built in `tools/theme-probe/` and packaged as `Lumiform-ThemeProbe-1.0.0.ccx`. It reports the theme name, live `onUpdated` events, `--uxp-host-*` colours and `app.appSkinInfo`, and saves one JSON snapshot per theme into its `PluginData` folder so palettes are frozen from exact values instead of screenshots. Installed into Photoshop's `Plug-ins` folder for the capture run. |
+| 2026-11-01 | Task 4.1 Done. The probe confirmed live `document.theme` changes but found no `--uxp-host-*` variables and no `app.appSkinInfo` in a third-party panel. Photoshop's own `host-theme.css`, `DesignAppColorThemesV5.xml` and `UIColors.txt` supplied the authoritative four-theme palette. A controlled Black -> Dark Gray -> Medium Gray -> Light Gray pass confirmed `darkest` / `dark` / `light` / `lightest`. The reference was re-identified as **Dark Gray**, not Medium Gray, and the sampled header/status greys were found not to be theme tokens. The four palettes and the semantic token sheet are frozen in 10.3.1. Task 4.2 is current. |

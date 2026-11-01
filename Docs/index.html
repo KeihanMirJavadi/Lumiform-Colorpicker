@@ -471,8 +471,8 @@
         </p>
         <p>
           It follows all four Photoshop themes (Black, Dark Gray, Medium Gray, Light Gray) through a UXP host relay
-          of <code>document.theme</code>, with a manual Appearance override in the guide. The reference capture
-          samples as Medium Gray.
+          of <code>document.theme</code>, with a manual Appearance override in the guide. Task 4.1 verified the
+          reference capture as Dark Gray and froze all four palettes from Adobe's own theme files.
         </p>
         <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
           Locked decisions P1-P24, sampled palette, theme architecture and the Stage 4 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> section 10 -
@@ -977,22 +977,22 @@
         </div>
         <div class="task-list">
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">4.1 Theme probe, reference freeze and token foundation</div>
-              <div class="task-desc">Add a temporary UXP theme probe (<code>tools/theme-probe/</code>, packaged by <code>npm run probe:package</code>) that displays <code>document.theme.getCurrent()</code>, live theme changes, the computed <code>--uxp-host-*</code> colours and <code>app.appSkinInfo</code>. Capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the four palettes and the semantic token sheet.</div>
-              <div class="task-criteria">Criteria: The probe reports a theme name for each of the four Photoshop themes; a live change is observed; four palettes and the token sheet are documented; no reskin behaviour ships from this task.</div>
+              <div class="task-desc">Added a temporary UXP theme probe (<code>tools/theme-probe/</code>, packaged by <code>npm run probe:package</code>) reporting <code>document.theme.getCurrent()</code>, live theme changes, <code>--uxp-host-*</code>, <code>app.appSkinInfo</code> and a timestamped log, writing one JSON snapshot per theme. Confirmed Black/Dark Gray/Medium Gray/Light Gray &rarr; <code>darkest</code>/<code>dark</code>/<code>light</code>/<code>lightest</code>; froze the four palettes and token sheet from Adobe's own theme files.</div>
+              <div class="task-criteria">Criteria met: a theme name was captured for each of the four Photoshop themes, live changes were observed, four palettes and the token sheet are documented, and no reskin behaviour shipped.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">4.2 Flat shell, compact header and status bar</div>
               <div class="task-desc">Replace section cards with flat rows, 1 px dividers and no shadows or oversized radii. Add the compact Photoshop-like header, workspace-coloured canvas frame and 22-24 px status bar. Preserve the V1.1 spine, closed <code>&lt;details&gt;</code> defaults and live summaries.</div>
               <div class="task-criteria">Criteria: At 320/420/600 the panel has no card look, the header is compact, the status bar is pinned, all four closed summaries remain live and the active theme palette is applied.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -1341,30 +1341,34 @@
         </div>
       </div>
 
-      <h3>The palette mismatch</h3>
+      <h3>Frozen four-theme palettes</h3>
       <p>
-        The saved Photoshop reference samples as the <strong>Medium Gray</strong> theme. The current panel is both
-        much darker and much bluer.
+        Task 4.1 confirmed the mapping with a controlled pass: <strong>Black = <code>darkest</code></strong>,
+        <strong>Dark Gray = <code>dark</code></strong>, <strong>Medium Gray = <code>light</code></strong>,
+        <strong>Light Gray = <code>lightest</code></strong>. Every value below comes from Photoshop's own
+        <code>host-theme.css</code>, <code>DesignAppColorThemesV5.xml</code> and <code>UIColors.txt</code>.
       </p>
       <table>
         <thead>
-          <tr><th>Role</th><th>Photoshop reference</th><th>Current Lumiform</th></tr>
+          <tr><th>Token</th><th>Black</th><th>Dark Gray</th><th>Medium Gray</th><th>Light Gray</th></tr>
         </thead>
         <tbody>
-          <tr><td>Workspace / document surround</td><td><code>#333333</code></td><td><code>#181818</code></td></tr>
-          <tr><td>Panel body</td><td><code>#535353</code></td><td><code>#1E1E1E</code></td></tr>
-          <tr><td>Panel header / toolbar</td><td><code>#424242</code></td><td><code>#262626</code></td></tr>
-          <tr><td>Field / dropdown</td><td><code>#454545</code></td><td><code>#141414</code></td></tr>
-          <tr><td>Hover / selected row</td><td><code>#6B6B6B</code> (neutral)</td><td><code>#3B82F6</code> (blue)</td></tr>
-          <tr><td>Border / divider</td><td><code>#383838</code> / <code>#474747</code></td><td><code>#383838</code> / <code>#2B2B2B</code></td></tr>
-          <tr><td>Primary / secondary text</td><td><code>#F0F0F0</code> / <code>#A0A0A0</code></td><td><code>#ECECEC</code> / <code>#9E9E9E</code></td></tr>
-          <tr><td>Status bar</td><td><code>#696969</code> with <code>#4A4A4A</code> text</td><td><code>#181818</code> with light text</td></tr>
+          <tr><td>Workspace</td><td><code>#1A1A1A</code></td><td><code>#333333</code></td><td><code>#A7A7A7</code></td><td><code>#DCDCDC</code></td></tr>
+          <tr><td>Panel</td><td><code>#323232</code></td><td><code>#535353</code></td><td><code>#B8B8B8</code></td><td><code>#F0F0F0</code></td></tr>
+          <tr><td>Header / status (flat)</td><td><code>#323232</code></td><td><code>#535353</code></td><td><code>#B8B8B8</code></td><td><code>#F0F0F0</code></td></tr>
+          <tr><td>Field</td><td><code>#262626</code></td><td><code>#454545</code></td><td><code>#E2E2E2</code></td><td><code>#FFFFFF</code></td></tr>
+          <tr><td>Hover</td><td><code>#3D3D3D</code></td><td><code>#5B5B5B</code></td><td><code>#9D9D9D</code></td><td><code>#CECECE</code></td></tr>
+          <tr><td>Selected</td><td><code>#474747</code></td><td><code>#6B6B6B</code></td><td><code>#A5A5A5</code></td><td><code>#BFBFBF</code></td></tr>
+          <tr><td>Border / strong</td><td><code>#292929</code> / <code>#494949</code></td><td><code>#454545</code> / <code>#5A5A5A</code></td><td><code>#9C9C9C</code> / <code>#CACACA</code></td><td><code>#D1D1D1</code> / <code>#D3D3D3</code></td></tr>
+          <tr><td>Text / secondary / muted</td><td><code>#FFFFFF</code> / <code>#9B9B9B</code> / <code>#525252</code></td><td><code>#FFFFFF</code> / <code>#E5E5E5</code> / <code>#747474</code></td><td><code>#424242</code> / <code>#424242</code> / <code>#8E8E8E</code></td><td><code>#4B4B4B</code> / <code>#606060</code> / <code>#BDBDBD</code></td></tr>
         </tbody>
       </table>
       <p style="font-size:12px; color:#f59e0b; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); padding:10px 12px; border-radius:6px;">
-        <strong>Reference:</strong> <code>_UI/ps-references/ps-reference.png</code>. The selected row is a neutral
-        lighter gray, not a blue accent. The probe in 4.1 captures the other three themes; the values above are
-        the Medium Gray starting point, not guesses.
+        <strong>Reference correction:</strong> <code>_UI/ps-references/ps-reference.png</code> was sampled as
+        Medium Gray in the first plan. Task 4.1 proved it is <strong>Dark Gray</strong> - workspace
+        <code>#333333</code>, panel <code>#535353</code>, field <code>#454545</code> are exact Dark Gray values.
+        Its header <code>#424242</code> and status <code>#696969</code> turned out to be application chrome, not
+        panel tokens, so the skin uses flat panel surfaces with dividers instead.
       </p>
 
       <h3>Theme flow</h3>
@@ -1389,34 +1393,29 @@ black / darkGray / mediumGray / lightGray token sets
         </p>
       </div>
 
-      <h3>4.1 Theme probe <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">Built, awaiting captures</span></h3>
+      <h3>4.1 Theme probe <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Done</span></h3>
       <div class="grid-2">
         <div class="card">
-          <h4>What it measures</h4>
+          <h4>What it measured</h4>
           <p style="font-size:13px;">
-            A throwaway UXP panel, not part of the product and sharing no code with <code>plugin/</code>. It reports
+            A throwaway UXP panel, not part of the product and sharing no code with <code>plugin/</code>. It reported
             <code>document.theme.getCurrent()</code>, live <code>onUpdated</code> values, every computed
-            <code>--uxp-host-*</code> variable with a swatch, <code>app.appSkinInfo</code> colour roles, the
-            <code>prefers-color-scheme</code> result and Photoshop/UXP versions.
+            <code>--uxp-host-*</code> variable, <code>app.appSkinInfo</code>, the environment and a timestamped
+            change log, writing one JSON per theme.
           </p>
           <p style="font-size:13px; margin-bottom:0;">
-            It writes one <code>theme-&lt;name&gt;.json</code> snapshot per theme into its own
-            <code>PluginData</code> folder, so the palettes are frozen from exact values, not screenshots.<br />
             Source: <code>tools/theme-probe/</code> · Package: <code>npm run probe:package</code> ·
             Output: <code>Lumiform-ThemeProbe-1.0.0.ccx</code>
           </p>
         </div>
         <div class="card">
-          <h4>How to capture</h4>
-          <ol style="font-size:13px; margin:0; padding-left:18px; color:#cbd5e1;">
-            <li>Copy <code>tools/theme-probe/</code> into Photoshop's <code>Plug-ins</code> folder, or install the probe <code>.ccx</code>, then restart Photoshop.</li>
-            <li>Open <em>Plugins ▸ Lumiform Theme Probe</em> and float it at about 460 x 920.</li>
-            <li>Open <em>Photoshop ▸ Settings ▸ Interface ▸ Color Theme</em>.</li>
-            <li>Select Black, Dark Gray, Medium Gray and Light Gray in turn; each switch saves a JSON snapshot.</li>
-          </ol>
-          <p style="font-size:12px; color:#f59e0b; margin:10px 0 0;">
-            The four palette columns stay <code>pending</code> until these captures land. They are not guessed.
-          </p>
+          <h4>What it found</h4>
+          <ul style="font-size:13px; margin:0; padding-left:18px; color:#cbd5e1;">
+            <li><code>document.theme</code> works and fires live events.</li>
+            <li>No <code>--uxp-host-*</code> variables resolve in a third-party panel, and <code>app.appSkinInfo</code> is unavailable in UXP 8.3.</li>
+            <li>The four palettes came from Photoshop's own <code>host-theme.css</code>, <code>DesignAppColorThemesV5.xml</code> and <code>UIColors.txt</code> instead.</li>
+            <li>The reference screenshot is Dark Gray, not Medium Gray; its header and status greys are application chrome, not theme tokens.</li>
+          </ul>
         </div>
       </div>
 
@@ -1459,8 +1458,8 @@ black / darkGray / mediumGray / lightGray token sets
           <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
         </thead>
         <tbody>
-          <tr><td>4.1 Theme probe, reference freeze and token foundation</td><td><span class="status-badge current">current</span></td><td>Four sampled palettes and the token sheet.</td></tr>
-          <tr><td>4.2 Flat shell, compact header and status bar</td><td><span class="status-badge planned">planned</span></td><td>No cards or shadows; compact native shell.</td></tr>
+          <tr><td>4.1 Theme probe, reference freeze and token foundation</td><td><span class="status-badge done">Done</span></td><td>Theme API confirmed live; four palettes and token sheet frozen from Adobe's files.</td></tr>
+          <tr><td>4.2 Flat shell, compact header and status bar</td><td><span class="status-badge current">current</span></td><td>No cards or shadows; compact native shell.</td></tr>
           <tr><td>4.3 Control reskin</td><td><span class="status-badge planned">planned</span></td><td>22-24 px native controls; time gradient untouched.</td></tr>
           <tr><td>4.4 Typography and icon set</td><td><span class="status-badge planned">planned</span></td><td>Segoe UI, sentence case, 14 line icons.</td></tr>
           <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge planned">planned</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
@@ -1474,15 +1473,15 @@ black / darkGray / mediumGray / lightGray token sets
         <div class="card">
           <h4>Documented-API risk</h4>
           <p style="font-size:13px;">
-            <code>document.theme</code> is not officially documented for Photoshop. The probe verifies it on the
-            target build; the manual Appearance row is the fallback.
+            <code>document.theme</code> is not officially documented, but 4.1 verified <code>getCurrent()</code>
+            and <code>onUpdated</code> on Photoshop 26.8. The manual Appearance row remains the fallback.
           </p>
         </div>
         <div class="card">
           <h4>Four palettes</h4>
           <p style="font-size:13px;">
-            Medium Gray is sampled now. The probe captures Black, Dark Gray and Light Gray so the other three
-            token sets are not guessed.
+            Frozen in 4.1 from Adobe's <code>host-theme.css</code>, <code>DesignAppColorThemesV5.xml</code> and
+            <code>UIColors.txt</code>, not guessed from a single screenshot.
           </p>
         </div>
         <div class="card">

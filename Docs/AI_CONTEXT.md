@@ -320,18 +320,18 @@ States are mirrored here so the parent protocol keeps working.
 
 ### Stage 4: V1.2 - Native Photoshop Skin
 
-Full plan, sampled palette, decision register P1-P24 and verification matrix live in
+Full plan, frozen four-theme palette, decision register P1-P24 and verification matrix live in
 **[AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) section 10**. This is a chrome-only reskin: no renderer, framing,
 lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unchanged. Reference:
-`_UI/ps-references/ps-reference.png` (Photoshop Medium Gray sample).
+`_UI/ps-references/ps-reference.png` (Photoshop Dark Gray sample - verified in 4.1).
 
-* [ ] **Task 4.1: Theme probe, reference freeze and token foundation**
-  * **State:** `current`
-  * **Description:** Add a temporary UXP theme probe (`tools/theme-probe/`, packaged by `npm run probe:package`) that displays `document.theme.getCurrent()`, live theme changes, the computed `--uxp-host-*` colours and `app.appSkinInfo`. Capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the four palettes and the semantic token sheet in `AI_CONTEXT_UI.md` 10.3.1.
-  * **Acceptance Criteria:** The probe reports a theme name for each of the four Photoshop themes; a live change is observed; four palettes and the token sheet are documented; no reskin behaviour ships from this task.
+* [x] **Task 4.1: Theme probe, reference freeze and token foundation**
+  * **State:** `Done`
+  * **Description:** Added a temporary UXP theme probe (`tools/theme-probe/`, packaged by `npm run probe:package`) reporting `document.theme.getCurrent()`, live theme changes, `--uxp-host-*`, `app.appSkinInfo` and a timestamped log, writing one JSON snapshot per theme. Confirmed Black/Dark Gray/Medium Gray/Light Gray -> `darkest`/`dark`/`light`/`lightest`; froze the four palettes and token sheet in `AI_CONTEXT_UI.md` 10.3.1 from Adobe's theme files. No reskin behaviour shipped.
+  * **Acceptance Criteria:** Met - a theme name was captured for each of the four Photoshop themes, live changes were observed, four palettes and the token sheet are documented, and no reskin behaviour shipped.
 
 * [ ] **Task 4.2: Flat shell, compact header and status bar**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Replace section cards with flat rows, 1 px dividers and no shadows or oversized radii. Add the compact Photoshop-like header, workspace-coloured canvas frame and 22-24 px status bar. Preserve the V1.1 spine, closed `<details>` defaults and live summaries.
   * **Acceptance Criteria:** At 320/420/600 the panel has no card look, the header is compact, the status bar is pinned, all four closed summaries remain live and the active theme palette is applied.
 
