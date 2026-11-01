@@ -15,6 +15,11 @@
 const WEB_SOURCE = "lumiform-web";
 const HOST_SOURCE = "lumiform-host";
 const POLL_INTERVAL_MS = 900;
+const FOCUS_BUILD = "shortcut-release-1";
+const FOCUS_DEBUG = false;
+
+let focusEvents = [];
+let focusWrite = Promise.resolve();
 
 let webview = null;
 let loadingOverlay = null;
@@ -38,6 +43,40 @@ let lastStatusConnected = null;
 
 function log(...args) {
   console.log("[Lumiform]", ...args);
+}
+
+/** Diagnostic snapshot written to plugin-data/focus-log.json (V1.2 4.7). */
+function focusSnapshot(stage, extra) {
+  const active = document.activeElement;
+  const panel = document.getElementById("panel");
+  return {
+    at: new Date().toISOString(),
+    stage,
+    build: FOCUS_BUILD,
+    webview: Boolean(webview),
+    webviewBlur: webview ? typeof webview.blur : null,
+    activeElement: active ? `${active.tagName}${active.id ? `#${active.id}` : ""}` : null,
+    hostHasFocus: typeof document.hasFocus === "function" ? document.hasFocus() : null,
+    panelFocus: panel ? typeof panel.focus : null,
+    hasPhotoshopApp: Boolean(photoshopApp),
+    hasActiveDocument: Boolean(photoshopApp && photoshopApp.activeDocument),
+    ...extra,
+  };
+}
+
+function recordFocus(stage, extra) {
+  if (!FOCUS_DEBUG) return;
+  focusEvents.push(focusSnapshot(stage, extra));
+  if (focusEvents.length > 40) focusEvents.shift();
+  const snapshot = focusEvents.slice();
+  focusWrite = focusWrite
+    .then(async () => {
+      const fs = require("uxp").storage.localFileSystem;
+      const folder = await fs.getDataFolder();
+      const file = await folder.createFile("focus-log.json", { overwrite: true });
+      await file.write(JSON.stringify(snapshot, null, 2));
+    })
+    .catch(() => {});
 }
 
 function clampChannel(value) {
@@ -163,38 +202,276 @@ async function openExternalUrl(url) {
  * move focus out of it. Blur the WebView and give the host panel focus first,
  * then activate Photoshop.
  */
-function focusPhotoshopDocument() {
-  try {
-    if (webview && typeof webview.blur === "function") {
-      webview.blur();
-    }
-    if (document.activeElement && typeof document.activeElement.blur === "function") {
-      document.activeElement.blur();
-    }
-    const panel = document.getElementById("panel");
-    if (panel && typeof panel.focus === "function") {
-      panel.focus();
-    }
-  } catch (error) {
-    log("Could not release the WebView keyboard:", error);
-  }
+const TOOL_REFS = {
+  v: "moveTool",
+  m: "marqueeRectTool",
+  l: "lassoTool",
+  w: "magicWandTool",
+  c: "cropTool",
+  i: "eyedropperTool",
+  j: "healingBrushTool",
+  b: "paintbrushTool",
+  s: "cloneStampTool",
+  y: "historyBrushTool",
+  e: "eraserTool",
+  g: "gradientTool",
+  o: "dodgeTool",
+  p: "penTool",
+  t: "typeCreateOrEditTool",
+  a: "pathComponentSelectTool",
+  u: "shapeTool",
+  h: "handTool",
+  r: "rotateTool",
+  z: "zoomTool",
+};
+
+let brushSizeCache = null;
+let brushCacheAt = 0;
+
+/**
+ * All shortcut actions go through one queue. A burst of keys becomes one
+ * Photoshop modal batch instead of one modal scope per keypress.
+ */
+const shortcutQueue = globalThis.LumiformCommandQueue.createCommandQueue({
+  execute: async (batch) => {
+    const photoshop = require("photoshop");
+    await photoshop.core.executeAsModal(
+      async () => {
+        for (const task of batch) {
+          await task.run();
+        }
+      },
+      { commandName: "Lumiform shortcut", interactive: true, timeOut: 0 }
+    );
+  },
+  coalesceMs: 50,
+  onError: (error) => log("Shortcut batch dropped:", error),
+});
+
+function enqueueTool(toolRef) {
+  shortcutQueue.enqueue({
+    run: async () => {
+      const photoshop = require("photoshop");
+      await photoshop.action.batchPlay(
+        [
+          {
+            _obj: "select",
+            _target: { _ref: toolRef },
+            _options: { dialogOptions: "dontDisplay" },
+          },
+        ],
+        {}
+      );
+      // Brush diameters differ per tool; refresh on the next size change.
+      brushSizeCache = null;
+      brushCacheAt = 0;
+    },
+  });
+}
+
+function enqueueBrushSize(direction) {
+  const task = {
+    mergeKey: "brush-size",
+    delta: direction,
+    run: async () => {
+      const photoshop = require("photoshop");
+      const now = Date.now();
+      if (brushSizeCache === null || now - brushCacheAt > 1500) {
+        const got = await photoshop.action.batchPlay(
+          [
+            {
+              _obj: "get",
+              _target: [
+                { _property: "currentToolOptions" },
+                { _ref: "application", _enum: "ordinal", _value: "targetEnum" },
+              ],
+            },
+          ],
+          { synchronousExecution: true }
+        );
+        const first = Array.isArray(got) ? got[0] : got;
+        const brush = first && first.currentToolOptions && first.currentToolOptions.brush;
+        const size = brush && (brush.diameter || brush.size);
+        brushSizeCache = size ? Number(size._value) : null;
+        brushCacheAt = now;
+      }
+
+      if (!brushSizeCache) return;
+      const step = Math.max(1, Math.round(brushSizeCache * 0.05));
+      const next = Math.max(1, brushSizeCache + task.delta * step);
+      brushSizeCache = next;
+      brushCacheAt = Date.now();
+
+      await photoshop.action.batchPlay(
+        [
+          {
+            _obj: "set",
+            _target: [{ _ref: "brush", _enum: "ordinal", _value: "targetEnum" }],
+            to: {
+              _obj: "brush",
+              diameter: { _unit: "pixelsUnit", _value: next },
+            },
+          },
+        ],
+        {}
+      );
+    },
+  };
+  shortcutQueue.enqueue(task);
+}
+
+function enqueueHistory(direction) {
+  shortcutQueue.enqueue({
+    run: async () => {
+      const photoshop = require("photoshop");
+      const doc = photoshop.app.activeDocument;
+      if (!doc || !doc.historyStates) return;
+      const states = doc.historyStates;
+      const current = doc.activeHistoryState;
+      let index = -1;
+      for (let i = 0; i < states.length; i += 1) {
+        if (states[i].id === current.id) {
+          index = i;
+          break;
+        }
+      }
+      const target = states[index + direction];
+      if (target) doc.activeHistoryState = target;
+    },
+  });
+}
+
+function enqueueResetColors() {
+  shortcutQueue.enqueue({
+    run: async () => {
+      const photoshop = require("photoshop");
+      const black = new photoshop.app.SolidColor();
+      black.rgb.red = 0;
+      black.rgb.green = 0;
+      black.rgb.blue = 0;
+      const white = new photoshop.app.SolidColor();
+      white.rgb.red = 255;
+      white.rgb.green = 255;
+      white.rgb.blue = 255;
+      photoshop.app.foregroundColor = black;
+      photoshop.app.backgroundColor = white;
+    },
+  });
+}
+
+function enqueueSwapColors() {
+  shortcutQueue.enqueue({
+    run: async () => {
+      const photoshop = require("photoshop");
+      const fg = photoshop.app.foregroundColor;
+      const bg = photoshop.app.backgroundColor;
+      const nextFg = new photoshop.app.SolidColor();
+      nextFg.rgb.red = bg.rgb.red;
+      nextFg.rgb.green = bg.rgb.green;
+      nextFg.rgb.blue = bg.rgb.blue;
+      const nextBg = new photoshop.app.SolidColor();
+      nextBg.rgb.red = fg.rgb.red;
+      nextBg.rgb.green = fg.rgb.green;
+      nextBg.rgb.blue = fg.rgb.blue;
+      photoshop.app.foregroundColor = nextFg;
+      photoshop.app.backgroundColor = nextBg;
+    },
+  });
+}
+
+function enqueueBatch(commands) {
+  shortcutQueue.enqueue({
+    run: async () => {
+      const photoshop = require("photoshop");
+      await photoshop.action.batchPlay(commands, {});
+    },
+  });
+}
+
+function enqueueDom(action) {
+  shortcutQueue.enqueue({
+    run: async () => {
+      await action();
+    },
+  });
+}
+
+async function handleShortcut(shortcut) {
+  if (!shortcut || typeof shortcut.key !== "string") return;
+  const key = shortcut.key;
+  const lower = key.toLowerCase();
+  const modifier = shortcut.ctrlKey || shortcut.metaKey;
+
+  recordFocus("shortcut", {
+    key,
+    code: shortcut.code,
+    modifier,
+    shift: shortcut.shiftKey,
+    repeat: shortcut.repeat,
+  });
 
   try {
-    if (photoshopApp && photoshopApp.activeDocument) {
-      // Re-activating the current document focuses its canvas window without
-      // changing the active document.
-      photoshopApp.activeDocument = photoshopApp.activeDocument;
+    if (modifier) {
+      if (lower === "z" && shortcut.shiftKey) {
+        enqueueHistory(1);
+      } else if (lower === "z" || lower === "y") {
+        enqueueHistory(lower === "y" || shortcut.shiftKey ? 1 : -1);
+      } else if (lower === "s" && !shortcut.shiftKey) {
+        enqueueDom(() => photoshopApp.activeDocument.save());
+      } else if (lower === "c") {
+        enqueueBatch([{ _obj: "copy" }]);
+      } else if (lower === "x") {
+        enqueueBatch([{ _obj: "cut" }]);
+      } else if (lower === "v") {
+        enqueueBatch([{ _obj: "paste" }]);
+      } else if (lower === "a") {
+        enqueueDom(() => photoshopApp.activeDocument.selection.selectAll());
+      } else if (lower === "d") {
+        enqueueDom(() => photoshopApp.activeDocument.selection.deselect());
+      } else if (lower === "j") {
+        enqueueDom(async () => {
+          const layer = photoshopApp.activeDocument.activeLayers[0];
+          if (layer) await layer.duplicate();
+        });
+      } else if (lower === "n" && shortcut.shiftKey) {
+        enqueueDom(() => photoshopApp.activeDocument.createLayer());
+      } else if (lower === "g") {
+        if (shortcut.shiftKey) {
+          enqueueDom(async () => {
+            const group = photoshopApp.activeDocument.activeLayers[0];
+            if (group) await group.ungroup();
+          });
+        } else {
+          enqueueDom(() =>
+            photoshopApp.activeDocument.groupLayers(photoshopApp.activeDocument.activeLayers)
+          );
+        }
+      }
+      return;
     }
-  } catch (error) {
-    log("Could not re-activate the document:", error);
-  }
 
-  try {
-    if (photoshopApp && typeof photoshopApp.bringToFront === "function") {
-      photoshopApp.bringToFront();
+    if (key === "[" || key === "{" || shortcut.code === "BracketLeft") {
+      enqueueBrushSize(-1);
+      return;
     }
+    if (key === "]" || key === "}" || shortcut.code === "BracketRight") {
+      enqueueBrushSize(1);
+      return;
+    }
+    if (lower === "d") {
+      enqueueResetColors();
+      return;
+    }
+    if (lower === "x") {
+      enqueueSwapColors();
+      return;
+    }
+
+    const toolRef = TOOL_REFS[lower];
+    if (toolRef) enqueueTool(toolRef);
   } catch (error) {
-    log("Could not bring Photoshop to the front:", error);
+    recordFocus("shortcut-error", { key, error: String(error) });
+    log("Shortcut failed:", key, error);
   }
 }
 
@@ -389,8 +666,10 @@ function handleWebMessage(event) {
     return;
   }
 
-  if (data.type === "focus-photoshop") {
-    focusPhotoshopDocument();
+  if (data.type === "shortcut") {
+    recordFocus("message-shortcut");
+    void handleShortcut(data.shortcut);
+    return;
   }
 }
 
@@ -406,6 +685,11 @@ function bindView() {
     log("Fatal: the WebView element is missing from index.html");
     return;
   }
+
+  // Keep the WebView out of the host's Tab order. Clicks still reach it, but
+  // focus release is handled by the focus-photoshop relay.
+  webview.tabIndex = -1;
+  webview.setAttribute("tabindex", "-1");
 
   webview.addEventListener("loadstart", () => {
     log("WebView load started");
@@ -471,8 +755,29 @@ function connectPhotoshop() {
   }
 }
 
+/** Logs host activation changes so the focus workaround can be diagnosed. */
+async function attachActivationListener() {
+  try {
+    const photoshop = require("photoshop");
+    await photoshop.core.addNotificationListener(
+      "OS",
+      ["activationChanged"],
+      (eventName, descriptor) => {
+        recordFocus("activation-changed", {
+          eventName,
+          descriptor: JSON.stringify(descriptor),
+        });
+      }
+    );
+    recordFocus("activation-listener-attached");
+  } catch (error) {
+    recordFocus("activation-listener-error", { error: String(error) });
+  }
+}
+
 function init() {
   bindView();
+  recordFocus("startup");
   connectPhotoshop();
 }
 
