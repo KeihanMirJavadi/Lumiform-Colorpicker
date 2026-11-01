@@ -417,7 +417,7 @@
         </div>
       </div>
 
-      <h3>Photoshop Add-on (v1.0)</h3>
+      <h3>Photoshop Add-on (v1.1)</h3>
       <div class="grid-2">
         <div class="card">
           <h4>Dockable UXP Panel</h4>
@@ -437,12 +437,12 @@
         </div>
       </div>
       <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">
-        Install: download <code>Lumiform-Colorpicker-1.0.0.ccx</code> (or build it with <code>npm run plugin</code>),
+        Install: download <code>Lumiform-Colorpicker-1.1.0.ccx</code> (or build it with <code>npm run plugin</code>),
         double-click it through Creative Cloud, or load <code>plugin/manifest.json</code> through UXP Developer Tool.
         Full guide: <code>Docs/PHOTOSHOP.md</code>.
       </p>
 
-      <h3>V1.1 - UI Design <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span></h3>
+      <h3>V1.1 - UI Design <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span></h3>
       <div class="card">
         <p>
           The v1.0 panel works, but its controls were assembled in development order. V1.1 restructures the panel
@@ -506,7 +506,7 @@
           <li><strong>Panel shell:</strong> <code>plugin/index.html</code> — full-size WebView plus loading/error overlays.</li>
           <li><strong>Host relay:</strong> <code>plugin/main.js</code> — reads/writes <code>app.foregroundColor</code>, coalesces rapid samples, polls external changes.</li>
           <li><strong>WebView bridge:</strong> <code>src/bridge/WebViewPhotoshopBridge.ts</code> — implements the same bridge interface as the mock.</li>
-          <li><strong>Package:</strong> <code>npm run plugin</code> → <code>release/Lumiform-Colorpicker-1.0.0.ccx</code>.</li>
+          <li><strong>Package:</strong> <code>npm run plugin</code> → <code>release/Lumiform-Colorpicker-1.1.0.ccx</code>.</li>
         </ul>
         <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
           The web app is inlined into one HTML file to avoid module/asset resolution on the <code>plugin:/</code> origin.
@@ -875,7 +875,7 @@
       <div class="stage-card">
         <div class="stage-header">
           <div class="stage-title">Stage 3: V1.1 - UI Design (Panel Redesign)</div>
-          <span class="status-badge current" id="stage3-badge">In Progress</span>
+          <span class="status-badge done" id="stage3-badge">Complete</span>
         </div>
         <div class="task-list">
 
@@ -915,31 +915,31 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">3.5 Light row and live foreground streaming</div>
               <div class="task-desc">Move the light chip into a labelled <code>Light</code> row in Sun &amp; Atmosphere, make the sphere albedo chip send on click, and stream H/S/B and hex edits at one write per animation frame.</div>
               <div class="task-criteria">Criteria: The light chip is discoverable at 320 px; the albedo chip sets the Photoshop foreground; H/S/B dragging streams without flooding the host; light and ground edits detach the preset.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">3.6 Controls Guide takeover and GitHub row</div>
               <div class="task-desc">Header info button opens a full-panel guide overlay with its own header and <strong>Back</strong>, rewrites the guide for the new UI, adds the GitHub row, and adds the <code>open-url</code> bridge message with an <code>uxp.shell.openExternal</code> host handler.</div>
               <div class="task-criteria">Criteria: Overlay covers the whole panel; Esc, backdrop and Back return to the tool; the GitHub row opens the repository externally; non-https URLs are rejected.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">3.7 Verification, polish and documentation sync</div>
               <div class="task-desc">Verify at 320/420/600 px and inside Photoshop across the detach, toggle and streaming paths; polish spacing, focus states and 320 px truncation; sync the three docs and rebuild the <code>.ccx</code>.</div>
               <div class="task-criteria">Criteria: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; every earlier criterion is demonstrated; docs match the shipped UI.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge done">Done</span>
           </div>
 
         </div>
@@ -1081,7 +1081,7 @@
         V1.1 restructures the panel without touching the lighting engine, the atmosphere model or the swatch
         mathematics. The goal is a panel where the preview is always visible, every section can be collapsed, and
         the state of the scene is readable without opening anything.
-        <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span>
+        <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span>
       </p>
 
       <div class="card" style="margin-bottom:20px;">
@@ -1091,7 +1091,7 @@
         </p>
         <pre style="background:#191919; padding:16px; border-radius:6px; color:#38bdf8; font-size:12px; overflow-x:auto;">
 +--------------------------------------------------------------+
-| HEADER   Lumiform Colorpicker        v1.0.0            [ i ] |
+| HEADER   Lumiform Colorpicker        v1.1.0            [ i ] |
 +--------------------------------------------------------------+
 | CANVAS   412:227, fixed camera, eyedropper reticle           |
 +--------------------------------------------------------------+
@@ -1197,9 +1197,9 @@
           <tr><td>3.2 Time-of-day strip</td><td><span class="status-badge done">Done</span></td><td>Icon row, snapped slider, chronological order, detach + <code>&#8634;</code>.</td></tr>
           <tr><td>3.3 Sphere model</td><td><span class="status-badge done">Done</span></td><td>Near / Mid / Far toggles, merged panel, Link Size.</td></tr>
           <tr><td>3.4 Ramp header</td><td><span class="status-badge done">Done</span></td><td>Sphere chip and albedo dot.</td></tr>
-          <tr><td>3.5 Light row &amp; streaming</td><td><span class="status-badge current">current</span></td><td>Labelled Light row, clickable albedo, per-frame writes.</td></tr>
-          <tr><td>3.6 Guide takeover</td><td><span class="status-badge planned">planned</span></td><td>Full overlay, GitHub row, <code>open-url</code> bridge.</td></tr>
-          <tr><td>3.7 Verification &amp; polish</td><td><span class="status-badge planned">planned</span></td><td>320/420/600 px + Photoshop checks, docs sync, new <code>.ccx</code>.</td></tr>
+          <tr><td>3.5 Light row &amp; streaming</td><td><span class="status-badge done">Done</span></td><td>Labelled Light row, clickable albedo, per-frame writes.</td></tr>
+          <tr><td>3.6 Guide takeover</td><td><span class="status-badge done">Done</span></td><td>Full overlay, GitHub row, <code>open-url</code> bridge.</td></tr>
+          <tr><td>3.7 Verification &amp; polish</td><td><span class="status-badge done">Done</span></td><td>320/420/600 px + Photoshop checks, docs sync, new <code>.ccx</code>.</td></tr>
         </tbody>
       </table>
 

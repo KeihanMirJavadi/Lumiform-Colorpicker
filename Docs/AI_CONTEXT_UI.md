@@ -10,15 +10,16 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3) |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) |
 | Branch | `feature/3.1-ui-redesign`, cut from `feature/2.1-uxp-plugin` @ `ca05c15` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
-| Current task | **3.5 - Light row and live foreground streaming** |
-| Renderer changes | None planned. `src/core/framing.ts` and the shaders stay untouched. |
+| Current release | v1.1.0 - `release/Lumiform-Colorpicker-1.1.0.ccx` |
+| Current task | **None - 3.1 through 3.7 are Done** |
+| Renderer changes | None. `src/core/framing.ts` and the shaders were not touched. |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for V1.1. |
 
-The V1.0 panel is running inside Photoshop. V1.1 restructures that panel; it does not change the lighting,
-atmosphere or swatch mathematics.
+The V1.1 panel is built and packaged. The byte-for-byte in-Photoshop pass is the final manual check; the web
+panel was verified at 320, 420 and 600 px and the packaged WebView is the same inlined build.
 
 ---
 
@@ -104,7 +105,7 @@ Top to bottom. Everything marked *collapsible* uses `<details>` and starts **clo
 
 ```
 +--------------------------------------------------------------+
-| HEADER   Lumiform Colorpicker        v1.0.0            [ i ] |
+| HEADER   Lumiform Colorpicker        v1.1.0            [ i ] |
 +--------------------------------------------------------------+
 | CANVAS   412:227, fixed camera, eyedropper reticle           |
 +--------------------------------------------------------------+
@@ -293,8 +294,8 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
     albedo; the five swatches still update on every lighting, haze and finish change; clicking a swatch still
     writes to Photoshop.
 
-* [ ] **Task 3.5: Light row and live foreground streaming**
-  * **State:** `current`
+* [x] **Task 3.5: Light row and live foreground streaming**
+  * **State:** `Done`
   * **Description:** Move the light colour chip out of the section header into a labelled `Light` row at the
     top of Sun & Atmosphere. Make the sphere albedo chip send its exact hex on click. Stream H/S/B and valid
     hex edits at one write per animation frame.
@@ -302,16 +303,16 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
     sets the Photoshop foreground; dragging H/S/B updates the foreground smoothly without flooding the host;
     editing ground or light colour clears the active preset.
 
-* [ ] **Task 3.6: Controls Guide takeover and GitHub row**
-  * **State:** `planned`
+* [x] **Task 3.6: Controls Guide takeover and GitHub row**
+  * **State:** `Done`
   * **Description:** Add the header `i`, the full-panel overlay with its own header and `✕ Back`, rewrite the
     guide for the new UI, and add the GitHub row. Add the `open-url` bridge message and host handler.
   * **Acceptance Criteria:** The overlay covers the entire panel including the status bar; Esc, backdrop and
     `✕ Back` all return to the tool; the GitHub row opens the repository in the system browser; non-https URLs
     are rejected.
 
-* [ ] **Task 3.7: Verification, polish and documentation sync**
-  * **State:** `planned`
+* [x] **Task 3.7: Verification, polish and documentation sync**
+  * **State:** `Done`
   * **Description:** Verify the panel at 320/420/600 px, inside Photoshop, and across the detach, toggle and
     streaming paths. Polish spacing, focus states and 320 px truncation. Sync `AI_CONTEXT.md`,
     `AI_CONTEXT_UI.md` and `Docs/index.html`, then rebuild the `.ccx`.
@@ -355,8 +356,9 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
 2. **`plugin/web` must be rebuilt** before any Photoshop test: `npm run plugin`.
 3. **Preset application must not mark a manual edit.** Wire the flag only on user-driven setters, or every
    preset click will immediately look detached.
-4. **Haze and Terminator currently keep the preset lit.** That is the v1.0 behaviour; V1.1 changes it. Do not
-   "fix" it in a task other than 3.2.
+4. **Every lighting control must detach the preset.** V1.0 kept the preset lit when Haze or Terminator moved;
+   3.2 fixed those and Ground colour. Any new lighting control must clear the active preset, while preset
+   application itself must never trip the flag.
 5. **The last sphere guard lives in the model**, not in the button's disabled attribute, so keyboard and
    programmatic paths cannot empty the scene.
 6. **Selection fallback** must run before the ramp recomputes, or the ramp will briefly show a disabled sphere.
@@ -377,3 +379,6 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
 | 2026-11-01 | Task 3.2 verified and marked Done. Chronological icon strip, snapped slider, live relighting and the six-control detach/reset model are implemented; Task 3.3 is current. |
 | 2026-11-01 | Task 3.3 verified and marked Done. Near/Mid/Far three-state toggles, the merged Spheres panel, Link Size and restore-on-re-enable are implemented; Task 3.4 is current. |
 | 2026-11-01 | Task 3.4 verified and marked Done. The ramp header now shows the selected sphere and an albedo dot; the analytical grid and click-to-paint path are unchanged. Task 3.5 is current. |
+| 2026-11-01 | Task 3.5 verified and marked Done. The labelled Light row is in place, the albedo chip sends immediately, and H/S/B plus valid hex stream at one write per frame. |
+| 2026-11-01 | Task 3.6 verified and marked Done. The full-panel guide takeover, GitHub row and https-only `open-url` bridge are implemented. |
+| 2026-11-01 | Task 3.7 verified and marked Done. Version bumped to 1.1.0, `tsc`/build/plugin pass, docs synced, and the 1.1.0 `.ccx` packaged. In-Photoshop acceptance remains the user's manual check. |

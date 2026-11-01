@@ -107,7 +107,7 @@ The project follows a **two-phase dual-target architecture**:
 * **Why a WebView:** A UXP panel itself has no WebGL (UXP only exposes a 2D canvas), so the Three.js renderer cannot run directly in the panel DOM. The panel therefore hosts the built web app in a **local UXP WebView** (`<webview src="plugin:/web/index.html">`). WebView2 on Windows and WKWebView on macOS provide the WebGL context, and the existing renderer, shaders, and eyedropper work unchanged.
 * **Panel shell:** `plugin/index.html` is the native UXP panel. It contains only the full-size WebView plus loading/error overlays; `plugin/main.js` is the UXP host.
 * **Bridge split:**
-  * `src/bridge/WebViewPhotoshopBridge.ts` runs inside the WebView, implements `IPhotoshopBridge`, and sends `ready`, `set-foreground` and `get-foreground` messages through `window.uxpHost`.
+  * `src/bridge/WebViewPhotoshopBridge.ts` runs inside the WebView, implements `IPhotoshopBridge`, and sends `ready`, `set-foreground`, `get-foreground` and `open-url` messages through `window.uxpHost`. The host opens `open-url` targets with `uxp.shell.openExternal` after an https check.
   * `plugin/main.js` receives those messages, reads/writes `app.foregroundColor` through the Photoshop DOM (`SolidColor`), and pushes `status`, `foreground` and `error` messages back. Rapid eyedropper samples are coalesced into one write at a time.
   * `getPhotoshopBridge()` selects the WebView bridge when `window.uxpHost` exists and the mock otherwise, so `npm run dev` remains fully interactive.
 * **Runtime requirements:** Photoshop 26.0+ (UXP 8.0+) for local WebView rendering. The manifest requests only `requiredPermissions.webview` (`allowLocalRendering: "yes"`, `enableMessageBridge: "localOnly"`); no network, clipboard, or filesystem permissions.
@@ -297,17 +297,17 @@ States are mirrored here so the parent protocol keeps working.
   * **Description:** Retitle the ramp with a read-only Near/Mid/Far chip and an albedo dot; keep the grid, recomputation and click-to-paint behaviour.
   * **Acceptance Criteria:** Chip follows selection; dot matches albedo; swatches still update on lighting, haze and finish changes; clicks still write to Photoshop.
 
-* [ ] **Task 3.5: Light row and live foreground streaming**
-  * **State:** `current`
+* [x] **Task 3.5: Light row and live foreground streaming**
+  * **State:** `Done`
   * **Description:** Move the light chip into a labelled `Light` row in Sun & Atmosphere, make the albedo chip send on click, and stream H/S/B and hex edits at one write per animation frame.
   * **Acceptance Criteria:** The light chip is discoverable at 320 px; the albedo chip sets the foreground; H/S/B dragging streams without flooding the host; light and ground edits detach the preset.
 
-* [ ] **Task 3.6: Controls Guide takeover and GitHub row**
-  * **State:** `planned`
+* [x] **Task 3.6: Controls Guide takeover and GitHub row**
+  * **State:** `Done`
   * **Description:** Header `i` opens a full-panel guide overlay with its own header and `✕ Back`, rewrites the guide for the new UI, adds the GitHub row, and adds the `open-url` bridge message with an `uxp.shell.openExternal` host handler.
   * **Acceptance Criteria:** Overlay covers the whole panel; Esc, backdrop and `✕ Back` return to the tool; the GitHub row opens the repository externally; non-https URLs are rejected.
 
-* [ ] **Task 3.7: Verification, polish and documentation sync**
-  * **State:** `planned`
+* [x] **Task 3.7: Verification, polish and documentation sync**
+  * **State:** `Done`
   * **Description:** Verify at 320/420/600 px and inside Photoshop across detach, toggle and streaming paths; polish spacing, focus states and truncation; sync the three docs and rebuild the `.ccx`.
   * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; all earlier acceptance criteria demonstrated; docs match the shipped UI.
