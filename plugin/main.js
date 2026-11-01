@@ -232,32 +232,9 @@ let brushCacheAt = 0;
  * All shortcut actions go through one queue. A burst of keys becomes one
  * Photoshop modal batch instead of one modal scope per keypress.
  */
-const modalRequiredKinds = new Set();
-
 const shortcutQueue = globalThis.LumiformCommandQueue.createCommandQueue({
   execute: async (batch) => {
     const photoshop = require("photoshop");
-    const canFast = batch.every(
-      (task) =>
-        task.needsModal !== true &&
-        (!task.kind || !modalRequiredKinds.has(task.kind))
-    );
-
-    if (canFast) {
-      try {
-        for (const task of batch) {
-          await task.run();
-        }
-        return;
-      } catch (error) {
-        if (!/modal scope/i.test(String(error))) throw error;
-        for (const task of batch) {
-          if (task.kind) modalRequiredKinds.add(task.kind);
-        }
-        // Fall through and retry the idempotent batch inside a modal scope.
-      }
-    }
-
     await photoshop.core.executeAsModal(
       async () => {
         for (const task of batch) {
