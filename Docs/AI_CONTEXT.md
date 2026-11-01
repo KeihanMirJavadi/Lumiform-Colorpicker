@@ -5,6 +5,10 @@
 > **V1.1 UI PHASE:** The panel redesign - design decisions, onboarding and the Stage 3 roadmap - lives in
 > [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md). This file stays authoritative for the architecture, the lighting model,
 > the add-on runtime and the task-state protocol; that file owns the UI phase.
+>
+> **V1.2 NATIVE PHOTOSHOP SKIN:** Stage 4 restyles the chrome to match Photoshop's four built-in themes. The
+> locked plan, sampled palette and theme architecture live in [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) section 10;
+> this file mirrors the Stage 4 task states. Chrome only - no renderer, lighting, framing or swatch-math changes.
 
 ---
 
@@ -311,3 +315,47 @@ States are mirrored here so the parent protocol keeps working.
   * **State:** `Done`
   * **Description:** Verify at 320/420/600 px and inside Photoshop across detach, toggle and streaming paths; polish spacing, focus states and truncation; sync the three docs and rebuild the `.ccx`.
   * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; all earlier acceptance criteria demonstrated; docs match the shipped UI.
+
+---
+
+### Stage 4: V1.2 - Native Photoshop Skin
+
+Full plan, sampled palette, decision register P1-P24 and verification matrix live in
+**[AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) section 10**. This is a chrome-only reskin: no renderer, framing,
+lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unchanged. Reference:
+`_UI/ps-references/ps-reference.png` (Photoshop Medium Gray sample).
+
+* [ ] **Task 4.1: Theme probe, reference freeze and token foundation**
+  * **State:** `current`
+  * **Description:** Add a temporary UXP theme probe that displays `document.theme.getCurrent()`, live theme changes and the computed `--uxp-host-*` colours. Package a probe `.ccx`; capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the four palettes and the semantic token sheet.
+  * **Acceptance Criteria:** The probe reports a theme name for each of the four Photoshop themes; a live change is observed; four palettes and the token sheet are documented; no reskin behaviour ships from this task.
+
+* [ ] **Task 4.2: Flat shell, compact header and status bar**
+  * **State:** `planned`
+  * **Description:** Replace section cards with flat rows, 1 px dividers and no shadows or oversized radii. Add the compact Photoshop-like header, workspace-coloured canvas frame and 22-24 px status bar. Preserve the V1.1 spine, closed `<details>` defaults and live summaries.
+  * **Acceptance Criteria:** At 320/420/600 the panel has no card look, the header is compact, the status bar is pinned, all four closed summaries remain live and the active theme palette is applied.
+
+* [ ] **Task 4.3: Control reskin**
+  * **State:** `planned`
+  * **Description:** Restyle buttons, sphere toggles, links, checkboxes, hex/number fields, disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states and a 1 px focus outline. Leave the time-of-day control untouched.
+  * **Acceptance Criteria:** Every control is usable at 320 px; selected/active states use the sampled tint; no blue chrome or hover lift; the time gradient, thumb and geometry are unchanged.
+
+* [ ] **Task 4.4: Typography and icon set**
+  * **State:** `planned`
+  * **Description:** Use Segoe UI at 11 px, sentence-case section titles and tabular numerals. Replace the 14 emoji and the info/reset/close/external-link glyphs with 16 px, 1.5 px line SVGs using `currentColor`.
+  * **Acceptance Criteria:** No emoji remains; icons are crisp at 16 px and inherit the theme colour; labels and aria text remain intact; the seven time icons stay on one line at 320 px.
+
+* [ ] **Task 4.5: Live theme linking and Appearance override**
+  * **State:** `planned`
+  * **Description:** Add the host `theme` relay, WebView `theme` message, URL bootstrap, four token sets and the guide's Appearance row with `localStorage` persistence. Add the mock theme source for browser development.
+  * **Acceptance Criteria:** Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Medium Gray; no flash or loop.
+
+* [ ] **Task 4.6: Guide and UXP host shell**
+  * **State:** `planned`
+  * **Description:** Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub. Restyle the loading/error shell with `--uxp-host-*` and a neutral spinner.
+  * **Acceptance Criteria:** The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still work; the GitHub row still opens externally; the host shell matches the active theme with no blue accent.
+
+* [ ] **Task 4.7: Verification, documentation and release**
+  * **State:** `planned`
+  * **Description:** Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild the `.ccx`.
+  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; every earlier criterion is demonstrated; four-theme screenshots and docs match; `Lumiform-Colorpicker-1.2.0.ccx` is produced.

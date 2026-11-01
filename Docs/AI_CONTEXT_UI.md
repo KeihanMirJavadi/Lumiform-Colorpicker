@@ -1,8 +1,10 @@
-# AI_CONTEXT_UI.md - V1.1 UI Redesign
+# AI_CONTEXT_UI.md - V1.1 UI Redesign & V1.2 Native Photoshop Skin
 
-> **AUDIENCE**: AI agents and developers implementing the V1.1 panel redesign.
+> **AUDIENCE**: AI agents and developers implementing the V1.1 panel redesign and the V1.2 native Photoshop skin.
 > **PARENT DOCUMENT**: [AI_CONTEXT.md](./AI_CONTEXT.md) - architecture, lighting model, add-on runtime and the
-> authoritative roadmap states. Read that file first; this file only covers the UI phase.
+> authoritative roadmap states. Read that file first; this file covers the UI phases.
+>
+> **V1.2 PLAN**: The locked native-skin plan is section 10. V1.1 is shipped; V1.2 is the active UI phase.
 
 ---
 
@@ -10,16 +12,18 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) |
-| Branch | `feature/3.1-ui-redesign`, cut from `feature/2.1-uxp-plugin` @ `ca05c15` |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.1 current) |
+| Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.1.0 - `release/Lumiform-Colorpicker-1.1.0.ccx` |
-| Current task | **None - 3.1 through 3.7 are Done** |
-| Renderer changes | None. `src/core/framing.ts` and the shaders were not touched. |
-| Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for V1.1. |
+| Next release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (planned) |
+| Current task | **4.1 - Theme probe, reference freeze and token foundation** |
+| Renderer changes | None across V1.1/V1.2. `src/core/framing.ts` and the shaders stay untouched. |
+| Reference | `_UI/ps-references/ps-reference.png` - the Photoshop chrome capture sampled in section 10.3 |
+| Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for both UI phases. |
 
-The V1.1 panel is built and packaged. The byte-for-byte in-Photoshop pass is the final manual check; the web
-panel was verified at 320, 420 and 600 px and the packaged WebView is the same inlined build.
+The V1.1 panel is built and packaged. V1.2 restyles its chrome to Photoshop's four built-in themes; it does not
+change the lighting, atmosphere, framing or swatch mathematics. The V1.2 plan is section 10.
 
 ---
 
@@ -28,12 +32,14 @@ panel was verified at 320, 420 and 600 px and the packaged WebView is the same i
 1. Read [AI_CONTEXT.md](./AI_CONTEXT.md) section 1 (the operating protocol) - it still governs task states,
    the single-`current` rule and the approval gate.
 2. Read this file end to end before writing UI code.
-3. Find the task with `State: current` in section 6 and implement **only** that task.
+3. Find the active task: section 6 for the V1.1 tasks (complete) or section 10 for V1.2. Only **4.1** is
+   `current`; implement only that task.
 4. Report, wait for approval, then sync states in **three** places: `AI_CONTEXT.md`, this file and
    `Docs/index.html`.
 
-Sections 3-5 are the agreed design and are normative. If an implementation detail contradicts them,
-the document wins until the user says otherwise.
+Sections 3-5 are the V1.1 behavioural design and remain normative. Section 10 is normative for the V1.2 visual
+skin and theme behaviour. If an implementation detail contradicts either, the document wins until the user
+says otherwise.
 
 ---
 
@@ -70,13 +76,14 @@ running `npm run plugin` first, or the WebView will 404 on `web/index.html`.
 | `src/ui/colorControls.ts` | HSB sliders + hex field for the selected sphere |
 | `src/ui/swatchRamp.ts` | Analytical 5-value ramp grid and swatch click handling |
 | `src/ui/statusBar.ts` | Photoshop connection status line |
-| `src/ui/styles/theme.css` | Every panel style: sections, sliders, toggles, overlay |
+| `src/ui/styles/theme.css` | Every panel style: sections, sliders, toggles, overlay; V1.2 four-theme token sets |
 | `src/render/Viewport.ts` | Scene owner: sphere slots, selection, size, haze, links |
 | `src/render/LightingEngine.ts` | Preset application and the "manual edit" flag |
 | `src/core/sphereSlots.ts` | Slot ids, labels, depth labels, world positions |
 | `src/core/lighting.ts` | `LIGHTING_PRESETS`, `LIGHTING_PRESET_ORDER`, elevation curve |
-| `src/bridge/*` | `IPhotoshopBridge`, mock and WebView transports |
-| `plugin/main.js` | UXP host: foreground colour relay, polling, `open-url` handler |
+| `src/bridge/*` | `IPhotoshopBridge`, mock and WebView transports; V1.2 `theme` message |
+| `plugin/main.js` | UXP host: foreground colour relay, polling, `open-url`, V1.2 theme relay |
+| `plugin/index.html`, `plugin/style.css` | UXP host shell: loading/error overlays; V1.2 native theme variables |
 
 ### 2.4 Runtime constraints
 
@@ -85,17 +92,31 @@ running `npm run plugin` first, or the WebView will 404 on `web/index.html`.
 * The panel scrolls as a whole (`.panel-content`); the header and status bar stay put.
 * `<details>` / `<summary>` are supported by WebView2 and WKWebView and are the chosen disclosure primitive.
 * No network access, no external fonts required by the build. `_AdobeCleanFont/` in the repo root is an
-  untracked asset pack supplied by the user; using it is optional and not part of V1.1 unless asked.
+  untracked asset pack supplied by the user; V1.2 uses Segoe UI/system instead because the pack's licence is
+  not an Adobe EULA.
 * `_UI/Lumiform_UI.ai` in the repo root is an untracked Illustrator mock-up supplied by the user. Treat it as
   reference material, not as a build input.
+* `_UI/ps-references/ps-reference.png` is the Photoshop chrome capture used for the V1.2 palette. It is a
+  reference, not a build input.
+* The WebView is isolated from the UXP host theme. `prefers-color-scheme` inside the WebView follows Windows,
+  not Photoshop; V1.2 must relay the Photoshop theme name from the UXP host (section 10.4).
 
-### 2.5 Definition of done for the phase
+### 2.5 Definition of done for V1.1
 
 * Every task in section 6 is `Done`.
 * `npx tsc --noEmit`, `npm run build` and `npm run plugin` all pass.
 * The panel is verified at 320, 420 and 600 px with all sections closed and then opened.
 * The redesign is verified inside Photoshop: strip snapping, detach + reset, sphere toggles, link toggles,
   guide takeover and live foreground streaming.
+
+### 2.6 Definition of done for V1.2
+
+* Every task in section 10.5 is `Done`.
+* The panel matches Photoshop's four built-in themes through the host relay, with a working manual override.
+* No emoji, no card stack, no decorative shadows, no blue chrome; the time-of-day gradient is unchanged.
+* `npx tsc --noEmit`, `npm run build` and `npm run plugin` pass.
+* Verified at 320/420/600 px and in Photoshop by switching all four themes live.
+* Version 1.2.0 and the `.ccx` are built; the three docs are synced.
 
 ---
 
@@ -370,7 +391,234 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
 
 ---
 
-## 10. Change Log
+## 10. V1.2 - Native Photoshop Skin
+
+### 10.0 Status and goal
+
+V1.1 is shipped. V1.2 is a **chrome-only** reskin that makes the panel read as a native Photoshop panel across
+Photoshop's four built-in themes. It does not touch the renderer, camera framing, lighting, atmosphere or swatch
+mathematics. The only intentional non-Photoshop element is the time-of-day gradient, which stays exactly as it is.
+
+The reference is `_UI/ps-references/ps-reference.png`, a native-resolution capture of the Photoshop window. Its
+chrome samples as Photoshop's **Medium Gray** theme. The exact values are in 10.3; the probe in 4.1 confirms the
+name and captures the other three themes.
+
+### 10.1 Non-goals
+
+* No renderer, framing, lighting, atmosphere, shader or swatch-math changes.
+* No reordering of the V1.1 spine, no new controls, no new presets.
+* No custom Photoshop `UIColors.txt` themes and no detection of the Gray/Blue Highlight setting. These are not
+  exposed to plugins.
+* No change to the time-of-day gradient, thumb or geometry.
+* No attempt to make the Lumiform canvas itself look like a Photoshop document.
+
+### 10.2 Locked decision register (P1-P24)
+
+| ID | Area | Decision |
+|---|---|---|
+| P1 | Scope | Restyle the entire add-on chrome: panel, header, sections, guide, UXP loading/error shell. The canvas and swatch colours are content. |
+| P2 | Fidelity | Match the sampled Photoshop themes exactly; allow only accessibility-driven deviations. |
+| P3 | Themes | Support all four: Black, Dark Gray, Medium Gray, Light Gray. |
+| P4 | Theme link | The UXP host reads `document.theme` and relays the name to the WebView; the WebView switches token sets live. |
+| P5 | Fallback | Default to Medium Gray and expose a manual Appearance override if `document.theme` is unavailable. |
+| P6 | Structure | Flat Photoshop grammar: continuous surfaces, 1 px dividers, no per-section cards, no decorative shadows. |
+| P7 | Header | Compact Photoshop-like title row; keep the `i` guide affordance; move the version out of the chrome. |
+| P8 | Selection | Use the sampled Photoshop selection tint only for selected/active states. In the reference it is neutral `#6B6B6B`, not blue. |
+| P9 | Accent scope | No Lumiform brand blue in the chrome. The only saturated element is the unchanged time-of-day gradient. |
+| P10 | Density | 22-24 px rows and controls; 22 px minimum hit target. |
+| P11 | Typography | Segoe UI / Windows system stack; 11 px base; no Adobe Clean pack (licence is not an Adobe EULA). |
+| P12 | Section titles | Sentence case, 11 px/600, no uppercase tracking. |
+| P13 | Numerals | Hex and numeric fields use the UI font with tabular numerals; hex stays uppercase. |
+| P14 | Icons | 16 px line icons, 1.5 px stroke, `currentColor`; replace all 14 emoji and the info/reset/close/external-link glyphs. |
+| P15 | Time gradient | Keep the entire current time-of-day control exactly as-is: gradient, thumb and geometry. |
+| P16 | Guide | Native Photoshop dialog: flat, 1 px border, ~2 px radius, compact title bar, no large shadow or blur. |
+| P17 | Contrast | Minimum readable contrast first; adjust Photoshop grays slightly where necessary. |
+| P18 | Host shell | The UXP loading/error shell uses native `--uxp-host-*` variables and `prefers-color-scheme`; no WebView palette there. |
+| P19 | Reference | Sample from `_UI/ps-references/ps-reference.png`; the values in 10.3 are the starting point, not guesses. |
+| P20 | Probe | 4.1 is a dedicated probe build: capture all four themes before the full reskin. |
+| P21 | Versioning | V1.2, Stage 4, version 1.2.0, new `.ccx`. |
+| P22 | Bootstrap | Pass the current theme in the WebView URL and send live `theme` messages; manual override wins; no first-paint flash. |
+| P23 | Unsupported | Custom `UIColors.txt` themes and Gray/Blue Highlight detection are out of scope; the neutral reference selection is the default. |
+| P24 | Dev preview | Browser dev defaults to Medium Gray; the Appearance row previews all four themes without Photoshop. |
+
+### 10.3 Sampled reference palette (Medium Gray)
+
+| Role | Sampled value |
+|---|---|
+| Workspace / document surround | `#333333` |
+| Panel body | `#535353` |
+| Panel header / toolbar | `#424242` |
+| Field / dropdown | `#454545` |
+| Hover / selected row | `#6B6B6B` |
+| Border / divider | `#383838` / `#474747` |
+| Primary text | `#F0F0F0` |
+| Secondary text | `#A0A0A0` / `#969696` |
+| Muted text | `#787878` |
+| Status bar | `#696969` with dark `#4A4A4A` text |
+
+The current Lumiform is `#1E1E1E / #262626 / #3B82F6`. It is both too dark and too blue for this theme.
+The reference confirms the selected row is neutral; there is no blue chrome to reproduce.
+
+### 10.4 Theme architecture
+
+```
+Photoshop Interface ▸ Color Theme
+        │ document.theme.getCurrent() / onUpdated
+        ▼
+UXP host (plugin/main.js)
+        │ postMessage({ type: "theme", theme })
+        ▼
+WebView bridge ──► data-ps-theme
+        │
+        ▼
+Four token sets: black / darkGray / mediumGray / lightGray
+```
+
+Rules:
+
+1. **Host detection.** `document.theme.getCurrent()` returns a theme name; `document.theme.onUpdated` fires on
+   change. Both are guarded because Photoshop does not officially document them.
+2. **Host relay.** The host sends `{ source: 'lumiform-host', type: 'theme', theme }` on `ready` and on every
+   change. It also appends `?theme=<name>` to the WebView URL so the first paint is correct.
+3. **WebView mapping.** The bridge exposes the theme to the shell; the shell sets `data-ps-theme` on the root.
+   Provisional mapping: `darkest` → Black, `dark` → Dark Gray, `light` → Medium Gray, `lightest` → Light Gray.
+   The probe confirms the mapping.
+4. **Token sets.** Each theme defines workspace, panel, header, field, hover, selected, border, text, status and
+   focus tokens. The reference populates Medium Gray; the probe populates the other three.
+5. **Manual override.** The guide's Appearance row offers `Auto / Black / Dark Gray / Medium Gray / Light Gray`.
+   Auto follows the host; a manual choice wins until Auto is selected. Persist in `localStorage`.
+6. **Host shell.** The UXP loading/error overlay uses `--uxp-host-*` and `@media (prefers-color-scheme)` directly;
+   the WebView cannot read those variables.
+7. **Failure.** If `document.theme` is unavailable, default to Medium Gray and keep the manual override.
+8. **Unsupported.** Custom `UIColors.txt` themes and the Gray/Blue Highlight setting cannot be read. The neutral
+   sampled selection is the default.
+
+### 10.5 Stage 4 roadmap
+
+States follow the parent protocol. Only **4.1** is `current`.
+
+* [ ] **Task 4.1: Theme probe, reference freeze and token foundation**
+  * **State:** `current`
+  * **Description:** Add a temporary UXP theme probe that displays `document.theme.getCurrent()`, live updates,
+    and the computed `--uxp-host-*` colours. Package a probe `.ccx`; capture Black, Dark Gray, Medium Gray and
+    Light Gray. Freeze the four palettes and the semantic token sheet.
+  * **Acceptance Criteria:** The probe reports a theme name for each of the four Photoshop themes; a live change
+    is observed; the four palettes are documented; the token sheet covers every role; no reskin behaviour ships
+    from this task.
+
+* [ ] **Task 4.2: Flat shell, compact header and status bar**
+  * **State:** `planned`
+  * **Description:** Replace section cards with flat rows on the panel background, 1 px dividers, no shadows or
+    oversized radii. Add the compact Photoshop-like header, the workspace-coloured canvas frame and the 22-24 px
+    status bar. Preserve the V1.1 spine, closed `<details>` defaults and live summaries.
+  * **Acceptance Criteria:** At 320/420/600 the panel has no card look, the header is compact, the status bar is
+    pinned, all four closed summaries remain live and the active theme palette is applied.
+
+* [ ] **Task 4.3: Control reskin**
+  * **State:** `planned`
+  * **Description:** Restyle buttons, three-state sphere toggles, link rows, checkboxes, hex/number fields,
+    disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states, a 1 px
+    focus outline and no transforms or glow. Leave the time-of-day control untouched.
+  * **Acceptance Criteria:** Every control is usable at 320 px; selected/active states use the sampled tint; no
+    blue chrome; no hover lift or glow; the time gradient, thumb and geometry are byte-for-byte unchanged.
+
+* [ ] **Task 4.4: Typography and icon set**
+  * **State:** `planned`
+  * **Description:** Move to Segoe UI at 11 px, sentence-case section titles and tabular numerals. Replace the 14
+    emoji and the info/reset/close/external-link glyphs with 16 px, 1.5 px line SVGs using `currentColor`.
+  * **Acceptance Criteria:** No emoji remains; icons are crisp at 16 px and inherit the theme colour; labels and
+    aria text remain intact; the seven time icons stay on one line at 320 px.
+
+* [ ] **Task 4.5: Live theme linking and Appearance override**
+  * **State:** `planned`
+  * **Description:** Add the host `theme` relay, the WebView `theme` message, the URL bootstrap, the four token
+    sets and the guide's Appearance row with `localStorage` persistence. Add the mock theme source for browser
+    development.
+  * **Acceptance Criteria:** Switching Photoshop through all four themes switches Lumiform live; a manual choice
+    sticks across reloads; selecting Auto resumes following the host; the fallback default is Medium Gray; no
+    flash or update loop.
+
+* [ ] **Task 4.6: Guide and UXP host shell**
+  * **State:** `planned`
+  * **Description:** Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub.
+    Restyle the loading/error shell with `--uxp-host-*` and a neutral spinner.
+  * **Acceptance Criteria:** The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still
+    work; the GitHub row still opens externally; the host shell matches the active theme and has no blue accent.
+
+* [ ] **Task 4.7: Verification, documentation and release**
+  * **State:** `planned`
+  * **Description:** Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check
+    contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild
+    the `.ccx`.
+  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; every earlier criterion is
+    demonstrated; the four-theme screenshots and docs match; `Lumiform-Colorpicker-1.2.0.ccx` is produced.
+
+### 10.6 Verification matrix
+
+| Area | 320 px | 420 px | 600 px | In Photoshop |
+|---|---|---|---|---|
+| Four themes, closed sections | required | required | required | required |
+| Live theme switch | required | required | required | required |
+| Manual Appearance override | required | required | required | required |
+| Flat shell / no cards | required | required | required | required |
+| Controls at 22-24 px | required | required | required | required |
+| No emoji / line icons | required | required | required | required |
+| Time gradient unchanged | required | required | required | required |
+| Guide native dialog | required | required | required | required |
+| Host loading/error shell | - | - | - | required |
+| Contrast / focus states | required | required | required | required |
+
+### 10.7 Risks and fallbacks
+
+1. **`document.theme` is undocumented for Photoshop.** The probe is the de-risking step; the manual Appearance
+   row is the fallback.
+2. **Exact grays for four themes.** The probe captures them; the reference gives Medium Gray now.
+3. **Light Gray contrast.** Adjust Photoshop grays slightly where text would fail; this is the approved
+   deviation.
+4. **Time gradient on light themes.** It is the one intentional exception; keep it exactly and test the
+   surrounding flat row in all four themes.
+5. **Host variables are fragile.** Use them for the host shell and probe calibration, not as the WebView's
+   runtime colour source.
+6. **Legacy host shell literals.** `plugin/style.css` hard-codes `#1e1e1e`, `#ececec` and `#3b82f6`; replace them
+   with native host variables and a neutral spinner.
+7. **First-paint flash.** Pass the theme in the WebView URL and apply it before the app renders.
+8. **Scope creep.** No renderer, lighting, framing or swatch-math changes.
+
+### 10.8 Assumed defaults
+
+* **Status bar:** match the sampled lighter Photoshop status bar (`#696969` with dark text); muted neutral
+  connection dot; red only on error.
+* **Focus ring:** 1 px light outline (`#F0F0F0` at ~60%), no glow.
+* **Time slider:** keep the entire current control exactly.
+* **Appearance row:** in the guide, directly above GitHub.
+* **Probe:** temporary overlay with theme name and sampled host colours; four screenshots.
+* **Icons:** sunrise, sun-behind-cloud, sun, high sun, sunset, golden sun, crescent moon; grass/leaf, neutral
+  circle, soil, sand; matte circle, satin sparkle, glossy diamond; plus info, reset, close and external-link.
+* **Browser dev:** defaults to Medium Gray; the Appearance row previews all four themes.
+
+### 10.9 Definition of done
+
+See 2.6. In short: all four themes live, manual override works, flat native chrome, no emoji or blue, time
+gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
+
+### 10.10 File map for V1.2
+
+| File | V1.2 responsibility |
+|---|---|
+| `src/ui/styles/theme.css` | Four theme token sets; flat surface/control styles |
+| `src/ui/shell.ts` | Theme data attribute, Appearance row, compact header, flat layout |
+| `src/ui/colorControls.ts` | Flat fields, sentence-case labels, line icons |
+| `src/ui/swatchRamp.ts` | Flat ramp header/tiles, no hover lift |
+| `src/ui/statusBar.ts` | Native status bar treatment |
+| `src/bridge/*` | `theme` host-to-web message and mock theme source |
+| `plugin/main.js` | `document.theme` probe, relay, URL bootstrap |
+| `plugin/index.html`, `plugin/style.css` | Native loading/error shell and host theme variables |
+| `Docs/AI_CONTEXT_UI.md` | This plan |
+| `Docs/index.html` | Human tracker: tab 8 and Stage 4 |
+
+---
+
+## 11. Change Log
 
 | Date | Change |
 |---|---|
@@ -382,3 +630,4 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
 | 2026-11-01 | Task 3.5 verified and marked Done. The labelled Light row is in place, the albedo chip sends immediately, and H/S/B plus valid hex stream at one write per frame. |
 | 2026-11-01 | Task 3.6 verified and marked Done. The full-panel guide takeover, GitHub row and https-only `open-url` bridge are implemented. |
 | 2026-11-01 | Task 3.7 verified and marked Done. Version bumped to 1.1.0, `tsc`/build/plugin pass, docs synced, and the 1.1.0 `.ccx` packaged. In-Photoshop acceptance remains the user's manual check. |
+| 2026-11-01 | V1.2 plan locked. The Photoshop reference sampled Medium Gray chrome; the four-theme host relay, flat native skin, line icons, Segoe UI, neutral selection and manual Appearance override were agreed. Stage 4 added with Task 4.1 current. |

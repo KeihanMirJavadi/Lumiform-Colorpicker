@@ -76,7 +76,10 @@
 
     .nav-tabs {
       display: flex;
-      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 4px;
+      max-width: 100%;
       background-color: #1a1a1a;
       padding: 4px;
       border-radius: 8px;
@@ -87,12 +90,13 @@
       background: none;
       border: none;
       color: var(--text-muted);
-      padding: 8px 16px;
-      font-size: 13px;
+      padding: 6px 9px;
+      font-size: 12px;
       font-weight: 600;
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s ease;
+      white-space: nowrap;
     }
 
     .nav-btn:hover {
@@ -365,12 +369,13 @@
 
     <nav class="nav-tabs">
       <button class="nav-btn active" onclick="switchTab('overview')">1. Overview</button>
-      <button class="nav-btn" onclick="switchTab('specs')">2. Architecture & Specs</button>
-      <button class="nav-btn" onclick="switchTab('lighting')">3. 3D & Lighting Engine</button>
-      <button class="nav-btn" onclick="switchTab('color')">4. Color & Swatch Ramp</button>
-      <button class="nav-btn" onclick="switchTab('roadmap')">5. Development Roadmap</button>
-      <button class="nav-btn" onclick="switchTab('depth')">6. Depth & Atmosphere</button>
-      <button class="nav-btn" onclick="switchTab('ui')">7. V1.1 UI Design</button>
+      <button class="nav-btn" onclick="switchTab('specs')">2. Architecture</button>
+      <button class="nav-btn" onclick="switchTab('lighting')">3. Lighting</button>
+      <button class="nav-btn" onclick="switchTab('color')">4. Color</button>
+      <button class="nav-btn" onclick="switchTab('roadmap')">5. Roadmap</button>
+      <button class="nav-btn" onclick="switchTab('depth')">6. Depth</button>
+      <button class="nav-btn" onclick="switchTab('ui')">7. V1.1 UI</button>
+      <button class="nav-btn" onclick="switchTab('ps-skin')">8. V1.2 Skin</button>
     </nav>
   </header>
 
@@ -453,6 +458,25 @@
         <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
           Decisions, onboarding and the Stage 3 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> -
           see <a href="#" onclick="switchTab('ui'); return false;" style="color:#93c5fd;">tab 7</a>.
+        </p>
+      </div>
+
+      <h3>V1.2 - Native Photoshop Skin <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span></h3>
+      <div class="card">
+        <p>
+          Photoshop's chrome is a neutral gray system; Lumiform's is still a dark web card stack with a bright blue
+          accent. V1.2 reskins the entire chrome - flat surfaces, 1 px dividers, 2 px radii, compact 22-24 px
+          controls, Segoe UI, line icons and a sampled neutral selection - without touching the renderer, framing,
+          lighting or swatch mathematics. The time-of-day gradient stays exactly as it is.
+        </p>
+        <p>
+          It follows all four Photoshop themes (Black, Dark Gray, Medium Gray, Light Gray) through a UXP host relay
+          of <code>document.theme</code>, with a manual Appearance override in the guide. The reference capture
+          samples as Medium Gray.
+        </p>
+        <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
+          Locked decisions P1-P24, sampled palette, theme architecture and the Stage 4 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> section 10 -
+          see <a href="#" onclick="switchTab('ps-skin'); return false;" style="color:#93c5fd;">tab 8</a>.
         </p>
       </div>
     </div>
@@ -945,6 +969,80 @@
         </div>
       </div>
 
+      <!-- STAGE 4 -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">Stage 4: V1.2 - Native Photoshop Skin</div>
+          <span class="status-badge current" id="stage4-badge">In Progress</span>
+        </div>
+        <div class="task-list">
+
+          <div class="task-item" data-status="current">
+            <div class="task-info">
+              <div class="task-name">4.1 Theme probe, reference freeze and token foundation</div>
+              <div class="task-desc">Add a temporary UXP theme probe that displays <code>document.theme.getCurrent()</code>, live theme changes and the computed <code>--uxp-host-*</code> colours. Package a probe <code>.ccx</code>; capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the four palettes and the semantic token sheet.</div>
+              <div class="task-criteria">Criteria: The probe reports a theme name for each of the four Photoshop themes; a live change is observed; four palettes and the token sheet are documented; no reskin behaviour ships from this task.</div>
+            </div>
+            <span class="status-badge current">current</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">4.2 Flat shell, compact header and status bar</div>
+              <div class="task-desc">Replace section cards with flat rows, 1 px dividers and no shadows or oversized radii. Add the compact Photoshop-like header, workspace-coloured canvas frame and 22-24 px status bar. Preserve the V1.1 spine, closed <code>&lt;details&gt;</code> defaults and live summaries.</div>
+              <div class="task-criteria">Criteria: At 320/420/600 the panel has no card look, the header is compact, the status bar is pinned, all four closed summaries remain live and the active theme palette is applied.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">4.3 Control reskin</div>
+              <div class="task-desc">Restyle buttons, sphere toggles, links, checkboxes, hex/number fields, disclosures, swatches and sliders. Use 22-24 px density, ~2 px radii, neutral hover/selected states and a 1 px focus outline. Leave the time-of-day control untouched.</div>
+              <div class="task-criteria">Criteria: Every control is usable at 320 px; selected/active states use the sampled tint; no blue chrome or hover lift; the time gradient, thumb and geometry are unchanged.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">4.4 Typography and icon set</div>
+              <div class="task-desc">Use Segoe UI at 11 px, sentence-case section titles and tabular numerals. Replace the 14 emoji and the info/reset/close/external-link glyphs with 16 px, 1.5 px line SVGs using <code>currentColor</code>.</div>
+              <div class="task-criteria">Criteria: No emoji remains; icons are crisp at 16 px and inherit the theme colour; labels and aria text remain intact; the seven time icons stay on one line at 320 px.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">4.5 Live theme linking and Appearance override</div>
+              <div class="task-desc">Add the host <code>theme</code> relay, WebView <code>theme</code> message, URL bootstrap, four token sets and the guide's Appearance row with <code>localStorage</code> persistence. Add the mock theme source for browser development.</div>
+              <div class="task-criteria">Criteria: Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Medium Gray; no flash or loop.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">4.6 Guide and UXP host shell</div>
+              <div class="task-desc">Restyle the guide as a native Photoshop dialog and add the Appearance row above GitHub. Restyle the loading/error shell with <code>--uxp-host-*</code> and a neutral spinner.</div>
+              <div class="task-criteria">Criteria: The guide covers the panel and is readable in all four themes; Back/Esc/backdrop still work; the GitHub row still opens externally; the host shell matches the active theme with no blue accent.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">4.7 Verification, documentation and release</div>
+              <div class="task-desc">Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild the <code>.ccx</code>.</div>
+              <div class="task-criteria">Criteria: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; every earlier criterion is demonstrated; four-theme screenshots and docs match; <code>Lumiform-Colorpicker-1.2.0.ccx</code> is produced.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+        </div>
+      </div>
+
     </div>
 
     <!-- TAB 6: DEPTH & ATMOSPHERE -->
@@ -1210,6 +1308,187 @@
           <code>Docs/AI_CONTEXT_UI.md</code>. Architecture, lighting and the task-state protocol remain in
           <code>Docs/AI_CONTEXT.md</code>. The v1.0 baseline is frozen on the
           <code>release/1.0-uxp-plugin</code> branch.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 8: V1.2 NATIVE PHOTOSHOP SKIN -->
+    <div id="ps-skin" class="tab-content">
+      <h2>V1.2 - Native Photoshop Skin</h2>
+      <p>
+        V1.2 makes the panel read as a native Photoshop panel across all four built-in themes. It is a chrome-only
+        reskin: the renderer, camera framing, lighting, atmosphere and swatch mathematics stay untouched. The
+        time-of-day gradient is the one intentional exception and stays exactly as it is.
+        <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span>
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>Objective</h4>
+          <p>
+            Match Photoshop's neutral gray chrome: flat surfaces, 1 px dividers, ~2 px radii, compact 22-24 px
+            controls, Segoe UI, monochrome line icons and a sampled neutral selection tint. Follow Black, Dark
+            Gray, Medium Gray and Light Gray live through a UXP host relay, with a manual Appearance override.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Non-goals</h4>
+          <p>
+            No renderer, framing, lighting, atmosphere, shader or swatch-math changes. No new controls or presets.
+            No custom <code>UIColors.txt</code> themes and no Gray/Blue Highlight detection - those are not exposed
+            to plugins. No change to the time-of-day gradient, thumb or geometry.
+          </p>
+        </div>
+      </div>
+
+      <h3>The palette mismatch</h3>
+      <p>
+        The saved Photoshop reference samples as the <strong>Medium Gray</strong> theme. The current panel is both
+        much darker and much bluer.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Role</th><th>Photoshop reference</th><th>Current Lumiform</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Workspace / document surround</td><td><code>#333333</code></td><td><code>#181818</code></td></tr>
+          <tr><td>Panel body</td><td><code>#535353</code></td><td><code>#1E1E1E</code></td></tr>
+          <tr><td>Panel header / toolbar</td><td><code>#424242</code></td><td><code>#262626</code></td></tr>
+          <tr><td>Field / dropdown</td><td><code>#454545</code></td><td><code>#141414</code></td></tr>
+          <tr><td>Hover / selected row</td><td><code>#6B6B6B</code> (neutral)</td><td><code>#3B82F6</code> (blue)</td></tr>
+          <tr><td>Border / divider</td><td><code>#383838</code> / <code>#474747</code></td><td><code>#383838</code> / <code>#2B2B2B</code></td></tr>
+          <tr><td>Primary / secondary text</td><td><code>#F0F0F0</code> / <code>#A0A0A0</code></td><td><code>#ECECEC</code> / <code>#9E9E9E</code></td></tr>
+          <tr><td>Status bar</td><td><code>#696969</code> with <code>#4A4A4A</code> text</td><td><code>#181818</code> with light text</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px; color:#f59e0b; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); padding:10px 12px; border-radius:6px;">
+        <strong>Reference:</strong> <code>_UI/ps-references/ps-reference.png</code>. The selected row is a neutral
+        lighter gray, not a blue accent. The probe in 4.1 captures the other three themes; the values above are
+        the Medium Gray starting point, not guesses.
+      </p>
+
+      <h3>Theme flow</h3>
+      <div class="card">
+        <pre style="background:#191919; padding:16px; border-radius:6px; color:#38bdf8; font-size:12px; overflow-x:auto;">
+Photoshop Interface ▸ Color Theme
+        │ document.theme.getCurrent() / onUpdated
+        ▼
+UXP host (plugin/main.js)
+        │ postMessage({ type: "theme", theme })
+        ▼
+WebView bridge ──► data-ps-theme
+        │
+        ▼
+black / darkGray / mediumGray / lightGray token sets
+        </pre>
+        <p style="font-size:13px; color:#cbd5e1;">
+          The WebView is isolated from the UXP host: <code>prefers-color-scheme</code> there follows Windows, not
+          Photoshop. The host also passes the current theme in the WebView URL so the first paint is correct.
+          If <code>document.theme</code> is unavailable, the panel defaults to Medium Gray and the manual
+          Appearance row takes over.
+        </p>
+      </div>
+
+      <h3>Locked decisions P1-P24</h3>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Area</th><th>Decision</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>P1</td><td>Scope</td><td>Restyle the entire chrome: panel, header, sections, guide and UXP loading/error shell. Canvas and swatch colours are content.</td></tr>
+          <tr><td>P2</td><td>Fidelity</td><td>Match the sampled Photoshop themes exactly; allow only accessibility-driven deviations.</td></tr>
+          <tr><td>P3</td><td>Themes</td><td>Support all four: Black, Dark Gray, Medium Gray, Light Gray.</td></tr>
+          <tr><td>P4</td><td>Theme link</td><td>The UXP host reads <code>document.theme</code> and relays the name to the WebView; token sets switch live.</td></tr>
+          <tr><td>P5</td><td>Fallback</td><td>Default Medium Gray plus a manual Appearance override if the host API is unavailable.</td></tr>
+          <tr><td>P6</td><td>Structure</td><td>Flat Photoshop grammar: continuous surfaces, 1 px dividers, no per-section cards or decorative shadows.</td></tr>
+          <tr><td>P7</td><td>Header</td><td>Compact Photoshop-like title row; keep the <code>i</code> affordance; move the version out of the chrome.</td></tr>
+          <tr><td>P8</td><td>Selection</td><td>Use the sampled Photoshop selection tint only for selected/active states. In the reference it is neutral <code>#6B6B6B</code>.</td></tr>
+          <tr><td>P9</td><td>Accent</td><td>No Lumiform brand blue in the chrome. The only saturated element is the unchanged time gradient.</td></tr>
+          <tr><td>P10</td><td>Density</td><td>22-24 px rows and controls; 22 px minimum hit target.</td></tr>
+          <tr><td>P11</td><td>Typography</td><td>Segoe UI / Windows system stack at 11 px; no Adobe Clean pack (licence is not an Adobe EULA).</td></tr>
+          <tr><td>P12</td><td>Section titles</td><td>Sentence case, 11 px/600, no uppercase tracking.</td></tr>
+          <tr><td>P13</td><td>Numerals</td><td>Hex and numeric fields use the UI font with tabular numerals; hex stays uppercase.</td></tr>
+          <tr><td>P14</td><td>Icons</td><td>16 px line icons, 1.5 px stroke, <code>currentColor</code>; replace all 14 emoji and the info/reset/close/external-link glyphs.</td></tr>
+          <tr><td>P15</td><td>Time gradient</td><td>Keep the entire current time-of-day control exactly as-is: gradient, thumb and geometry.</td></tr>
+          <tr><td>P16</td><td>Guide</td><td>Native Photoshop dialog: flat, 1 px border, ~2 px radius, compact title bar, no large shadow or blur.</td></tr>
+          <tr><td>P17</td><td>Contrast</td><td>Minimum readable contrast first; adjust Photoshop grays slightly where necessary.</td></tr>
+          <tr><td>P18</td><td>Host shell</td><td>The UXP loading/error shell uses native <code>--uxp-host-*</code> variables and <code>prefers-color-scheme</code>.</td></tr>
+          <tr><td>P19</td><td>Reference</td><td>Sample from <code>_UI/ps-references/ps-reference.png</code>; the palette table is the starting point.</td></tr>
+          <tr><td>P20</td><td>Probe</td><td>4.1 is a dedicated probe build: capture all four themes before the full reskin.</td></tr>
+          <tr><td>P21</td><td>Versioning</td><td>V1.2, Stage 4, version 1.2.0, new <code>.ccx</code>.</td></tr>
+          <tr><td>P22</td><td>Bootstrap</td><td>Pass the theme in the WebView URL and send live <code>theme</code> messages; manual override wins; no first-paint flash.</td></tr>
+          <tr><td>P23</td><td>Unsupported</td><td>Custom <code>UIColors.txt</code> themes and Gray/Blue Highlight detection are out of scope; neutral selection is the default.</td></tr>
+          <tr><td>P24</td><td>Dev preview</td><td>Browser dev defaults to Medium Gray; the Appearance row previews all four themes without Photoshop.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Stage 4 Roadmap</h3>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>4.1 Theme probe, reference freeze and token foundation</td><td><span class="status-badge current">current</span></td><td>Four sampled palettes and the token sheet.</td></tr>
+          <tr><td>4.2 Flat shell, compact header and status bar</td><td><span class="status-badge planned">planned</span></td><td>No cards or shadows; compact native shell.</td></tr>
+          <tr><td>4.3 Control reskin</td><td><span class="status-badge planned">planned</span></td><td>22-24 px native controls; time gradient untouched.</td></tr>
+          <tr><td>4.4 Typography and icon set</td><td><span class="status-badge planned">planned</span></td><td>Segoe UI, sentence case, 14 line icons.</td></tr>
+          <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge planned">planned</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
+          <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge planned">planned</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
+          <tr><td>4.7 Verification, documentation and release</td><td><span class="status-badge planned">planned</span></td><td>Four-theme checks, docs sync, 1.2.0 <code>.ccx</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Risks and fallbacks</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Documented-API risk</h4>
+          <p style="font-size:13px;">
+            <code>document.theme</code> is not officially documented for Photoshop. The probe verifies it on the
+            target build; the manual Appearance row is the fallback.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Four palettes</h4>
+          <p style="font-size:13px;">
+            Medium Gray is sampled now. The probe captures Black, Dark Gray and Light Gray so the other three
+            token sets are not guessed.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Light-theme contrast</h4>
+          <p style="font-size:13px;">
+            Light Gray will need small gray adjustments for readable text. That is the one approved deviation
+            from an exact match.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Time gradient</h4>
+          <p style="font-size:13px;">
+            It stays exactly as-is, including thumb and geometry. It is the one intentionally non-Photoshop
+            element; the surrounding row is themed.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Host variables</h4>
+          <p style="font-size:13px;">
+            Use <code>--uxp-host-*</code> for the host shell and probe calibration, not as the WebView's runtime
+            colour source.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Scope</h4>
+          <p style="font-size:13px;">
+            No renderer, framing, lighting, atmosphere or swatch-math changes. If a task needs one, stop and ask.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Source of Truth</h4>
+        <p style="font-size:13px; margin-bottom:0;">
+          Locked plan, full task criteria and the verification matrix:
+          <code>Docs/AI_CONTEXT_UI.md</code> section 10. Parent roadmap: <code>Docs/AI_CONTEXT.md</code> Stage 4.
+          Local reference: <a href="../_UI/ps-references/ps-reference.png" target="_blank" style="color:#93c5fd;">ps-reference.png</a>.
         </p>
       </div>
     </div>
