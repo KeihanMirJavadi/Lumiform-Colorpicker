@@ -156,16 +156,45 @@ async function openExternalUrl(url) {
 
 /**
  * Hands keyboard focus back to the Photoshop document. Without this a UXP
- * WebView keeps the keyboard after a canvas drag, so Photoshop shortcuts
- * (brush size, tool keys) do nothing until the document is clicked.
+ * WebView keeps the keyboard after any click, so Photoshop shortcuts (brush
+ * size, tool keys) and Tab do nothing until the document is clicked.
+ *
+ * The WebView is a separate Chromium view: app.bringToFront() alone cannot
+ * move focus out of it. Blur the WebView and give the host panel focus first,
+ * then activate Photoshop.
  */
 function focusPhotoshopDocument() {
+  try {
+    if (webview && typeof webview.blur === "function") {
+      webview.blur();
+    }
+    if (document.activeElement && typeof document.activeElement.blur === "function") {
+      document.activeElement.blur();
+    }
+    const panel = document.getElementById("panel");
+    if (panel && typeof panel.focus === "function") {
+      panel.focus();
+    }
+  } catch (error) {
+    log("Could not release the WebView keyboard:", error);
+  }
+
+  try {
+    if (photoshopApp && photoshopApp.activeDocument) {
+      // Re-activating the current document focuses its canvas window without
+      // changing the active document.
+      photoshopApp.activeDocument = photoshopApp.activeDocument;
+    }
+  } catch (error) {
+    log("Could not re-activate the document:", error);
+  }
+
   try {
     if (photoshopApp && typeof photoshopApp.bringToFront === "function") {
       photoshopApp.bringToFront();
     }
   } catch (error) {
-    log("Could not return focus to Photoshop:", error);
+    log("Could not bring Photoshop to the front:", error);
   }
 }
 

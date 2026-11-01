@@ -92,6 +92,11 @@ body {
   background-color: var(--uxp-host-background-color, var(--host-bg));
 }
 
+/* Focus is moved here deliberately to release the WebView's keyboard. */
+#panel:focus {
+  outline: none;
+}
+
 #lumiformView {
   position: absolute;
   top: 0;

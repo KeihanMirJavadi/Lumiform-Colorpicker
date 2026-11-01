@@ -83,7 +83,10 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
   }
 
   focusPhotoshop(): void {
-    // Browser dev has no Photoshop window to focus back.
+    // Browser dev has no Photoshop window to focus back. The counter is a
+    // development hook proving that the UI released keyboard focus.
+    const devWindow = window as Window & { __lumiformFocusCalls?: number };
+    devWindow.__lumiformFocusCalls = (devWindow.__lumiformFocusCalls ?? 0) + 1;
   }
 
   onStatusChange(callback: (status: string) => void): () => void {

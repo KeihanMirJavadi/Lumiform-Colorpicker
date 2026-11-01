@@ -556,7 +556,7 @@ export class AppShell {
     this.bindSurfaceFinishControls();
     this.bindSectionSummaryListeners();
     this.bindPanelResets();
-    this.bindCanvasFocusReturn();
+    this.bindFocusRelease();
 
     this.syncSphereUI();
   }
@@ -680,22 +680,49 @@ export class AppShell {
   }
 
   /**
-   * A UXP WebView owns the keyboard while the pointer is inside it. After a
-   * canvas drag, hand focus back to Photoshop so global shortcuts keep working
-   * without an extra click on the document.
+   * A UXP WebView owns the keyboard after any click, which traps Tab and every
+   * Photoshop shortcut inside the panel. After a non-text interaction, hand
+   * focus back to Photoshop. Text fields keep focus while being edited and
+   * release on Enter/Escape. The guide keeps focus while it is open so its
+   * Escape/Tab handling still works.
    */
-  private bindCanvasFocusReturn(): void {
-    const container = this.root.querySelector<HTMLElement>('#viewport-container');
-    if (!container) return;
-
-    const release = (): void => {
-      const active = document.activeElement;
-      if (active instanceof HTMLElement) active.blur();
-      window.setTimeout(() => this.bridge.focusPhotoshop(), 0);
+  private bindFocusRelease(): void {
+    const guideIsOpen = (): boolean => {
+      const guide = this.root.querySelector<HTMLElement>('#guide-overlay');
+      return Boolean(guide && !guide.hidden);
     };
 
-    container.addEventListener('pointerup', release);
-    container.addEventListener('pointercancel', release);
+    // Text entry keeps the keyboard while it is being edited. Sliders,
+    // checkboxes, colour wells and buttons release it immediately.
+    const isTextEntry = (target: EventTarget | null): boolean =>
+      target instanceof Element &&
+      target.closest(
+        'input[type="text"], input[type="number"], input[type="search"], textarea, select, [contenteditable="true"]'
+      ) !== null;
+
+    document.addEventListener(
+      'pointerup',
+      (event) => {
+        if (isTextEntry(event.target)) return;
+        // Let the click finish first: the info button opens the guide on click.
+        window.setTimeout(() => {
+          if (!guideIsOpen()) this.bridge.focusPhotoshop();
+        }, 0);
+      },
+      true
+    );
+
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.key !== 'Enter' && event.key !== 'Escape') return;
+        if (!isTextEntry(event.target)) return;
+        if (guideIsOpen()) return;
+        (event.target as HTMLElement).blur();
+        this.bridge.focusPhotoshop();
+      },
+      true
+    );
   }
 
   /**
@@ -798,6 +825,8 @@ export class AppShell {
       document.removeEventListener('keydown', handleGuideKeyDown);
       setBackgroundInert(false);
       openBtn.focus();
+      // The guide needed the keyboard while open; release it to Photoshop now.
+      window.setTimeout(() => this.bridge.focusPhotoshop(), 0);
     };
 
     function handleGuideKeyDown(event: KeyboardEvent): void {
