@@ -52,6 +52,12 @@ export interface IPhotoshopBridge {
   sendShortcut(payload: ShortcutPayload): void;
 
   /**
+   * Ends the host's open shortcut session so Photoshop regains its normal UI
+   * before the pointer moves to the canvas.
+   */
+  endShortcutSession(): void;
+
+  /**
    * Subscribes to bridge status changes.
    */
   onStatusChange(callback: (status: string) => void): () => void;

@@ -96,6 +96,10 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
     devWindow.__lumiformShortcuts = [...(devWindow.__lumiformShortcuts ?? []), payload];
   }
 
+  endShortcutSession(): void {
+    // Browser dev has no host session.
+  }
+
   onStatusChange(callback: (status: string) => void): () => void {
     this._statusListeners.add(callback);
     callback(this._status);

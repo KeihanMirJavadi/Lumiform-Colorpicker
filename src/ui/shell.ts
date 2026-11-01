@@ -723,6 +723,12 @@ export class AppShell {
       },
       true
     );
+
+    // Release Photoshop's modal scope as soon as the pointer leaves the panel,
+    // so a brush stroke on the canvas is never blocked by a shortcut session.
+    this.root.addEventListener('pointerleave', () => {
+      this.bridge.endShortcutSession();
+    });
   }
 
   /**

@@ -232,17 +232,94 @@ let brushCacheAt = 0;
  * All shortcut actions go through one queue. A burst of keys becomes one
  * Photoshop modal batch instead of one modal scope per keypress.
  */
-const shortcutQueue = globalThis.LumiformCommandQueue.createCommandQueue({
-  execute: async (batch) => {
-    const photoshop = require("photoshop");
+const SESSION_IDLE_MS = 750;
+let sessionTasks = [];
+let sessionWake = null;
+let sessionClosed = false;
+let sessionRunning = false;
+let sessionLastTaskAt = 0;
+
+function wakeSession() {
+  if (sessionWake) {
+    const wake = sessionWake;
+    sessionWake = null;
+    wake("work");
+  }
+}
+
+function waitForSessionWork(timeoutMs) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (reason) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      resolve(reason);
+    };
+    const timer = window.setTimeout(() => {
+      if (sessionWake === finish) sessionWake = null;
+      finish("timeout");
+    }, timeoutMs);
+    sessionWake = finish;
+  });
+}
+
+async function runShortcutSession() {
+  sessionRunning = true;
+  const photoshop = require("photoshop");
+  try {
     await photoshop.core.executeAsModal(
-      async () => {
-        for (const task of batch) {
-          await task.run();
+      async (context) => {
+        while (!sessionClosed) {
+          if (context && context.isCancelled) break;
+
+          if (sessionTasks.length === 0) {
+            const remaining = SESSION_IDLE_MS - (Date.now() - sessionLastTaskAt);
+            if (remaining <= 0) break;
+            const reason = await waitForSessionWork(remaining);
+            if (reason === "timeout") break;
+          }
+
+          const task = sessionTasks.shift();
+          if (!task) continue;
+          try {
+            await task.run();
+          } catch (error) {
+            log("Shortcut task failed:", error);
+          }
+          sessionLastTaskAt = Date.now();
         }
       },
-      { commandName: "Lumiform shortcut", interactive: true, timeOut: 0 }
+      { commandName: "Lumiform shortcuts", interactive: true, timeOut: 0 }
     );
+  } catch (error) {
+    log("Shortcut session failed:", error);
+  } finally {
+    sessionRunning = false;
+    sessionTasks = [];
+    sessionWake = null;
+  }
+}
+
+function enqueueShortcutBatch(batch) {
+  sessionTasks.push(...batch);
+  sessionLastTaskAt = Date.now();
+  if (!sessionRunning) {
+    sessionClosed = false;
+    void runShortcutSession();
+  } else {
+    wakeSession();
+  }
+}
+
+function endShortcutSession() {
+  sessionClosed = true;
+  wakeSession();
+}
+
+const shortcutQueue = globalThis.LumiformCommandQueue.createCommandQueue({
+  execute: async (batch) => {
+    enqueueShortcutBatch(batch);
   },
   coalesceMs: 16,
   onError: (error) => log("Shortcut batch dropped:", error),
@@ -687,6 +764,11 @@ function handleWebMessage(event) {
   if (data.type === "shortcut") {
     recordFocus("message-shortcut");
     void handleShortcut(data.shortcut);
+    return;
+  }
+
+  if (data.type === "shortcut-session-end") {
+    endShortcutSession();
     return;
   }
 }

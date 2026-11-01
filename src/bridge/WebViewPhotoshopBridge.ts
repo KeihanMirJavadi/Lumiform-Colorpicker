@@ -13,7 +13,7 @@ import { IPhotoshopBridge, ColorChangeEvent, ShortcutPayload } from './IPhotosho
  */
 export interface WebToHostMessage {
   source: 'lumiform-web';
-  type: 'ready' | 'set-foreground' | 'get-foreground' | 'open-url' | 'focus-photoshop' | 'shortcut';
+  type: 'ready' | 'set-foreground' | 'get-foreground' | 'open-url' | 'focus-photoshop' | 'shortcut' | 'shortcut-session-end';
   requestId?: number;
   rgb?: RGBColor;
   hex?: string;
@@ -156,6 +156,10 @@ export class WebViewPhotoshopBridge implements IPhotoshopBridge {
 
   sendShortcut(payload: ShortcutPayload): void {
     this.post({ source: 'lumiform-web', type: 'shortcut', shortcut: payload });
+  }
+
+  endShortcutSession(): void {
+    this.post({ source: 'lumiform-web', type: 'shortcut-session-end' });
   }
 
   async getForegroundColor(): Promise<RGBColor | null> {
