@@ -232,9 +232,32 @@ let brushCacheAt = 0;
  * All shortcut actions go through one queue. A burst of keys becomes one
  * Photoshop modal batch instead of one modal scope per keypress.
  */
+const modalRequiredKinds = new Set();
+
 const shortcutQueue = globalThis.LumiformCommandQueue.createCommandQueue({
   execute: async (batch) => {
     const photoshop = require("photoshop");
+    const canFast = batch.every(
+      (task) =>
+        task.needsModal !== true &&
+        (!task.kind || !modalRequiredKinds.has(task.kind))
+    );
+
+    if (canFast) {
+      try {
+        for (const task of batch) {
+          await task.run();
+        }
+        return;
+      } catch (error) {
+        if (!/modal scope/i.test(String(error))) throw error;
+        for (const task of batch) {
+          if (task.kind) modalRequiredKinds.add(task.kind);
+        }
+        // Fall through and retry the idempotent batch inside a modal scope.
+      }
+    }
+
     await photoshop.core.executeAsModal(
       async () => {
         for (const task of batch) {
@@ -244,12 +267,14 @@ const shortcutQueue = globalThis.LumiformCommandQueue.createCommandQueue({
       { commandName: "Lumiform shortcut", interactive: true, timeOut: 0 }
     );
   },
-  coalesceMs: 50,
+  coalesceMs: 16,
   onError: (error) => log("Shortcut batch dropped:", error),
 });
 
 function enqueueTool(toolRef) {
   shortcutQueue.enqueue({
+    kind: "tool",
+    needsModal: false,
     run: async () => {
       const photoshop = require("photoshop");
       await photoshop.action.batchPlay(
@@ -270,37 +295,42 @@ function enqueueTool(toolRef) {
 }
 
 function enqueueBrushSize(direction) {
+  let target = null;
   const task = {
+    kind: "brush",
     mergeKey: "brush-size",
     delta: direction,
+    needsModal: false,
     run: async () => {
       const photoshop = require("photoshop");
-      const now = Date.now();
-      if (brushSizeCache === null || now - brushCacheAt > 1500) {
-        const got = await photoshop.action.batchPlay(
-          [
-            {
-              _obj: "get",
-              _target: [
-                { _property: "currentToolOptions" },
-                { _ref: "application", _enum: "ordinal", _value: "targetEnum" },
-              ],
-            },
-          ],
-          { synchronousExecution: true }
-        );
-        const first = Array.isArray(got) ? got[0] : got;
-        const brush = first && first.currentToolOptions && first.currentToolOptions.brush;
-        const size = brush && (brush.diameter || brush.size);
-        brushSizeCache = size ? Number(size._value) : null;
-        brushCacheAt = now;
-      }
+      if (target === null) {
+        const now = Date.now();
+        if (brushSizeCache === null || now - brushCacheAt > 1500) {
+          const got = await photoshop.action.batchPlay(
+            [
+              {
+                _obj: "get",
+                _target: [
+                  { _property: "currentToolOptions" },
+                  { _ref: "application", _enum: "ordinal", _value: "targetEnum" },
+                ],
+              },
+            ],
+            { synchronousExecution: true }
+          );
+          const first = Array.isArray(got) ? got[0] : got;
+          const brush = first && first.currentToolOptions && first.currentToolOptions.brush;
+          const size = brush && (brush.diameter || brush.size);
+          brushSizeCache = size ? Number(size._value) : null;
+          brushCacheAt = now;
+        }
 
-      if (!brushSizeCache) return;
-      const step = Math.max(1, Math.round(brushSizeCache * 0.05));
-      const next = Math.max(1, brushSizeCache + task.delta * step);
-      brushSizeCache = next;
-      brushCacheAt = Date.now();
+        if (!brushSizeCache) return;
+        const step = Math.max(1, Math.round(brushSizeCache * 0.05));
+        target = Math.max(1, brushSizeCache + task.delta * step);
+        brushSizeCache = target;
+        brushCacheAt = Date.now();
+      }
 
       await photoshop.action.batchPlay(
         [
@@ -309,7 +339,7 @@ function enqueueBrushSize(direction) {
             _target: [{ _ref: "brush", _enum: "ordinal", _value: "targetEnum" }],
             to: {
               _obj: "brush",
-              diameter: { _unit: "pixelsUnit", _value: next },
+              diameter: { _unit: "pixelsUnit", _value: target },
             },
           },
         ],
@@ -322,6 +352,7 @@ function enqueueBrushSize(direction) {
 
 function enqueueHistory(direction) {
   shortcutQueue.enqueue({
+    needsModal: true,
     run: async () => {
       const photoshop = require("photoshop");
       const doc = photoshop.app.activeDocument;
@@ -343,6 +374,7 @@ function enqueueHistory(direction) {
 
 function enqueueResetColors() {
   shortcutQueue.enqueue({
+    needsModal: true,
     run: async () => {
       const photoshop = require("photoshop");
       const black = new photoshop.app.SolidColor();
@@ -361,6 +393,7 @@ function enqueueResetColors() {
 
 function enqueueSwapColors() {
   shortcutQueue.enqueue({
+    needsModal: true,
     run: async () => {
       const photoshop = require("photoshop");
       const fg = photoshop.app.foregroundColor;
@@ -381,6 +414,7 @@ function enqueueSwapColors() {
 
 function enqueueBatch(commands) {
   shortcutQueue.enqueue({
+    needsModal: true,
     run: async () => {
       const photoshop = require("photoshop");
       await photoshop.action.batchPlay(commands, {});
@@ -390,6 +424,7 @@ function enqueueBatch(commands) {
 
 function enqueueDom(action) {
   shortcutQueue.enqueue({
+    needsModal: true,
     run: async () => {
       await action();
     },
@@ -401,6 +436,12 @@ async function handleShortcut(shortcut) {
   const key = shortcut.key;
   const lower = key.toLowerCase();
   const modifier = shortcut.ctrlKey || shortcut.metaKey;
+
+  // Holding a letter should not enqueue the same tool/action repeatedly.
+  if (shortcut.repeat) {
+    const isBrushKey = key === "[" || key === "]" || key === "{" || key === "}";
+    if (!isBrushKey) return;
+  }
 
   recordFocus("shortcut", {
     key,
