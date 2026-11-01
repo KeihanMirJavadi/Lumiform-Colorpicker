@@ -13,7 +13,7 @@
 | Phase | **V1.1 - UI Design** (Stage 3) |
 | Branch | `feature/3.1-ui-redesign`, cut from `feature/2.1-uxp-plugin` @ `ca05c15` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
-| Current task | **3.1 - Panel spine, collapsible sections & live headers** |
+| Current task | **3.2 - Time-of-day strip (icons + snapped slider + detach/↺)** |
 | Renderer changes | None planned. `src/core/framing.ts` and the shaders stay untouched. |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for V1.1. |
 
@@ -257,8 +257,8 @@ opens externally through the bridge.
 
 States follow the parent protocol: `Done`, `current`, `planned`. Only one task is `current`.
 
-* [ ] **Task 3.1: Panel spine, collapsible sections & live headers**
-  * **State:** `current`
+* [x] **Task 3.1: Panel spine, collapsible sections & live headers**
+  * **State:** `Done`
   * **Description:** Rebuild the panel shell into the order in section 3. Replace every section card with a
     `<details>` block that starts closed, add the header `i` affordance and the live summary line for
     Spheres, Sun & Atmosphere, Ground and Surface Finish. No behaviour changes yet beyond the shell.
@@ -267,7 +267,7 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
     status bar stays pinned.
 
 * [ ] **Task 3.2: Time-of-day strip (icons + snapped slider + detach/↺)**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Replace the segmented preset control with the seven-icon row above a snapping slider.
     Reorder the presets chronologically. Apply presets live while dragging. Implement the detach rule for all
     six lighting controls and the `· edited ↺` label with its reset behaviour.
@@ -373,3 +373,4 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
 | Date | Change |
 |---|---|
 | 2026-11-01 | Document created. V1.1 UI decisions captured and Stage 3 roadmap added. |
+| 2026-11-01 | Task 3.1 verified and marked Done. Panel spine, closed `<details>` sections and live summaries are implemented; Task 3.2 is current. |

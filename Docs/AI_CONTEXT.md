@@ -68,7 +68,7 @@ The project follows a **two-phase dual-target architecture**:
 ┌────────────────────────────────────────────────────────────────────────┐
 │                       Panel UI (Photoshop Dark #1e1e1e)                │
 │  ├─ Compact HSB Sliders + Hex Input                                    │
-│  ├─ Time-of-Day Presets (7 phases: Morning to Early Morning)           │
+│  ├─ Time-of-Day Presets (7 phases: Early Morning to Night)             │
 │  ├─ Surface Finish Toggle (Matte / Satin / Glossy)                     │
 │  └─ Per-Sphere Size Slider                                             │
 └───────────────────────────────────┬────────────────────────────────────┘
@@ -140,13 +140,13 @@ The project follows a **two-phase dual-target architecture**:
   * **Ground Bounce ($\hat{N}_y < 0$):** Underside reflection, driven only by light that actually reaches the ground (no always-on under-light).
 * **Display Pipeline:** Linear-light shading → neutral tone curve with a soft highlight shoulder → sRGB display encoding → 1/255 dithering to prevent gradient banding.
 * **Curated Presets (Phase 1):** Seven keyframes on one elevation curve, measured from the time-of-day reference sheet. Selecting a preset restores that phase's key light, sky, ground albedo, and calibrated Haze amount.
-  1. **Morning:** Pale hazy sky, soft warm low key, low contrast. Haze 43%.
-  2. **Midday:** High side sun, pale cyan sky fill, saturated green bounce (measured). Haze 3%.
-  3. **Afternoon:** Deep blue sky, crisp warm key, vivid green bounce. Haze 9%.
-  4. **Near Sunset:** Low amber sun, lilac sky, long warm shadow. Haze 60%.
-  5. **Golden Hour:** Lowest orange sun, rose sky, warm earth bounce. Haze 70%.
-  6. **Night:** Cool moonlight, deep navy sky, faint bounce. Haze 15%.
-  7. **Early Morning:** Before sunrise, cool ambient light, pale rose over a blue-gray horizon haze. Haze 60%.
+  1. **Early Morning:** Before sunrise, cool ambient light, pale rose over a blue-gray horizon haze. Haze 60%.
+  2. **Morning:** Pale hazy sky, soft warm low key, low contrast. Haze 43%.
+  3. **Midday:** High side sun, pale cyan sky fill, saturated green bounce (measured). Haze 3%.
+  4. **Afternoon:** Deep blue sky, crisp warm key, vivid green bounce. Haze 9%.
+  5. **Near Sunset:** Low amber sun, lilac sky, long warm shadow. Haze 60%.
+  6. **Golden Hour:** Lowest orange sun, rose sky, warm earth bounce. Haze 70%.
+  7. **Night:** Cool moonlight, deep navy sky, faint bounce. Haze 15%.
   * Each keyframe owns its visible dome colours, horizon haze colour/width, lighting irradiances, key angle/softness, ground albedo, and ground/air turbidity. Clicking a preset and entering its Orbit/Height by hand produce identical lighting at the preset's calibrated Haze; Haze is a separate control, and a preset click resets it to that phase's value.
 
 ### 4.3 Surface Finish Modes
@@ -214,7 +214,7 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
 
 * [x] **Task 1.3: Lighting Engine & Sun Sliders**
   * **State:** `Done`
-  * **Description:** Implement directional key light driven by Orbit/Height sliders, 3-zone ambient model (Sky/Horizon/Ground), dynamic atmosphere, and 7 time-of-day presets (Morning through Early Morning). No in-canvas sun marker.
+  * **Description:** Implement directional key light driven by Orbit/Height sliders, 3-zone ambient model (Sky/Horizon/Ground), dynamic atmosphere, and 7 time-of-day presets (Early Morning through Night). No in-canvas sun marker.
   * **Acceptance Criteria:** Moving Orbit/Height repositions the light smoothly; clicking presets immediately updates the lighting atmosphere.
 
 * [x] **Task 1.4: Surface Finish (Matte / Satin / Glossy)**
@@ -278,13 +278,13 @@ States: `Done`, `current`, `planned`. Only **one** task may be `current`.
 Full design decisions, onboarding and the task breakdown live in **[AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md)**.
 States are mirrored here so the parent protocol keeps working.
 
-* [ ] **Task 3.1: Panel spine, collapsible sections & live headers**
-  * **State:** `current`
+* [x] **Task 3.1: Panel spine, collapsible sections & live headers**
+  * **State:** `Done`
   * **Description:** Rebuild the panel shell into the V1.1 spine (header, canvas, time of day, ramp, spheres, sun & atmosphere, ground, surface finish, status bar). Replace section cards with `<details>` blocks that start closed, add the header info affordance and live collapsed-header summaries.
   * **Acceptance Criteria:** At 320/420/600 px the panel shows the new spine with four closed, correctly summarised sections; opening each reveals its controls; the status bar stays pinned.
 
 * [ ] **Task 3.2: Time-of-day strip (icons + snapped slider + detach/↺)**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Seven icon buttons in one row above a snapping slider, chronological preset order, live relighting, and the detach rule for all six lighting controls with the `· edited ↺` reset label.
   * **Acceptance Criteria:** Clicking and dragging the strip agree; crossing a stop relights immediately; moving any lighting control clears all buttons and shows `edited`; `↺` restores the calibrated preset; one line at 320 px.
 

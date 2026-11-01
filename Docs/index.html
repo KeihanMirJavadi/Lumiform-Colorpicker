@@ -606,6 +606,14 @@
         </thead>
         <tbody>
           <tr>
+            <td><strong>Early Morning</strong></td>
+            <td>Pre-sunrise cool ambient (22°, very soft)</td>
+            <td>Lavender-pink above a blue-gray horizon haze layer</td>
+            <td>Blue-gray, cool bounce</td>
+            <td>60%</td>
+            <td>Cool dawn, very soft edges.</td>
+          </tr>
+          <tr>
             <td><strong>Morning</strong></td>
             <td>Soft warm low key (24°, broad terminator)</td>
             <td>Pale cream horizon, soft blue zenith, wide haze band</td>
@@ -652,14 +660,6 @@
             <td>Dark teal, near-black</td>
             <td>15%</td>
             <td>Moody night, faint edge light.</td>
-          </tr>
-          <tr>
-            <td><strong>Early Morning</strong></td>
-            <td>Pre-sunrise cool ambient (22°, very soft)</td>
-            <td>Lavender-pink above a blue-gray horizon haze layer</td>
-            <td>Blue-gray, cool bounce</td>
-            <td>60%</td>
-            <td>Cool dawn, very soft edges.</td>
           </tr>
         </tbody>
       </table>
@@ -761,7 +761,7 @@
           <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">1.3 Lighting Engine & Sun Sliders</div>
-              <div class="task-desc">Implement directional key light driven by Orbit/Height sliders, dynamic 3-zone ambient (Sky/Horizon/Ground), and seven calibrated time-of-day presets (Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night, Early Morning). No in-canvas sun marker.</div>
+              <div class="task-desc">Implement directional key light driven by Orbit/Height sliders, dynamic 3-zone ambient (Sky/Horizon/Ground), and seven calibrated time-of-day presets (Early Morning, Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night). No in-canvas sun marker.</div>
               <div class="task-criteria">Criteria: Orbit/Height sliders reposition the light smoothly; each preset restores its own key, sky, ground albedo, and calibrated Haze amount.</div>
             </div>
             <span class="status-badge done">Done</span>
@@ -879,22 +879,22 @@
         </div>
         <div class="task-list">
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">3.1 Panel spine, collapsible sections &amp; live headers</div>
               <div class="task-desc">Rebuild the panel shell into the V1.1 spine: header, canvas, time of day, ramp, spheres, sun &amp; atmosphere, ground, surface finish, status bar. Replace section cards with <code>&lt;details&gt;</code> blocks that start closed, add the header info affordance and live collapsed-header summaries.</div>
               <div class="task-criteria">Criteria: At 320/420/600 px the panel shows the new spine with four closed, correctly summarised sections; opening each reveals its controls; the status bar stays pinned.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
-              <div class="task-name">3.2 Time-of-day strip (icons + snapped slider + detach / &#8635;)</div>
-              <div class="task-desc">Seven icon buttons in one row above a snapping slider, chronological preset order (Early Morning first), live relighting, and the detach rule for all six lighting controls with the <code>&middot; edited &#8635;</code> reset label.</div>
-              <div class="task-criteria">Criteria: Clicking and dragging agree; crossing a stop relights immediately; moving any lighting control clears all buttons and shows <code>edited</code>; <code>&#8635;</code> restores the calibrated preset; one line at 320 px.</div>
+              <div class="task-name">3.2 Time-of-day strip (icons + snapped slider + detach / &#8634;)</div>
+              <div class="task-desc">Seven icon buttons in one row above a snapping slider, chronological preset order (Early Morning first), live relighting, and the detach rule for all six lighting controls with the <code>&middot; edited &#8634;</code> reset label.</div>
+              <div class="task-criteria">Criteria: Clicking and dragging agree; crossing a stop relights immediately; moving any lighting control clears all buttons and shows <code>edited</code>; <code>&#8634;</code> restores the calibrated preset; one line at 320 px.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -1051,7 +1051,7 @@
           </tr>
           <tr>
             <td><strong>Time-of-Day Presets</strong></td>
-            <td>Seven calibrated phases: Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night, Early Morning. Selecting one restores its key light, sky, ground albedo, and Haze amount. The Haze slider moves to that preset's calibrated value (Midday 3% through Golden Hour 70%).</td>
+            <td>Seven calibrated phases: Early Morning, Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night. Selecting one restores its key light, sky, ground albedo, and Haze amount. The Haze slider moves to that preset's calibrated value (Midday 3% through Golden Hour 70%).</td>
           </tr>
           <tr>
             <td><strong>Haze</strong></td>
@@ -1137,7 +1137,7 @@
           <tr><td>D6</td><td>Time of day</td><td>The slider snaps to seven stops and relights as it crosses them.</td></tr>
           <tr><td>D7</td><td>Time of day</td><td>Seven icon-only buttons in one row; names in tooltips and in the row label.</td></tr>
           <tr><td>D8</td><td>Presets</td><td>Moving any of the six lighting controls clears all seven buttons; there is no Custom button.</td></tr>
-          <tr><td>D9</td><td>Presets</td><td>The label reads <code>&lt;Last preset&gt; &middot; edited &#8635;</code>; <code>&#8635;</code> re-applies the calibrated preset.</td></tr>
+          <tr><td>D9</td><td>Presets</td><td>The label reads <code>&lt;Last preset&gt; &middot; edited &#8634;</code>; <code>&#8634;</code> re-applies the calibrated preset.</td></tr>
           <tr><td>D10</td><td>Presets</td><td>That reset touches only the six lighting values, never sphere colour, size, links or selection.</td></tr>
           <tr><td>D11</td><td>Naming</td><td>Near / Mid / Far everywhere user-facing; internal ids stay center / right / left.</td></tr>
           <tr><td>D12</td><td>Spheres</td><td>Three-state toggles (off, on-unselected, on-selected) replace the count control, Delete and the selector row.</td></tr>
@@ -1162,8 +1162,8 @@
             Presets are starting points, not modes. Clicking one applies it and moves every lighting slider to its
             values. Moving <strong>any</strong> of Orbit, Height, Terminator, Haze, Light colour or Ground colour
             clears all seven buttons - the state is custom, but no Custom button exists to represent it.
-            The label then reads <code>Near Sunset &middot; edited &#8635;</code> and the thumb stays parked.
-            <code>&#8635;</code> or any preset button re-applies the calibrated preset.
+            The label then reads <code>Near Sunset &middot; edited &#8634;</code> and the thumb stays parked.
+            <code>&#8634;</code> or any preset button re-applies the calibrated preset.
           </p>
         </div>
         <div class="card">
@@ -1199,8 +1199,8 @@
           <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
         </thead>
         <tbody>
-          <tr><td>3.1 Panel spine, collapsible sections &amp; live headers</td><td><span class="status-badge current">current</span></td><td>New spine, four closed sections, live summaries.</td></tr>
-          <tr><td>3.2 Time-of-day strip</td><td><span class="status-badge planned">planned</span></td><td>Icon row, snapped slider, chronological order, detach + <code>&#8635;</code>.</td></tr>
+          <tr><td>3.1 Panel spine, collapsible sections &amp; live headers</td><td><span class="status-badge done">Done</span></td><td>New spine, four closed sections, live summaries.</td></tr>
+          <tr><td>3.2 Time-of-day strip</td><td><span class="status-badge current">current</span></td><td>Icon row, snapped slider, chronological order, detach + <code>&#8634;</code>.</td></tr>
           <tr><td>3.3 Sphere model</td><td><span class="status-badge planned">planned</span></td><td>Near / Mid / Far toggles, merged panel, Link Size.</td></tr>
           <tr><td>3.4 Ramp header</td><td><span class="status-badge planned">planned</span></td><td>Sphere chip and albedo dot.</td></tr>
           <tr><td>3.5 Light row &amp; streaming</td><td><span class="status-badge planned">planned</span></td><td>Labelled Light row, clickable albedo, per-frame writes.</td></tr>
