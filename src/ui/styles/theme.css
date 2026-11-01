@@ -1,21 +1,100 @@
+/* ==========================================================================
+   V1.2 Photoshop theme tokens (Task 4.1)
+
+   Values frozen from Photoshop's own theme files:
+     Required/UXP/host-theme.css              - plugin host palette
+     xml/DesignAppColorThemesV5.xml           - workspace, field, disabled text
+     Required/UIColors.txt                    - PaletteFill cross-check
+
+   Photoshop label -> document.theme token (verified in task 4.1):
+     Black -> darkest, Dark Gray -> dark, Medium Gray -> light, Light Gray -> lightest
+   ========================================================================== */
+
+:root,
+:root[data-ps-theme='darkGray'] {
+  --ps-workspace: #333333;
+  --ps-surface: #535353;
+  --ps-field: #454545;
+  --ps-hover: #5b5b5b;
+  --ps-selected: #6b6b6b;
+  --ps-line: #454545;
+  --ps-line-strong: #5a5a5a;
+  --ps-ink: #ffffff;
+  --ps-ink-secondary: #e5e5e5;
+  --ps-ink-muted: #747474;
+  --ps-status-bg: #535353;
+  --ps-status-text: #e5e5e5;
+  --ps-focus: #ffffff;
+}
+
+:root[data-ps-theme='black'] {
+  --ps-workspace: #1a1a1a;
+  --ps-surface: #323232;
+  --ps-field: #262626;
+  --ps-hover: #3d3d3d;
+  --ps-selected: #474747;
+  --ps-line: #292929;
+  --ps-line-strong: #494949;
+  --ps-ink: #ffffff;
+  --ps-ink-secondary: #9b9b9b;
+  --ps-ink-muted: #525252;
+  --ps-status-bg: #323232;
+  --ps-status-text: #9b9b9b;
+  --ps-focus: #ffffff;
+}
+
+:root[data-ps-theme='mediumGray'] {
+  --ps-workspace: #a7a7a7;
+  --ps-surface: #b8b8b8;
+  --ps-field: #e2e2e2;
+  --ps-hover: #9d9d9d;
+  --ps-selected: #a5a5a5;
+  --ps-line: #9c9c9c;
+  --ps-line-strong: #cacaca;
+  --ps-ink: #424242;
+  --ps-ink-secondary: #424242;
+  --ps-ink-muted: #8e8e8e;
+  --ps-status-bg: #b8b8b8;
+  --ps-status-text: #424242;
+  --ps-focus: #424242;
+}
+
+:root[data-ps-theme='lightGray'] {
+  --ps-workspace: #dcdcdc;
+  --ps-surface: #f0f0f0;
+  --ps-field: #ffffff;
+  --ps-hover: #cecece;
+  --ps-selected: #bfbfbf;
+  --ps-line: #d1d1d1;
+  --ps-line-strong: #d3d3d3;
+  --ps-ink: #4b4b4b;
+  --ps-ink-secondary: #606060;
+  --ps-ink-muted: #bdbdbd;
+  --ps-status-bg: #f0f0f0;
+  --ps-status-text: #606060;
+  --ps-focus: #4b4b4b;
+}
+
+/* Legacy token aliases. Existing V1.1 rules keep working and inherit the
+   active Photoshop theme from the semantic tokens above. */
 :root {
-  --ps-bg-darkest: #181818;
-  --ps-bg-panel: #1e1e1e;
-  --ps-bg-elevated: #262626;
-  --ps-bg-hover: #323232;
-  --ps-bg-input: #141414;
-  --ps-border: #383838;
-  --ps-border-subtle: #2b2b2b;
-  --ps-text-primary: #ececec;
-  --ps-text-secondary: #9e9e9e;
-  --ps-text-disabled: #5e5e5e;
-  --ps-accent-blue: #3b82f6;
-  --ps-accent-hover: #2563eb;
-  --ps-status-connected: #22c55e;
-  --ps-status-disconnected: #ef4444;
-  --ps-radius-sm: 4px;
-  --ps-radius-md: 6px;
-  --ps-radius-lg: 8px;
+  --ps-bg-darkest: var(--ps-workspace);
+  --ps-bg-panel: var(--ps-surface);
+  --ps-bg-elevated: var(--ps-surface);
+  --ps-bg-hover: var(--ps-hover);
+  --ps-bg-input: var(--ps-field);
+  --ps-border: var(--ps-line);
+  --ps-border-subtle: var(--ps-line);
+  --ps-text-primary: var(--ps-ink);
+  --ps-text-secondary: var(--ps-ink-secondary);
+  --ps-text-disabled: var(--ps-ink-muted);
+  --ps-accent-blue: var(--ps-selected);
+  --ps-accent-hover: var(--ps-line-strong);
+  --ps-status-connected: var(--ps-ink-secondary);
+  --ps-status-disconnected: #d06a55;
+  --ps-radius-sm: 2px;
+  --ps-radius-md: 2px;
+  --ps-radius-lg: 2px;
 }
 
 * {
@@ -1074,8 +1153,8 @@ details[open] > .section-summary .section-chevron {
   }
   50% {
     opacity: 0.7;
-    background-color: rgba(59, 130, 246, 0.18);
-    box-shadow: inset 0 0 0 2px var(--ps-accent-blue), 0 0 8px rgba(59, 130, 246, 0.6);
+    background-color: rgba(127, 127, 127, 0.18);
+    box-shadow: inset 0 0 0 2px var(--ps-accent-blue), 0 0 8px rgba(127, 127, 127, 0.45);
   }
   100% {
     opacity: 0;
@@ -1352,4 +1431,256 @@ details[open] > .section-summary .section-chevron {
   flex: 0 0 auto;
   font-size: 14px;
   color: #93c5fd;
+}
+
+/* ==========================================================================
+   V1.2 flat shell (Task 4.2)
+
+   Photoshop grammar: continuous panel surfaces, 1 px dividers, 2 px radii,
+   no cards, no decorative shadows, compact header and a 24 px status bar.
+   Controls are reskinned in 4.3; this layer sets the structure.
+   ========================================================================== */
+
+html,
+body {
+  background-color: var(--ps-surface);
+  color: var(--ps-ink);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+}
+
+/* --- compact header ------------------------------------------------------ */
+
+.panel-header {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  background-color: var(--ps-surface);
+  border-bottom: 1px solid var(--ps-line);
+}
+
+.panel-header h1 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--ps-ink);
+}
+
+/* P7: the version leaves the chrome; the guide owns it. */
+.panel-header .badge {
+  display: none;
+}
+
+.panel-info-btn {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+  font-family: inherit;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.panel-info-btn:hover {
+  color: var(--ps-ink);
+  background-color: var(--ps-hover);
+  border-color: transparent;
+}
+
+/* --- continuous workspace / panel surfaces ------------------------------ */
+
+.panel-content {
+  padding: 0;
+  gap: 0;
+  background-color: var(--ps-surface);
+}
+
+/* The document matte: a workspace band around the canvas. The card keeps the
+   V1.1 412:227 geometry; only the surround is themed. */
+.viewport-frame {
+  padding: 8px 10px;
+  background-color: var(--ps-workspace);
+  border-bottom: 1px solid var(--ps-line);
+}
+
+.viewport-card {
+  width: 100%;
+  margin: 0 auto;
+  background-color: var(--ps-workspace);
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+/* The frame already draws the divider above the first section. */
+.viewport-frame + .section-card {
+  border-top: 0;
+}
+
+.section-card {
+  padding: 6px 10px 8px;
+  background-color: var(--ps-surface);
+  border: 0;
+  border-top: 1px solid var(--ps-line);
+  border-radius: 0;
+}
+
+details.section-card {
+  padding: 0;
+  overflow: visible;
+}
+
+.section-header {
+  margin-bottom: 6px;
+}
+
+.section-card h2,
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ps-ink-secondary);
+}
+
+.section-summary {
+  min-height: 24px;
+  padding: 3px 10px;
+  gap: 8px;
+  border-radius: 0;
+}
+
+.section-summary:hover {
+  background-color: var(--ps-hover);
+}
+
+.section-summary:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: -1px;
+}
+
+.section-state {
+  font-size: 10px;
+  color: var(--ps-ink-secondary);
+}
+
+.section-body {
+  padding: 2px 10px 10px;
+}
+
+.section-divider {
+  height: 1px;
+  margin: 8px 0;
+  background-color: var(--ps-line);
+}
+
+.field-label,
+.toolbar-label {
+  font-size: 11px;
+  color: var(--ps-ink-secondary);
+}
+
+/* --- 24 px status bar ---------------------------------------------------- */
+
+.status-bar {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 10px;
+  background-color: var(--ps-status-bg);
+  border-top: 1px solid var(--ps-line);
+  font-size: 10px;
+  color: var(--ps-status-text);
+}
+
+.status-text {
+  font-size: 10px;
+  color: var(--ps-status-text);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+}
+
+.active-brush-label {
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ps-ink-muted);
+}
+
+.active-brush-hex {
+  font-size: 10px;
+  color: var(--ps-ink-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- neutral states, no blue chrome, no hover lift ----------------------- */
+
+.sphere-toggle[data-state='selected'],
+.time-icon-btn.active,
+.time-icon-btn[aria-pressed='true'],
+.finish-btn.active,
+.ground-preset-btn.active {
+  background-color: var(--ps-selected);
+  border-color: var(--ps-line-strong);
+  color: var(--ps-ink);
+  box-shadow: none;
+}
+
+.sphere-toggle:active,
+.swatch-block:active {
+  transform: none;
+}
+
+.swatch-block:hover {
+  border-color: var(--ps-line-strong);
+  transform: none;
+  box-shadow: none;
+}
+
+.albedo-send-btn:hover {
+  border-color: var(--ps-line-strong);
+  box-shadow: none;
+}
+
+/* Neutral focus: a 1 px ink outline, never the old blue ring or glow. */
+.panel-info-btn:focus-visible,
+.sphere-toggle:focus-visible,
+.hsb-summary:focus-visible,
+.time-reset-btn:focus-visible,
+.time-icon-btn:focus-visible,
+.albedo-send-btn:focus-visible,
+.guide-back:focus-visible,
+.guide-github-row:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+.ps-input-hex:focus,
+.ps-input-num:focus {
+  border-color: var(--ps-line-strong);
+  box-shadow: inset 0 0 0 1px var(--ps-line-strong);
+}
+
+/* 4.2 follow-ups: neutral reset affordance and guide link arrow. */
+.time-reset-btn {
+  border-radius: 2px;
+  background-color: transparent;
+  border: 1px solid var(--ps-line-strong);
+  color: var(--ps-ink-secondary);
+}
+
+.time-reset-btn:hover {
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+.guide-github-arrow {
+  color: var(--ps-ink-secondary);
 }

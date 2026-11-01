@@ -69,8 +69,11 @@ export class AppShell {
       </header>
 
       <main class="panel-content">
-        <!-- 1. Canvas: fixed 412:227 framing, eyedropper reticle -->
-        <div class="viewport-card" id="viewport-container"></div>
+        <!-- 1. Canvas: fixed 412:227 framing, eyedropper reticle. The frame is
+             the workspace matte; the card itself keeps the V1.1 geometry. -->
+        <div class="viewport-frame">
+          <div class="viewport-card" id="viewport-container"></div>
+        </div>
 
         <!-- 2. Time of Day (always open): icon strip + snapped slider -->
         <section class="section-card" aria-labelledby="time-of-day-heading">

@@ -1017,7 +1017,7 @@
             <div class="task-info">
               <div class="task-name">4.5 Live theme linking and Appearance override</div>
               <div class="task-desc">Add the host <code>theme</code> relay, WebView <code>theme</code> message, URL bootstrap, four token sets and the guide's Appearance row with <code>localStorage</code> persistence. Add the mock theme source for browser development.</div>
-              <div class="task-criteria">Criteria: Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Medium Gray; no flash or loop.</div>
+              <div class="task-criteria">Criteria: Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Dark Gray; no flash or loop.</div>
             </div>
             <span class="status-badge planned">planned</span>
           </div>
@@ -1388,7 +1388,7 @@ black / darkGray / mediumGray / lightGray token sets
         <p style="font-size:13px; color:#cbd5e1;">
           The WebView is isolated from the UXP host: <code>prefers-color-scheme</code> there follows Windows, not
           Photoshop. The host also passes the current theme in the WebView URL so the first paint is correct.
-          If <code>document.theme</code> is unavailable, the panel defaults to Medium Gray and the manual
+          If <code>document.theme</code> is unavailable, the panel defaults to Dark Gray and the manual
           Appearance row takes over.
         </p>
       </div>
@@ -1429,7 +1429,7 @@ black / darkGray / mediumGray / lightGray token sets
           <tr><td>P2</td><td>Fidelity</td><td>Match the sampled Photoshop themes exactly; allow only accessibility-driven deviations.</td></tr>
           <tr><td>P3</td><td>Themes</td><td>Support all four: Black, Dark Gray, Medium Gray, Light Gray.</td></tr>
           <tr><td>P4</td><td>Theme link</td><td>The UXP host reads <code>document.theme</code> and relays the name to the WebView; token sets switch live.</td></tr>
-          <tr><td>P5</td><td>Fallback</td><td>Default Medium Gray plus a manual Appearance override if the host API is unavailable.</td></tr>
+          <tr><td>P5</td><td>Fallback</td><td>Default Dark Gray (the reference theme) plus a manual Appearance override if the host API is unavailable.</td></tr>
           <tr><td>P6</td><td>Structure</td><td>Flat Photoshop grammar: continuous surfaces, 1 px dividers, no per-section cards or decorative shadows.</td></tr>
           <tr><td>P7</td><td>Header</td><td>Compact Photoshop-like title row; keep the <code>i</code> affordance; move the version out of the chrome.</td></tr>
           <tr><td>P8</td><td>Selection</td><td>Use the sampled Photoshop selection tint only for selected/active states. In the reference it is neutral <code>#6B6B6B</code>.</td></tr>
@@ -1448,7 +1448,7 @@ black / darkGray / mediumGray / lightGray token sets
           <tr><td>P21</td><td>Versioning</td><td>V1.2, Stage 4, version 1.2.0, new <code>.ccx</code>.</td></tr>
           <tr><td>P22</td><td>Bootstrap</td><td>Pass the theme in the WebView URL and send live <code>theme</code> messages; manual override wins; no first-paint flash.</td></tr>
           <tr><td>P23</td><td>Unsupported</td><td>Custom <code>UIColors.txt</code> themes and Gray/Blue Highlight detection are out of scope; neutral selection is the default.</td></tr>
-          <tr><td>P24</td><td>Dev preview</td><td>Browser dev defaults to Medium Gray; the Appearance row previews all four themes without Photoshop.</td></tr>
+          <tr><td>P24</td><td>Dev preview</td><td>Browser dev defaults to Dark Gray; the Appearance row previews all four themes without Photoshop.</td></tr>
         </tbody>
       </table>
 

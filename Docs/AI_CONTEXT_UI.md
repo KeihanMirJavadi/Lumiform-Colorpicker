@@ -420,7 +420,7 @@ the frozen four-theme palettes are in 10.3 and 10.3.1.
 | P2 | Fidelity | Match the sampled Photoshop themes exactly; allow only accessibility-driven deviations. |
 | P3 | Themes | Support all four: Black, Dark Gray, Medium Gray, Light Gray. |
 | P4 | Theme link | The UXP host reads `document.theme` and relays the name to the WebView; the WebView switches token sets live. |
-| P5 | Fallback | Default to Medium Gray and expose a manual Appearance override if `document.theme` is unavailable. |
+| P5 | Fallback | Default to Dark Gray (the reference theme) and expose a manual Appearance override if `document.theme` is unavailable. |
 | P6 | Structure | Flat Photoshop grammar: continuous surfaces, 1 px dividers, no per-section cards, no decorative shadows. |
 | P7 | Header | Compact Photoshop-like title row; keep the `i` guide affordance; move the version out of the chrome. |
 | P8 | Selection | Use the sampled Photoshop selection tint only for selected/active states. In the reference it is neutral `#6B6B6B`, not blue. |
@@ -439,7 +439,7 @@ the frozen four-theme palettes are in 10.3 and 10.3.1.
 | P21 | Versioning | V1.2, Stage 4, version 1.2.0, new `.ccx`. |
 | P22 | Bootstrap | Pass the current theme in the WebView URL and send live `theme` messages; manual override wins; no first-paint flash. |
 | P23 | Unsupported | Custom `UIColors.txt` themes and Gray/Blue Highlight detection are out of scope; the neutral reference selection is the default. |
-| P24 | Dev preview | Browser dev defaults to Medium Gray; the Appearance row previews all four themes without Photoshop. |
+| P24 | Dev preview | Browser dev defaults to Dark Gray; the Appearance row previews all four themes without Photoshop. |
 
 ### 10.3 Reference palette (Dark Gray sample)
 
@@ -575,7 +575,7 @@ Rules:
    Auto follows the host; a manual choice wins until Auto is selected. Persist in `localStorage`.
 6. **Host shell.** The UXP loading/error overlay uses `--uxp-host-*` and `@media (prefers-color-scheme)` directly;
    the WebView cannot read those variables.
-7. **Failure.** If `document.theme` is unavailable, default to Medium Gray and keep the manual override.
+7. **Failure.** If `document.theme` is unavailable, default to Dark Gray and keep the manual override.
 8. **Unsupported.** Custom `UIColors.txt` themes and the Gray/Blue Highlight setting cannot be read. The neutral
    sampled selection is the default.
 
@@ -625,7 +625,7 @@ States follow the parent protocol. Only **4.2** is `current`.
     sets and the guide's Appearance row with `localStorage` persistence. Add the mock theme source for browser
     development.
   * **Acceptance Criteria:** Switching Photoshop through all four themes switches Lumiform live; a manual choice
-    sticks across reloads; selecting Auto resumes following the host; the fallback default is Medium Gray; no
+    sticks across reloads; selecting Auto resumes following the host; the fallback default is Dark Gray; no
     flash or update loop.
 
 * [ ] **Task 4.6: Guide and UXP host shell**
@@ -685,7 +685,7 @@ States follow the parent protocol. Only **4.2** is `current`.
 * **Probe:** temporary plugin with theme name, host-variable scan, environment and one JSON snapshot per theme.
 * **Icons:** sunrise, sun-behind-cloud, sun, high sun, sunset, golden sun, crescent moon; grass/leaf, neutral
   circle, soil, sand; matte circle, satin sparkle, glossy diamond; plus info, reset, close and external-link.
-* **Browser dev:** defaults to Medium Gray; the Appearance row previews all four themes.
+* **Browser dev:** defaults to Dark Gray; the Appearance row previews all four themes.
 
 ### 10.9 Definition of done
 

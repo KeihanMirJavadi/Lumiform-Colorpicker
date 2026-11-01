@@ -348,7 +348,7 @@ lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unc
 * [ ] **Task 4.5: Live theme linking and Appearance override**
   * **State:** `planned`
   * **Description:** Add the host `theme` relay, WebView `theme` message, URL bootstrap, four token sets and the guide's Appearance row with `localStorage` persistence. Add the mock theme source for browser development.
-  * **Acceptance Criteria:** Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Medium Gray; no flash or loop.
+  * **Acceptance Criteria:** Switching Photoshop through all four themes switches Lumiform live; a manual choice sticks across reloads; Auto resumes following the host; the fallback default is Dark Gray; no flash or loop.
 
 * [ ] **Task 4.6: Guide and UXP host shell**
   * **State:** `planned`
