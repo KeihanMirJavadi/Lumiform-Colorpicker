@@ -190,7 +190,7 @@ The project follows a **two-phase dual-target architecture**:
 * **Per-sphere size:** Size is decoupled per sphere (20%–100% of the base radius). It applies to the selected sphere, or to every enabled sphere when Link Size is on. Scaling pivots on that sphere's bottom-center so it stays grounded; the camera does not move.
 * **Selection:** The active sphere is chosen by clicking it in the viewport or by clicking a Near / Mid / Far toggle. Selection persists for editing, while a highlight ring flashes for about a second and fades on every selection action; there is no permanent outline. If the selected sphere is hidden, selection falls back in Near -> Mid -> Far order.
 * **Picking through atmosphere:** The eyedropper samples the final rendered (atmosphere-affected) color of any sphere, so the same albedo can be compared across near, mid, and far depths.
-* **Swatch ramp:** The analytical 5-value ramp follows the selected sphere and includes that sphere's depth-dependent atmospheric haze, so its swatches match the rendered color at that distance.
+* **Swatch ramp:** The analytical 5-value ramp follows the selected sphere and includes that sphere's depth-dependent atmospheric haze, so its swatches match the rendered color at that distance. Its header reads `5-VALUE RAMP` and carries a read-only chip with the selected sphere's Near/Mid/Far name and a dot of its albedo.
 * **Shadows & contact AO:** Ground shading accumulates drop shadows and contact occlusion from every visible sphere, with haze applied to the ground and far shadows.
 
 ---
@@ -292,13 +292,13 @@ States are mirrored here so the parent protocol keeps working.
   * **Description:** Rename spheres to Near/Mid/Far, replace the count control and Delete with three-state toggles, add the last-sphere guard, restore-on-re-enable, selection fallback, Link Size, and the merged sphere panel with size, albedo and the nested H/S/B disclosure.
   * **Acceptance Criteria:** Toggles enable/select/disable as specified; the last sphere cannot be disabled; re-enabling restores colour and size; link toggles equalise immediately; no count or Delete control remains.
 
-* [ ] **Task 3.4: Ramp header, sphere indicator & albedo dot**
-  * **State:** `current`
+* [x] **Task 3.4: Ramp header, sphere indicator & albedo dot**
+  * **State:** `Done`
   * **Description:** Retitle the ramp with a read-only Near/Mid/Far chip and an albedo dot; keep the grid, recomputation and click-to-paint behaviour.
   * **Acceptance Criteria:** Chip follows selection; dot matches albedo; swatches still update on lighting, haze and finish changes; clicks still write to Photoshop.
 
 * [ ] **Task 3.5: Light row and live foreground streaming**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Move the light chip into a labelled `Light` row in Sun & Atmosphere, make the albedo chip send on click, and stream H/S/B and hex edits at one write per animation frame.
   * **Acceptance Criteria:** The light chip is discoverable at 320 px; the albedo chip sets the foreground; H/S/B dragging streams without flooding the host; light and ground edits detach the preset.
 

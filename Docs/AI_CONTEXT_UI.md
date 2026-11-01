@@ -13,7 +13,7 @@
 | Phase | **V1.1 - UI Design** (Stage 3) |
 | Branch | `feature/3.1-ui-redesign`, cut from `feature/2.1-uxp-plugin` @ `ca05c15` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
-| Current task | **3.4 - Ramp header, sphere indicator & albedo dot** |
+| Current task | **3.5 - Light row and live foreground streaming** |
 | Renderer changes | None planned. `src/core/framing.ts` and the shaders stay untouched. |
 | Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for V1.1. |
 
@@ -285,8 +285,8 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
     disabled; re-enabling restores its previous colour and size; link toggles equalise immediately and keep
     applying edits; no count or Delete control remains.
 
-* [ ] **Task 3.4: Ramp header, sphere indicator & albedo dot**
-  * **State:** `current`
+* [x] **Task 3.4: Ramp header, sphere indicator & albedo dot**
+  * **State:** `Done`
   * **Description:** Retitle the ramp, add the read-only sphere chip and the albedo dot, and keep the grid and
     click-to-paint behaviour unchanged.
   * **Acceptance Criteria:** The chip follows selection and reads Near/Mid/Far; the dot matches the sphere's
@@ -294,7 +294,7 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
     writes to Photoshop.
 
 * [ ] **Task 3.5: Light row and live foreground streaming**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Move the light colour chip out of the section header into a labelled `Light` row at the
     top of Sun & Atmosphere. Make the sphere albedo chip send its exact hex on click. Stream H/S/B and valid
     hex edits at one write per animation frame.
@@ -376,3 +376,4 @@ States follow the parent protocol: `Done`, `current`, `planned`. Only one task i
 | 2026-11-01 | Task 3.1 verified and marked Done. Panel spine, closed `<details>` sections and live summaries are implemented; Task 3.2 is current. |
 | 2026-11-01 | Task 3.2 verified and marked Done. Chronological icon strip, snapped slider, live relighting and the six-control detach/reset model are implemented; Task 3.3 is current. |
 | 2026-11-01 | Task 3.3 verified and marked Done. Near/Mid/Far three-state toggles, the merged Spheres panel, Link Size and restore-on-re-enable are implemented; Task 3.4 is current. |
+| 2026-11-01 | Task 3.4 verified and marked Done. The ramp header now shows the selected sphere and an albedo dot; the analytical grid and click-to-paint path are unchanged. Task 3.5 is current. |

@@ -906,22 +906,22 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">3.4 Ramp header, sphere indicator &amp; albedo dot</div>
               <div class="task-desc">Retitle the ramp with a read-only Near / Mid / Far chip and an albedo dot; keep the grid, the recomputation triggers and click-to-paint behaviour.</div>
               <div class="task-criteria">Criteria: Chip follows selection; dot matches albedo; swatches still update on lighting, haze and finish changes; clicks still write to Photoshop.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">3.5 Light row and live foreground streaming</div>
               <div class="task-desc">Move the light chip into a labelled <code>Light</code> row in Sun &amp; Atmosphere, make the sphere albedo chip send on click, and stream H/S/B and hex edits at one write per animation frame.</div>
               <div class="task-criteria">Criteria: The light chip is discoverable at 320 px; the albedo chip sets the Photoshop foreground; H/S/B dragging streams without flooding the host; light and ground edits detach the preset.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -1037,7 +1037,7 @@
           </tr>
           <tr>
             <td><strong>Albedo &amp; H &middot; S &middot; B</strong></td>
-            <td>The merged Spheres panel exposes the selected sphere's albedo chip and hex, with the HSB sliders behind a closed disclosure. The swatch ramp follows the selected sphere.</td>
+            <td>The merged Spheres panel exposes the selected sphere's albedo chip and hex, with the HSB sliders behind a closed disclosure. The swatch ramp follows the selected sphere; its header names that sphere and shows an albedo dot.</td>
           </tr>
           <tr>
             <td><strong>Eyedropper</strong></td>
@@ -1069,7 +1069,7 @@
           The ground-to-sky airlight transition is spread over the horizon band rather than snapped at the eye line, so a hazy sphere
           reads as one form instead of two colours. Each preset owns its calibrated Haze amount, and selecting it resets the slider.
           Picking reads the final framebuffer, which means the sampled color already includes haze. The analytical swatch ramp follows the
-          selected sphere, including its depth haze.
+          selected sphere, including its depth haze, and labels itself with that sphere's name and albedo dot.
         </p>
       </div>
     </div>
@@ -1196,8 +1196,8 @@
           <tr><td>3.1 Panel spine, collapsible sections &amp; live headers</td><td><span class="status-badge done">Done</span></td><td>New spine, four closed sections, live summaries.</td></tr>
           <tr><td>3.2 Time-of-day strip</td><td><span class="status-badge done">Done</span></td><td>Icon row, snapped slider, chronological order, detach + <code>&#8634;</code>.</td></tr>
           <tr><td>3.3 Sphere model</td><td><span class="status-badge done">Done</span></td><td>Near / Mid / Far toggles, merged panel, Link Size.</td></tr>
-          <tr><td>3.4 Ramp header</td><td><span class="status-badge current">current</span></td><td>Sphere chip and albedo dot.</td></tr>
-          <tr><td>3.5 Light row &amp; streaming</td><td><span class="status-badge planned">planned</span></td><td>Labelled Light row, clickable albedo, per-frame writes.</td></tr>
+          <tr><td>3.4 Ramp header</td><td><span class="status-badge done">Done</span></td><td>Sphere chip and albedo dot.</td></tr>
+          <tr><td>3.5 Light row &amp; streaming</td><td><span class="status-badge current">current</span></td><td>Labelled Light row, clickable albedo, per-frame writes.</td></tr>
           <tr><td>3.6 Guide takeover</td><td><span class="status-badge planned">planned</span></td><td>Full overlay, GitHub row, <code>open-url</code> bridge.</td></tr>
           <tr><td>3.7 Verification &amp; polish</td><td><span class="status-badge planned">planned</span></td><td>320/420/600 px + Photoshop checks, docs sync, new <code>.ccx</code>.</td></tr>
         </tbody>
