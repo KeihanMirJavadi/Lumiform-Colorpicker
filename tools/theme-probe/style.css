@@ -1,0 +1,307 @@
+/*
+ * Lumiform theme probe - temporary Stage 4 (task 4.1) diagnostic panel.
+ *
+ * The probe is deliberately styled from the UXP host variables it is meant to
+ * measure. If those variables are missing, the fallbacks below keep the panel
+ * readable, and the probe reports the gap in its own list.
+ */
+
+:root {
+  --probe-bg: var(--uxp-host-background-color, #323232);
+  --probe-fg: var(--uxp-host-text-color, #f0f0f0);
+  --probe-border: var(--uxp-host-border-color, #5a5a5a);
+  --probe-muted: #a8a8a8;
+  --probe-field: rgba(255, 255, 255, 0.06);
+  --probe-accent: #f0f0f0;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --probe-bg: var(--uxp-host-background-color, #f0f0f0);
+    --probe-fg: var(--uxp-host-text-color, #1c1c1c);
+    --probe-border: var(--uxp-host-border-color, #b4b4b4);
+    --probe-muted: #5c5c5c;
+    --probe-field: rgba(0, 0, 0, 0.06);
+    --probe-accent: #1c1c1c;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--probe-bg);
+  color: var(--probe-fg);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------------------------------------------------------------- top bar */
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--probe-border);
+  background-color: var(--probe-bg);
+}
+
+.bar-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+.bar-title strong {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background-color: #4ec9a0;
+}
+
+.tag {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border: 1px solid var(--probe-border);
+  border-radius: 3px;
+  color: var(--probe-muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-actions {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.bar-actions button {
+  padding: 3px 9px;
+  border: 1px solid var(--probe-border);
+  border-radius: 2px;
+  background-color: var(--probe-field);
+  color: var(--probe-fg);
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.bar-actions button:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+@media (prefers-color-scheme: light) {
+  .bar-actions button:hover {
+    background-color: rgba(0, 0, 0, 0.12);
+  }
+}
+
+.bar-actions button:focus-visible {
+  outline: 1px solid var(--probe-accent);
+  outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------------ shell */
+
+#probe {
+  padding: 10px 10px 16px;
+}
+
+.block {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--probe-border);
+}
+
+.block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.block-head h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.count {
+  color: var(--probe-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hint {
+  margin: 3px 0 6px;
+  color: var(--probe-muted);
+  font-size: 10px;
+}
+
+.hint code,
+.footnote code {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+}
+
+.empty {
+  margin: 4px 0 0;
+  padding: 8px;
+  border: 1px dashed var(--probe-border);
+  border-radius: 2px;
+  color: var(--probe-muted);
+  font-size: 10px;
+}
+
+/* ------------------------------------------------------------------- hero */
+
+.hero {
+  padding: 10px 12px;
+  border: 1px solid var(--probe-border);
+  border-radius: 2px;
+  background-color: var(--probe-field);
+}
+
+.hero-label {
+  color: var(--probe-muted);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+
+.hero-value {
+  margin: 3px 0 4px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  word-break: break-word;
+}
+
+.hero-meta {
+  color: var(--probe-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-meta .sep {
+  padding: 0 4px;
+  opacity: 0.6;
+}
+
+.hero-error {
+  margin-top: 6px;
+  padding: 5px 7px;
+  border: 1px solid #a4553f;
+  border-radius: 2px;
+  color: #f0b8a8;
+  font-size: 10px;
+}
+
+/* ------------------------------------------------------------------- rows */
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  gap: 7px;
+  min-height: 20px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.16);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+}
+
+.row-value {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--probe-muted);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--probe-border);
+  border-radius: 1px;
+}
+
+.swatch.is-empty {
+  background-image: linear-gradient(45deg, rgba(128, 128, 128, 0.45) 25%, transparent 25%, transparent 75%, rgba(128, 128, 128, 0.45) 75%);
+  background-size: 6px 6px;
+}
+
+.row.plain {
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+}
+
+.log .row {
+  grid-template-columns: 58px minmax(0, 1fr);
+}
+
+.log .row-value {
+  text-align: left;
+  color: var(--probe-fg);
+  font-weight: 600;
+}
+
+.log .row-name {
+  color: var(--probe-muted);
+}
+
+.footnote {
+  margin: 14px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--probe-border);
+  color: var(--probe-muted);
+  font-size: 10px;
+}

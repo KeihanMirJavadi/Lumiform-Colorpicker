@@ -327,7 +327,7 @@ lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unc
 
 * [ ] **Task 4.1: Theme probe, reference freeze and token foundation**
   * **State:** `current`
-  * **Description:** Add a temporary UXP theme probe that displays `document.theme.getCurrent()`, live theme changes and the computed `--uxp-host-*` colours. Package a probe `.ccx`; capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the four palettes and the semantic token sheet.
+  * **Description:** Add a temporary UXP theme probe (`tools/theme-probe/`, packaged by `npm run probe:package`) that displays `document.theme.getCurrent()`, live theme changes, the computed `--uxp-host-*` colours and `app.appSkinInfo`. Capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the four palettes and the semantic token sheet in `AI_CONTEXT_UI.md` 10.3.1.
   * **Acceptance Criteria:** The probe reports a theme name for each of the four Photoshop themes; a live change is observed; four palettes and the token sheet are documented; no reskin behaviour ships from this task.
 
 * [ ] **Task 4.2: Flat shell, compact header and status bar**

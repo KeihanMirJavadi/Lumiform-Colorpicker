@@ -459,6 +459,52 @@ name and captures the other three themes.
 The current Lumiform is `#1E1E1E / #262626 / #3B82F6`. It is both too dark and too blue for this theme.
 The reference confirms the selected row is neutral; there is no blue chrome to reproduce.
 
+### 10.3.1 Theme probe (temporary, task 4.1)
+
+The probe is a throwaway UXP panel that measures Photoshop's real theme values before any reskin code is written.
+It is not part of the product and shares no code with `plugin/`.
+
+| Item | Value |
+|---|---|
+| Source | `tools/theme-probe/` - `manifest.json`, `index.html`, `style.css`, `main.js` |
+| Package | `npm run probe:package` -> `release/Lumiform-ThemeProbe-1.0.0.ccx` |
+| Reads | `document.theme.getCurrent()`, live `onUpdated` values, every computed `--uxp-host-*` variable (with a swatch), `app.appSkinInfo` colour roles, `prefers-color-scheme`, Photoshop/UXP versions and a timestamped change log |
+| Writes | Nothing. The probe never touches the document, the foreground colour or the product panel. |
+| Capture | Float the panel at roughly 460x920, open Photoshop Settings > Interface > Color Theme, switch through all four themes and screenshot each state |
+
+Why a separate plugin: `document.theme` is undocumented for Photoshop and may change shape. Keeping the probe out of
+`plugin/` means no diagnostic code can leak into a 1.2.0 build, and a broken probe cannot break the shipping panel.
+
+The probe also accepts the older `onUpdated.add` / `.on` shapes and polls `getCurrent()` once per 1.2 s, so a build
+where the event never fires still reports changes. The change log labels each entry `live` (event) or `poll`
+(fallback); a `live` entry is the evidence for "a live change is observed".
+
+The theme names Photoshop may report are `darkest`, `dark`, `medium`, `light` and `lightest` (the same vocabulary as
+the manifest icon `theme` arrays). The probe records which of those map to Black, Dark Gray, Medium Gray and Light
+Gray; the mapping is only frozen once all four captures exist.
+
+#### Frozen palettes and semantic tokens (target of 4.1)
+
+Medium Gray is sampled from `ps-reference.png`. The other three columns stay blank until the probe captures them -
+they are not guesses.
+
+| Token | Black | Dark Gray | Medium Gray | Light Gray |
+|---|---|---|---|---|
+| `--ps-workspace` | pending | pending | `#333333` | pending |
+| `--ps-panel` | pending | pending | `#535353` | pending |
+| `--ps-header` | pending | pending | `#424242` | pending |
+| `--ps-field` | pending | pending | `#454545` | pending |
+| `--ps-hover` | pending | pending | `#6B6B6B` (sampled means selected; hover to confirm) | pending |
+| `--ps-selected` | pending | pending | `#6B6B6B` | pending |
+| `--ps-border` | pending | pending | `#383838` | pending |
+| `--ps-border-strong` | pending | pending | `#474747` | pending |
+| `--ps-text` | pending | pending | `#F0F0F0` | pending |
+| `--ps-text-secondary` | pending | pending | `#A0A0A0` | pending |
+| `--ps-text-muted` | pending | pending | `#787878` | pending |
+| `--ps-status-bg` | pending | pending | `#696969` | pending |
+| `--ps-status-text` | pending | pending | `#4A4A4A` | pending |
+| `--ps-focus` | pending | pending | `#F0F0F0` at 60% | pending |
+
 ### 10.4 Theme architecture
 
 ```
@@ -481,8 +527,8 @@ Rules:
 2. **Host relay.** The host sends `{ source: 'lumiform-host', type: 'theme', theme }` on `ready` and on every
    change. It also appends `?theme=<name>` to the WebView URL so the first paint is correct.
 3. **WebView mapping.** The bridge exposes the theme to the shell; the shell sets `data-ps-theme` on the root.
-   Provisional mapping: `darkest` → Black, `dark` → Dark Gray, `light` → Medium Gray, `lightest` → Light Gray.
-   The probe confirms the mapping.
+   Provisional mapping: `darkest` -> Black, `dark` -> Dark Gray, `light` -> Medium Gray, `lightest` -> Light Gray.
+   `medium` may also appear. Task 4.1 replaces this provisional list with the probe's four observed names.
 4. **Token sets.** Each theme defines workspace, panel, header, field, hover, selected, border, text, status and
    focus tokens. The reference populates Medium Gray; the probe populates the other three.
 5. **Manual override.** The guide's Appearance row offers `Auto / Black / Dark Gray / Medium Gray / Light Gray`.
@@ -499,9 +545,10 @@ States follow the parent protocol. Only **4.1** is `current`.
 
 * [ ] **Task 4.1: Theme probe, reference freeze and token foundation**
   * **State:** `current`
-  * **Description:** Add a temporary UXP theme probe that displays `document.theme.getCurrent()`, live updates,
-    and the computed `--uxp-host-*` colours. Package a probe `.ccx`; capture Black, Dark Gray, Medium Gray and
-    Light Gray. Freeze the four palettes and the semantic token sheet.
+  * **Description:** Add a temporary UXP theme probe (`tools/theme-probe/`, packaged with
+    `npm run probe:package`) that displays `document.theme.getCurrent()`, live updates, the computed
+    `--uxp-host-*` colours and `app.appSkinInfo`. Capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the
+    four palettes and the semantic token sheet in 10.3.1.
   * **Acceptance Criteria:** The probe reports a theme name for each of the four Photoshop themes; a live change
     is observed; the four palettes are documented; the token sheet covers every role; no reskin behaviour ships
     from this task.
@@ -631,3 +678,4 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 | 2026-11-01 | Task 3.6 verified and marked Done. The full-panel guide takeover, GitHub row and https-only `open-url` bridge are implemented. |
 | 2026-11-01 | Task 3.7 verified and marked Done. Version bumped to 1.1.0, `tsc`/build/plugin pass, docs synced, and the 1.1.0 `.ccx` packaged. In-Photoshop acceptance remains the user's manual check. |
 | 2026-11-01 | V1.2 plan locked. The Photoshop reference sampled Medium Gray chrome; the four-theme host relay, flat native skin, line icons, Segoe UI, neutral selection and manual Appearance override were agreed. Stage 4 added with Task 4.1 current. |
+| 2026-11-01 | Task 4.1 probe built in `tools/theme-probe/` and packaged as `Lumiform-ThemeProbe-1.0.0.ccx`. It reports the theme name, live `onUpdated` events, `--uxp-host-*` colours and `app.appSkinInfo`. Four theme captures are the remaining 4.1 evidence; the palette table stays `pending` until then. |

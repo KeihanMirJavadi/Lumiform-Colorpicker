@@ -980,7 +980,7 @@
           <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">4.1 Theme probe, reference freeze and token foundation</div>
-              <div class="task-desc">Add a temporary UXP theme probe that displays <code>document.theme.getCurrent()</code>, live theme changes and the computed <code>--uxp-host-*</code> colours. Package a probe <code>.ccx</code>; capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the four palettes and the semantic token sheet.</div>
+              <div class="task-desc">Add a temporary UXP theme probe (<code>tools/theme-probe/</code>, packaged by <code>npm run probe:package</code>) that displays <code>document.theme.getCurrent()</code>, live theme changes, the computed <code>--uxp-host-*</code> colours and <code>app.appSkinInfo</code>. Capture Black, Dark Gray, Medium Gray and Light Gray. Freeze the four palettes and the semantic token sheet.</div>
               <div class="task-criteria">Criteria: The probe reports a theme name for each of the four Photoshop themes; a live change is observed; four palettes and the token sheet are documented; no reskin behaviour ships from this task.</div>
             </div>
             <span class="status-badge current">current</span>
@@ -1387,6 +1387,36 @@ black / darkGray / mediumGray / lightGray token sets
           If <code>document.theme</code> is unavailable, the panel defaults to Medium Gray and the manual
           Appearance row takes over.
         </p>
+      </div>
+
+      <h3>4.1 Theme probe <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">Built, awaiting captures</span></h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>What it measures</h4>
+          <p style="font-size:13px;">
+            A throwaway UXP panel, not part of the product and sharing no code with <code>plugin/</code>. It reports
+            <code>document.theme.getCurrent()</code>, live <code>onUpdated</code> values, every computed
+            <code>--uxp-host-*</code> variable with a swatch, <code>app.appSkinInfo</code> colour roles, the
+            <code>prefers-color-scheme</code> result and Photoshop/UXP versions. It writes nothing.
+          </p>
+          <p style="font-size:13px; margin-bottom:0;">
+            Source: <code>tools/theme-probe/</code><br />
+            Package: <code>npm run probe:package</code><br />
+            Output: <code>Lumiform-ThemeProbe-1.0.0.ccx</code>
+          </p>
+        </div>
+        <div class="card">
+          <h4>How to capture</h4>
+          <ol style="font-size:13px; margin:0; padding-left:18px; color:#cbd5e1;">
+            <li>Float the probe panel at about 460 x 920.</li>
+            <li>Open <em>Photoshop ▸ Settings ▸ Interface ▸ Color Theme</em>.</li>
+            <li>Select Black, Dark Gray, Medium Gray and Light Gray in turn.</li>
+            <li>Screenshot the probe in each theme; the change log should show a <code>live</code> entry.</li>
+          </ol>
+          <p style="font-size:12px; color:#f59e0b; margin:10px 0 0;">
+            The four palette columns stay <code>pending</code> until these captures land. They are not guessed.
+          </p>
+        </div>
       </div>
 
       <h3>Locked decisions P1-P24</h3>
