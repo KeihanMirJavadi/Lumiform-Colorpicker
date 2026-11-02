@@ -8,7 +8,13 @@
 >
 > **V1.2 NATIVE PHOTOSHOP SKIN:** Stage 4 restyles the chrome to match Photoshop's four built-in themes. The
 > locked plan, sampled palette and theme architecture live in [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) section 10;
-> this file mirrors the Stage 4 task states. Chrome only - no renderer, lighting, framing or swatch-math changes.
+> this file mirrors the Stage 4 task states. Stage 4 is complete. Chrome only - no renderer, lighting, framing or
+> swatch-math changes.
+>
+> **V1.3 WORKSPACE LAYOUT:** Stage 5 makes the 3D preview a resizable reference sheet (bounded aspect up to 1:1),
+> splits the panel into a fixed dock and a scrolling section list, and compacts Time of Day and the 5-Value Ramp.
+> The locked plan is [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) section 11; this file mirrors the Stage 5 task states.
+> It is the first phase since V1.0 that touches framing, and only framing.
 
 ---
 
@@ -355,7 +361,45 @@ lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unc
   * **Description:** The guide is a flat native dialog (1 px border, 2 px radius, 28-30 px title bar, hairline section dividers, no shadow) with the Appearance row above GitHub. The UXP loading/error shell follows the four themes via `prefers-color-scheme` with `--uxp-host-*` fallbacks, a neutral spinner and no blue.
   * **Acceptance Criteria:** Met in the browser: the guide covers the panel, is readable in all four themes, Back/Esc/backdrop close it, and there is no blue in the guide or host shell. The in-Photoshop host-shell check is part of 4.7.
 
-* [ ] **Task 4.7: Verification, documentation and release**
+* [x] **Task 4.7: Verification, documentation and release**
+  * **State:** `Done`
+  * **Description:** Verified 320/420/600 across all four themes and in Photoshop, and checked contrast, focus, truncation and the unchanged time gradient. Closed the install defects: per-panel resets for Spheres, Sun & Atmosphere, Ground Surface & Color and Surface Finish & Reflectivity; the time-of-day slider alignment; the GitHub link (`launchProcess.schemes: ["https"]`); and Windows UXP keyboard forwarding (`command-queue.js`, one interactive modal session reused across a burst, released after 750 ms idle or pointer-leave). Synced the three docs, bumped to 1.2.0 and rebuilt the `.ccx`.
+  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; every earlier criterion is demonstrated; the four-theme screenshots and docs match; `Lumiform-Colorpicker-1.2.0.ccx` is produced and installed. In-Photoshop live acceptance of the session-modal latency remains a manual check. The WebView keyboard-focus handoff stays an Adobe Windows UXP limitation, worked around by forwarding shortcuts.
+
+### Stage 5: V1.3 - Workspace Layout
+
+Full plan, locked decisions W1-W14 and verification matrix live in **[AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md)
+section 11**. The preview gains a bounded aspect range from the reference 412:227 up to 1:1, a splitter and a fixed
+dock; only the four section rows scroll. It is the first phase since V1.0 that touches framing: `src/core/framing.ts`
+solves the camera and the three slot positions per aspect. Sphere geometry, materials, lighting, atmosphere,
+shaders and swatch maths stay untouched.
+
+* [ ] **Task 5.1: Aspect-aware framing**
   * **State:** `current`
-  * **Description:** Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild the `.ccx`.
-  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; every earlier criterion is demonstrated; four-theme screenshots and docs match; `Lumiform-Colorpicker-1.2.0.ccx` is produced.
+  * **Description:** Turn `src/core/framing.ts` into a pure `buildFraming(aspect)` that returns the vertical FOV, camera Z, horizon pitch and the three slot positions for any aspect in `[1.0, 1.815]`. Keep the reference `FRAMING` export. `Viewport.handleResize` re-solves the camera and moves the three meshes inside one animation frame.
+  * **Acceptance Criteria:** At 412:227 the render is unchanged. At 1:1 the spheres keep 40.0/27.8/10.4 % of frame height and their centre X fractions, the horizon stays at 55.1 %, nothing clips, and no lighting/material/shader value changes.
+
+* [ ] **Task 5.2: Fixed dock, splitter and scroll region**
+  * **State:** `planned`
+  * **Description:** Split the panel into a non-scrolling dock (preview, splitter, Time of Day row, Ramp row) and a scrolling section list. The splitter is a focusable separator with reference and 1:1 snaps, hover treatment, pointer capture and double-click toggle.
+  * **Acceptance Criteria:** The scrollbar exists only beside the four sections, the preview never moves when the list scrolls, and the splitter reaches both snaps and a 0-height list.
+
+* [ ] **Task 5.3: Collapsible Time of Day and floating slider**
+  * **State:** `planned`
+  * **Description:** Convert Time of Day to `<details>` with title, state, reset and chevron. Collapsed, one slider instance moves to a bare overlay on the preview's bottom edge: 35 % at rest, 100 % inside the bottom 28 px band, clickable throughout.
+  * **Acceptance Criteria:** Both states stay in sync with the lighting engine, the reset works in both, and sampling under the band still works unless the track is pressed.
+
+* [ ] **Task 5.4: Compact 5-Value Ramp**
+  * **State:** `planned`
+  * **Description:** Remove the in-body header; the row shows the sphere name and five mini chips; the body is five colour squares with tooltip/aria metadata.
+  * **Acceptance Criteria:** Click-to-paint and live recalculation are unchanged and no tag/hex text remains in the body.
+
+* [ ] **Task 5.5: Layout persistence and Reset layout**
+  * **State:** `planned`
+  * **Description:** Persist preview height, collapsed essentials and section open states in `localStorage`; add Reset layout to the guide.
+  * **Acceptance Criteria:** State survives a panel reload, invalid values fall back safely, and Reset layout restores the defaults.
+
+* [ ] **Task 5.6: Verification, documentation and release**
+  * **State:** `planned`
+  * **Description:** Run the section 11.3 matrix at 320/420/600 and in Photoshop, sync the three docs, bump to 1.3.0 and build the `.ccx`.
+  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; the matrix is demonstrated; `Lumiform-Colorpicker-1.3.0.ccx` is produced.

@@ -1,10 +1,12 @@
-# AI_CONTEXT_UI.md - V1.1 UI Redesign & V1.2 Native Photoshop Skin
+# AI_CONTEXT_UI.md - V1.1 UI Redesign, V1.2 Native Photoshop Skin & V1.3 Workspace Layout
 
-> **AUDIENCE**: AI agents and developers implementing the V1.1 panel redesign and the V1.2 native Photoshop skin.
+> **AUDIENCE**: AI agents and developers implementing the V1.1 panel redesign, the V1.2 native Photoshop skin and
+> the V1.3 workspace layout.
 > **PARENT DOCUMENT**: [AI_CONTEXT.md](./AI_CONTEXT.md) - architecture, lighting model, add-on runtime and the
 > authoritative roadmap states. Read that file first; this file covers the UI phases.
 >
-> **V1.2 PLAN**: The locked native-skin plan is section 10. V1.1 is shipped; V1.2 is the active UI phase.
+> **PHASE PLANS**: Section 10 is the locked V1.2 native-skin plan (complete). Section 11 is the locked V1.3
+> workspace-layout plan (active). V1.1 lives in sections 3-6.
 
 ---
 
@@ -12,18 +14,18 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, 4.7 current) |
-| Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin` |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, complete) · **V1.3 - Workspace Layout** (Stage 5, 5.1 current) |
+| Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin`; V1.3: `feature/5.1-workspace-layout` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
-| Current release | v1.1.0 - `release/Lumiform-Colorpicker-1.1.0.ccx` |
-| Next release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built, awaiting install/review) |
-| Current task | **4.7 - Verification, documentation and release** |
-| Renderer changes | None across V1.1/V1.2. `src/core/framing.ts` and the shaders stay untouched. |
+| Current release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built and installed) |
+| Next release | v1.3.0 |
+| Current task | **5.1 - Aspect-aware framing** |
+| Renderer changes | None in V1.1/V1.2. V1.3 re-solves `src/core/framing.ts` (camera and slot positions per aspect); sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
-| Deferred | The 1:1 canvas request (item 1 of the original brief) is **out of scope** for both UI phases. |
+| Deferred | The WebView keyboard focus handoff (Adobe Windows UXP bug) stays open; shortcut forwarding is the shipped workaround. |
 
-The V1.1 panel is built and packaged. V1.2 restyles its chrome to Photoshop's four built-in themes; it does not
-change the lighting, atmosphere, framing or swatch mathematics. The V1.2 plan is section 10.
+The V1.1 panel is built and packaged. V1.2 restyles its chrome to Photoshop's four built-in themes and V1.3 turns
+the 3D preview into a resizable reference sheet. The V1.2 plan is section 10; the V1.3 plan is section 11.
 
 ---
 
@@ -32,14 +34,14 @@ change the lighting, atmosphere, framing or swatch mathematics. The V1.2 plan is
 1. Read [AI_CONTEXT.md](./AI_CONTEXT.md) section 1 (the operating protocol) - it still governs task states,
    the single-`current` rule and the approval gate.
 2. Read this file end to end before writing UI code.
-3. Find the active task: section 6 for the V1.1 tasks (complete) or section 10 for V1.2. Only **4.1** is
-   `current`; implement only that task.
+3. Find the active task: section 6 (V1.1, complete), section 10 (V1.2, complete) or section 11 (V1.3,
+   active). Only **5.1** is `current`; implement only that task.
 4. Report, wait for approval, then sync states in **three** places: `AI_CONTEXT.md`, this file and
    `Docs/index.html`.
 
 Sections 3-5 are the V1.1 behavioural design and remain normative. Section 10 is normative for the V1.2 visual
-skin and theme behaviour. If an implementation detail contradicts either, the document wins until the user
-says otherwise.
+skin and theme behaviour. Section 11 is normative for the V1.3 workspace layout. If an implementation detail
+contradicts any of them, the document wins until the user says otherwise.
 
 ---
 
@@ -89,7 +91,8 @@ running `npm run plugin` first, or the WebView will 404 on `web/index.html`.
 
 * **Minimum panel width 320 px**, docked default 420x780, floating 460x820 (`plugin/manifest.json`).
   Every layout decision must survive 320 px; treat 600 px as the widest common case.
-* The panel scrolls as a whole (`.panel-content`); the header and status bar stay put.
+* The panel scrolls as a whole (`.panel-content`) in V1.1/V1.2; the header and status bar stay put. V1.3
+  replaces this with a fixed dock (preview + Time of Day + Ramp) and a scrolling section list (section 11).
 * `<details>` / `<summary>` are supported by WebView2 and WKWebView and are the chosen disclosure primitive.
 * No network access, no external fonts required by the build. `_AdobeCleanFont/` in the repo root is an
   untracked asset pack supplied by the user; V1.2 uses Segoe UI/system instead because the pack's licence is
@@ -117,6 +120,18 @@ running `npm run plugin` first, or the WebView will 404 on `web/index.html`.
 * `npx tsc --noEmit`, `npm run build` and `npm run plugin` pass.
 * Verified at 320/420/600 px and in Photoshop by switching all four themes live.
 * Version 1.2.0 and the `.ccx` are built; the three docs are synced.
+
+### 2.7 Definition of done for V1.3
+
+* Every task in section 11.2 is `Done`.
+* The preview runs from the reference 412:227 shape up to 1:1, and the three spheres keep their reference
+  composition at every allowed aspect without clipping.
+* The preview, Time of Day and the Ramp are a fixed dock; only the four collapsible sections scroll.
+* The splitter, the floating time slider and the compact ramp work at 320, 420 and 600 px and in both a tall
+  narrow dock and a short wide one.
+* No sphere geometry, material, lighting, atmosphere, shader or swatch-math change.
+* `npx tsc --noEmit`, `npm run build` and `npm run plugin` pass; version 1.3.0 and the `.ccx` are built; the
+  three docs are synced.
 
 ---
 
@@ -581,7 +596,7 @@ Rules:
 
 ### 10.5 Stage 4 roadmap
 
-States follow the parent protocol. Only **4.7** is `current`.
+States follow the parent protocol. Every Stage 4 task is `Done`; Stage 5 (section 11) is active.
 
 * [x] **Task 4.1: Theme probe, reference freeze and token foundation**
   * **State:** `Done`
@@ -642,13 +657,20 @@ States follow the parent protocol. Only **4.7** is `current`.
     (verified by computed colours), Back/Esc/backdrop close it, sections stay flat, and there is no blue in the
     guide or host shell. The in-Photoshop host-shell check is part of 4.7.
 
-* [ ] **Task 4.7: Verification, documentation and release**
-  * **State:** `current`
-  * **Description:** Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check
-    contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild
-    the `.ccx`.
-  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; every earlier criterion is
-    demonstrated; the four-theme screenshots and docs match; `Lumiform-Colorpicker-1.2.0.ccx` is produced.
+* [x] **Task 4.7: Verification, documentation and release**
+  * **State:** `Done`
+  * **Description:** Verified 320/420/600 across all four themes and in Photoshop by switching themes live, and
+    checked contrast, focus, truncation and the unchanged time gradient. Closed the defects found during install:
+    per-panel reset buttons for Spheres, Sun & Atmosphere, Ground Surface & Color and Surface Finish &
+    Reflectivity; the time-of-day slider alignment at 320/420/600; the GitHub link (`launchProcess.schemes:
+    ["https"]`); and Windows UXP keyboard forwarding (`plugin/command-queue.js`, one interactive modal session
+    reused across a shortcut burst, released after 750 ms idle or on pointer-leave). Synced the three docs, bumped
+    to 1.2.0 and rebuilt `release/Lumiform-Colorpicker-1.2.0.ccx`.
+  * **Acceptance Criteria:** Met - `tsc --noEmit`, `npm run build` and `npm run plugin` pass; every earlier
+    criterion is demonstrated; the four-theme screenshots and docs match; `Lumiform-Colorpicker-1.2.0.ccx` is
+    produced and installed. In-Photoshop live acceptance of the session-modal latency remains a manual check; the
+    known limit (the WebView cannot hand keyboard focus back to Photoshop on Windows) is documented and worked
+    around by forwarding shortcuts.
 
 ### 10.6 Verification matrix
 
@@ -718,7 +740,137 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 
 ---
 
-## 11. Change Log
+## 11. V1.3 - Workspace Layout
+
+### 11.0 Status and goal
+
+V1.2 shipped a chrome-only skin and the preview stayed locked to 412:227. In a docked 235-260 px column that is a
+130-145 px picture: the fixed shape is the reason artists cannot fit the panel to their workspace. V1.3 makes the
+preview a resizable reference sheet with a bounded aspect range, gives it a fixed dock and compacts the two
+always-open essentials. It is the first phase since V1.0 that touches framing, and only framing: the camera and
+the three sphere slot positions are re-solved per aspect, while sphere geometry, materials, lighting, atmosphere,
+shaders and swatch maths stay exactly as they are.
+
+### 11.1 Locked decision register (W1-W14)
+
+| # | Decision | Locked value |
+|---|---|---|
+| W1 | Phase | V1.3, Stage 5. Starts only after 1.2.0 is closed out and pushed. |
+| W2 | Aspect range | Bounded, never portrait: `height <= width`. Snap stops at the reference 412:227 (`height = 0.551 x width`) and 1:1 (`height = width`). No arbitrary ratios beyond the range. |
+| W3 | Framing behaviour | Fill. The three spheres keep their reference fractions of frame height (40.0 / 27.8 / 10.4 %) and their centre X fractions (49.9 / 79.0 / 18.8 %); the horizon stays at 55.1 % of height. Camera and slot positions are re-solved for the actual aspect. Because the aspect never drops below 1.0, the composition never clips. |
+| W4 | Resize source | Photoshop's native panel resize sets the width. A 6 px drag splitter directly under the preview sets its height. |
+| W5 | Panel width change | Keep the height the user set and clamp it to the new width. Double-click toggles the two snap stops (reference <-> 1:1). |
+| W6 | Splitter affordance | 6 px grab strip, 1 px rule in the middle, transparent until hover; strong line plus `row-resize` on hover and while dragging. `role="separator"`, focusable; Arrow 8 px, Shift+Arrow 32 px, Home = reference, End = 1:1. |
+| W7 | Dock order | `header -> preview (+ floating slider) -> splitter -> Time of Day row -> Ramp row -> scrolling section list -> status bar`. The scrollbar belongs to the list only. |
+| W8 | List minimum | None. The list may be dragged to 0 and hidden completely. The splitter stays reachable above the Time of Day row; "Reset layout" in the guide restores a working split. |
+| W9 | Wheel | Hovering the preview or the dock never scrolls anything. Only the section list scrolls, with the pointer over it. |
+| W10 | Time of Day | Row: `Time of Day` + state (`Midday`, `Midday - edited`) + reset (always visible, in both states) + chevron. Expanded: the seven icons and the slider in place. Collapsed: a bare slider track floats on the bottom inside edge of the preview - 35 % at rest, 100 % while the pointer is in the bottom 28 px band, back to 35 % on leave; clickable and draggable at all times; sampling under the band still works unless the track itself is pressed. |
+| W11 | 5-Value Ramp | No in-body header. Row: `5-Value Ramp` + selected sphere name + five mini chips + chevron. Expanded body: five colour squares only, no tag, no hex, no hint; `title` and `aria-label` carry the tone and hex. Clicking still paints. |
+| W12 | Persistence | `localStorage`: preview height, Time of Day collapsed, Ramp collapsed, the four section open states. "Reset layout" in the guide clears all of them. |
+| W13 | Existing resets | The four per-panel reset buttons (Spheres, Sun, Ground, Finish) and the Time of Day reset are unchanged. |
+| W14 | Scope guard | No sphere geometry, material, light, atmosphere, shader or swatch-math change. Only `src/core/framing.ts`, the viewport layout code, the panel DOM/CSS and layout persistence change. |
+
+### 11.2 Stage 5 roadmap
+
+States follow the parent protocol. Only **5.1** is `current`.
+
+* [ ] **Task 5.1: Aspect-aware framing**
+  * **State:** `current`
+  * **Description:** Turn `src/core/framing.ts` into a pure `buildFraming(aspect)` that returns the camera Z, the
+    vertical FOV, the horizon pitch and the three slot positions for any aspect in `[1.0, 1.815]`. Keep the
+    exported reference `FRAMING` for the initial build so `sphereSlots.ts` and every consumer stay source
+    compatible. `Viewport.handleResize` re-solves the camera and moves the three meshes when the container aspect
+    changes, inside one animation frame.
+  * **Acceptance Criteria:** At 412:227 the render is pixel-identical to V1.2. At 1:1 the near/mid/far spheres keep
+    40.0/27.8/10.4 % of frame height, their centre X fractions, and the horizon at 55.1 %; nothing clips. No
+    lighting, material, atmosphere or shader value changes. `tsc --noEmit` passes.
+
+* [ ] **Task 5.2: Fixed dock, splitter and scroll region**
+  * **State:** `planned`
+  * **Description:** Restructure the panel into a non-scrolling dock (preview, splitter, Time of Day row, Ramp row)
+    and a scrolling section list. Implement the splitter as a focusable separator with the snap stops, hover
+    treatment, pointer capture, double-click toggle and rAF-throttled height updates.
+  * **Acceptance Criteria:** The scrollbar exists only beside the four sections; the preview never moves when the
+    list scrolls; the splitter reaches both snaps and 0-height list; keyboard and pointer both work.
+
+* [ ] **Task 5.3: Collapsible Time of Day and floating slider**
+  * **State:** `planned`
+  * **Description:** Convert the Time of Day section to `<details>` with the row described in W10 and move the
+    slider to a floating overlay on the preview while collapsed. One slider instance, moved in the DOM, keeps the
+    value authoritative.
+  * **Acceptance Criteria:** Expanded shows icons + slider; collapsed shows the row + floating slider; the 35/100/35
+    opacity behaviour and the 28 px reveal band work; the slider still snaps and relights; the reset works in both
+    states.
+
+* [ ] **Task 5.4: Compact 5-Value Ramp**
+  * **State:** `planned`
+  * **Description:** Remove the in-body header, keep the row with the sphere name and five mini chips, and shrink
+    the expanded body to five squares with tooltip/aria metadata.
+  * **Acceptance Criteria:** Clicking still paints; the ramp still follows the selected sphere and every lighting
+    change; no tag or hex text remains in the body.
+
+* [ ] **Task 5.5: Layout persistence and Reset layout**
+  * **State:** `planned`
+  * **Description:** Persist the layout state in `localStorage`, restore it before first paint where possible, and
+    add "Reset layout" to the Controls Guide.
+  * **Acceptance Criteria:** A pinned height, collapsed essentials and open sections survive a panel reload;
+    corrupt or out-of-range values fall back safely; Reset layout restores the defaults.
+
+* [ ] **Task 5.6: Verification, documentation and release**
+  * **State:** `planned`
+  * **Description:** Verify the matrix in 11.3 at 320/420/600 and in Photoshop, update the three docs, bump to
+    1.3.0 and build the `.ccx`.
+  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; the matrix is demonstrated;
+    the docs match; `Lumiform-Colorpicker-1.3.0.ccx` is produced.
+
+### 11.3 Verification matrix
+
+| Area | 320 px | 420 px | 600 px | Tall narrow dock | Short wide dock | In Photoshop |
+|---|---|---|---|---|---|---|
+| Reference 412:227 render identical | required | required | required | - | - | required |
+| 1:1 render, no clip | required | required | required | required | - | required |
+| Intermediate aspect via splitter | required | required | required | required | required | required |
+| Panel width change keeps height | - | - | - | required | required | required |
+| Dock fixed, list scrolls | required | required | required | required | required | required |
+| List hidden to 0 and restored | required | - | - | required | required | required |
+| Floating time slider reveal/opacity | required | required | required | required | required | required |
+| Compact ramp, click to paint | required | required | required | required | required | required |
+| Layout persistence | - | - | - | - | - | required |
+| Four themes unchanged | required | required | required | required | required | required |
+
+### 11.4 Risks and fallbacks
+
+1. **Framing re-solve moves the spheres.** The eyedropper reticle and sampling use container coordinates, so
+   verify that sampling still matches the rendered pixel after a resize. Fallback: sample from the renderer
+   readback the same way, independent of slot positions.
+2. **Renderer resize cost while dragging.** Throttle `setSize` and the camera update to one animation frame and
+   avoid reallocating geometry.
+3. **A DOM slider over a WebGL canvas.** Keep the overlay outside the canvas element, with pointer events only on
+   the track, and do not put a compositing layer over the whole canvas.
+4. **Hidden list discoverability.** The splitter is always visible above the Time of Day row; double-click returns
+   to a snap stop; the guide documents Reset layout.
+5. **`localStorage` inside the UXP WebView.** The theme preference already persists there; verify layout values
+   survive a full panel reload and fall back to defaults when invalid.
+6. **Short-panel arithmetic.** The preview plus the two rows can exceed a very short panel; clamp the preview first
+   and let the list reach 0 rather than overflowing the panel.
+7. **Scope creep.** No lighting, material, atmosphere, shader or swatch change in this phase.
+
+### 11.5 File map for V1.3
+
+| File | V1.3 responsibility |
+|---|---|
+| `src/core/framing.ts` | `buildFraming(aspect)`, reference export retained |
+| `src/render/Viewport.ts` | Re-solve camera and slots on resize inside one frame |
+| `src/ui/shell.ts` | Dock structure, splitter, Time of Day disclosure, floating slider, persistence wiring |
+| `src/ui/swatchRamp.ts` | Compact body, row summary and mini chips |
+| `src/ui/layout.ts` | New: splitter controller and `localStorage` layout store |
+| `src/ui/styles/theme.css` | Dock/scroll regions, splitter, floating slider, compact ramp |
+| `Docs/AI_CONTEXT_UI.md` | This plan |
+| `Docs/index.html` | Human tracker: Stage 5 |
+
+---
+
+## 12. Change Log
 
 | Date | Change |
 |---|---|
@@ -738,3 +890,5 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 | 2026-11-01 | Task 4.4 Done. All 14 emoji and the info/reset/close/external glyphs are replaced by 19 inline 16 px line SVGs (1.5 px stroke, `currentColor`); the seven time icons stay on one row at 320 px and labels/aria text are unchanged. Version bumped to 1.2.0 and `release/Lumiform-Colorpicker-1.2.0.ccx` packaged for the first in-Photoshop review. Task 4.5 is current. |
 | 2026-11-01 | Task 4.5 Done. The host relays `document.theme` live and appends `?theme=` to the WebView URL; the bridge exposes `onThemeChange`; the guide's Appearance row offers Auto plus the four themes and persists the choice in `localStorage`. Verified in the browser with the mock: Auto follows simulated host switches, a pinned theme survives reloads and ignores host changes, and the URL bootstrap paints the right palette before the shell renders. The 1.2.0 package was rebuilt with the relay. Task 4.6 is current. |
 | 2026-11-01 | Task 4.6 Done. The guide is a flat native dialog (1 px border, 2 px radius, compact title bar, hairline section dividers, no shadow) with the Appearance row above GitHub; Back/Esc/backdrop all close it. The UXP loading/error shell now follows the four themes through `prefers-color-scheme` with `--uxp-host-*` fallbacks, a neutral spinner and no blue. Verified in the browser; the host-shell theme check remains for 4.7, which is current. |
+| 2026-11-02 | Task 4.7 Done and V1.2 closed. Per-panel reset buttons for Spheres, Sun & Atmosphere, Ground Surface & Color and Surface Finish & Reflectivity; the time-of-day slider re-centred at 320/420/600; the GitHub link fixed through `launchProcess.schemes: ["https"]`; Windows UXP keyboard forwarding added (`command-queue.js`, one interactive modal session reused across a burst, released after 750 ms idle or pointer-leave). `tsc`/build/plugin pass, `Lumiform-Colorpicker-1.2.0.ccx` packaged and installed, docs synced. |
+| 2026-11-02 | V1.3 plan locked as Stage 5 (section 11). The preview becomes a resizable reference sheet: bounded aspect from 412:227 to 1:1, fill framing with re-solved camera and slots, a splitter under the preview, a fixed dock for the preview + Time of Day + Ramp, a scrolling section list that can be hidden to 0, a bare floating time slider at 35/100/35 % opacity, a compact ramp with no in-body header, and persisted layout state. No lighting, material, atmosphere, shader or swatch change. Task 5.1 is current. |

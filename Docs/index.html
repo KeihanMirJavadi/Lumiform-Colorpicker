@@ -375,7 +375,7 @@
       <button class="nav-btn" onclick="switchTab('roadmap')">5. Roadmap</button>
       <button class="nav-btn" onclick="switchTab('depth')">6. Depth</button>
       <button class="nav-btn" onclick="switchTab('ui')">7. V1.1 UI</button>
-      <button class="nav-btn" onclick="switchTab('ps-skin')">8. V1.2 Skin</button>
+      <button class="nav-btn" onclick="switchTab('ps-skin')">8. Skins &amp; Layout</button>
     </nav>
   </header>
 
@@ -442,7 +442,7 @@
         </div>
       </div>
       <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">
-        Install: download <code>Lumiform-Colorpicker-1.1.0.ccx</code> (or build it with <code>npm run plugin</code>),
+        Install: download <code>Lumiform-Colorpicker-1.2.0.ccx</code> (or build it with <code>npm run plugin</code>),
         double-click it through Creative Cloud, or load <code>plugin/manifest.json</code> through UXP Developer Tool.
         Full guide: <code>Docs/PHOTOSHOP.md</code>.
       </p>
@@ -461,7 +461,7 @@
         </p>
       </div>
 
-      <h3>V1.2 - Native Photoshop Skin <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span></h3>
+      <h3>V1.2 - Native Photoshop Skin <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span></h3>
       <div class="card">
         <p>
           Photoshop's chrome is a neutral gray system; Lumiform's is still a dark web card stack with a bright blue
@@ -472,10 +472,30 @@
         <p>
           It follows all four Photoshop themes (Black, Dark Gray, Medium Gray, Light Gray) through a UXP host relay
           of <code>document.theme</code>, with a manual Appearance override in the guide. Task 4.1 verified the
-          reference capture as Dark Gray and froze all four palettes from Adobe's own theme files.
+          reference capture as Dark Gray and froze all four palettes from Adobe's own theme files. The release also
+          added per-panel resets, fixed the GitHub link, and shipped Windows keyboard forwarding with a command queue
+          and a reused modal session.
         </p>
         <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
           Locked decisions P1-P24, sampled palette, theme architecture and the Stage 4 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> section 10 -
+          see <a href="#" onclick="switchTab('ps-skin'); return false;" style="color:#93c5fd;">tab 8</a>.
+        </p>
+      </div>
+
+      <h3>V1.3 - Workspace Layout <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span></h3>
+      <div class="card">
+        <p>
+          The 3D canvas is a reference sheet, but its fixed 412:227 shape is 130-145 px tall in a docked column. V1.3
+          lets the preview take any shape from the reference up to 1:1, with a splitter directly under it and a
+          bounded fill that keeps the three spheres composed without clipping.
+        </p>
+        <p>
+          The preview, Time of Day and the 5-Value Ramp become a fixed dock; only the four collapsible sections
+          scroll, and that list can be dragged to zero. Time of Day folds to a row with the slider floating on the
+          preview's bottom edge, and the ramp loses its in-body header and text labels. Layout state persists.
+        </p>
+        <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
+          Locked decisions W1-W14, the framing contract and the Stage 5 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> section 11 -
           see <a href="#" onclick="switchTab('ps-skin'); return false;" style="color:#93c5fd;">tab 8</a>.
         </p>
       </div>
@@ -530,7 +550,7 @@
           <li><strong>Panel shell:</strong> <code>plugin/index.html</code> — full-size WebView plus loading/error overlays.</li>
           <li><strong>Host relay:</strong> <code>plugin/main.js</code> — reads/writes <code>app.foregroundColor</code>, coalesces rapid samples, polls external changes.</li>
           <li><strong>WebView bridge:</strong> <code>src/bridge/WebViewPhotoshopBridge.ts</code> — implements the same bridge interface as the mock.</li>
-          <li><strong>Package:</strong> <code>npm run plugin</code> → <code>release/Lumiform-Colorpicker-1.1.0.ccx</code>.</li>
+          <li><strong>Package:</strong> <code>npm run plugin</code> → <code>release/Lumiform-Colorpicker-1.2.0.ccx</code>.</li>
         </ul>
         <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
           The web app is inlined into one HTML file to avoid module/asset resolution on the <code>plugin:/</code> origin.
@@ -973,7 +993,7 @@
       <div class="stage-card">
         <div class="stage-header">
           <div class="stage-title">Stage 4: V1.2 - Native Photoshop Skin</div>
-          <span class="status-badge current" id="stage4-badge">In Progress</span>
+          <span class="status-badge done" id="stage4-badge">Complete</span>
         </div>
         <div class="task-list">
 
@@ -1031,13 +1051,78 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">4.7 Verification, documentation and release</div>
-              <div class="task-desc">Verify 320/420/600 across all four themes and in Photoshop by switching themes live. Check contrast, focus, truncation and the unchanged time gradient. Sync the three docs, bump to 1.2.0 and rebuild the <code>.ccx</code>.</div>
-              <div class="task-criteria">Criteria: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; every earlier criterion is demonstrated; four-theme screenshots and docs match; <code>Lumiform-Colorpicker-1.2.0.ccx</code> is produced.</div>
+              <div class="task-desc">Verified 320/420/600 across all four themes and in Photoshop, and checked contrast, focus, truncation and the unchanged time gradient. Closed the install defects: per-panel resets for Spheres, Sun &amp; Atmosphere, Ground Surface &amp; Color and Surface Finish &amp; Reflectivity; the time-of-day slider alignment; the GitHub link (<code>launchProcess.schemes: ["https"]</code>); and Windows UXP keyboard forwarding (<code>command-queue.js</code>, one interactive modal session reused across a burst, released after 750 ms idle or pointer-leave). Synced the three docs, bumped to 1.2.0 and rebuilt the <code>.ccx</code>.</div>
+              <div class="task-criteria">Met: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; every earlier criterion is demonstrated; the four-theme screenshots and docs match; <code>Lumiform-Colorpicker-1.2.0.ccx</code> is produced and installed. Session-modal latency remains a manual check; the WebView focus handoff stays an Adobe limitation, worked around by forwarding shortcuts.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STAGE 5 -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">Stage 5: V1.3 - Workspace Layout</div>
+          <span class="status-badge current" id="stage5-badge">In Progress</span>
+        </div>
+        <div class="task-list">
+
+          <div class="task-item" data-status="current">
+            <div class="task-info">
+              <div class="task-name">5.1 Aspect-aware framing</div>
+              <div class="task-desc">Turn <code>src/core/framing.ts</code> into a pure <code>buildFraming(aspect)</code> that returns the vertical FOV, camera Z, horizon pitch and the three slot positions for any aspect in <code>[1.0, 1.815]</code>. Keep the reference <code>FRAMING</code> export. <code>Viewport.handleResize</code> re-solves the camera and moves the three meshes inside one animation frame.</div>
+              <div class="task-criteria">Criteria: at 412:227 the render is unchanged; at 1:1 the spheres keep 40.0/27.8/10.4 % of frame height and their centre X fractions, the horizon stays at 55.1 %, nothing clips, and no lighting, material or shader value changes.</div>
             </div>
             <span class="status-badge current">current</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">5.2 Fixed dock, splitter and scroll region</div>
+              <div class="task-desc">Split the panel into a non-scrolling dock (preview, splitter, Time of Day row, Ramp row) and a scrolling section list. The splitter is a focusable separator with reference and 1:1 snaps, hover treatment, pointer capture and a double-click toggle.</div>
+              <div class="task-criteria">Criteria: the scrollbar exists only beside the four sections, the preview never moves when the list scrolls, and the splitter reaches both snaps and a 0-height list.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">5.3 Collapsible Time of Day and floating slider</div>
+              <div class="task-desc">Convert Time of Day to <code>&lt;details&gt;</code> with title, state, reset and chevron. Collapsed, one slider instance moves to a bare overlay on the preview's bottom edge: 35 % at rest, 100 % inside the bottom 28 px band, clickable throughout.</div>
+              <div class="task-criteria">Criteria: both states stay in sync with the lighting engine, the reset works in both, and sampling under the band still works unless the track is pressed.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">5.4 Compact 5-Value Ramp</div>
+              <div class="task-desc">Remove the in-body header; the row shows the sphere name and five mini chips; the body is five colour squares with tooltip/aria metadata.</div>
+              <div class="task-criteria">Criteria: click-to-paint and live recalculation are unchanged and no tag or hex text remains in the body.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">5.5 Layout persistence and Reset layout</div>
+              <div class="task-desc">Persist preview height, collapsed essentials and section open states in <code>localStorage</code>; add Reset layout to the guide.</div>
+              <div class="task-criteria">Criteria: state survives a panel reload, invalid values fall back safely, and Reset layout restores the defaults.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">5.6 Verification, documentation and release</div>
+              <div class="task-desc">Run the section 11.3 matrix at 320/420/600 and in Photoshop, sync the three docs, bump to 1.3.0 and build the <code>.ccx</code>.</div>
+              <div class="task-criteria">Criteria: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; the matrix is demonstrated; <code>Lumiform-Colorpicker-1.3.0.ccx</code> is produced.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
           </div>
 
         </div>
@@ -1189,7 +1274,7 @@
         </p>
         <pre style="background:#191919; padding:16px; border-radius:6px; color:#38bdf8; font-size:12px; overflow-x:auto;">
 +--------------------------------------------------------------+
-| HEADER   Lumiform Colorpicker        v1.1.0            [ i ] |
+| HEADER   Lumiform Colorpicker        v1.2.0            [ i ] |
 +--------------------------------------------------------------+
 | CANVAS   412:227, fixed camera, eyedropper reticle           |
 +--------------------------------------------------------------+
@@ -1314,12 +1399,13 @@
 
     <!-- TAB 8: V1.2 NATIVE PHOTOSHOP SKIN -->
     <div id="ps-skin" class="tab-content">
-      <h2>V1.2 - Native Photoshop Skin</h2>
+      <h2>V1.2 Skin &amp; V1.3 Workspace Layout</h2>
       <p>
         V1.2 makes the panel read as a native Photoshop panel across all four built-in themes. It is a chrome-only
         reskin: the renderer, camera framing, lighting, atmosphere and swatch mathematics stay untouched. The
         time-of-day gradient is the one intentional exception and stays exactly as it is.
-        <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">In Progress</span>
+        <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">V1.2 Complete</span>
+        <span class="badge-tag" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.5);">V1.3 In Progress</span>
       </p>
 
       <div class="grid-2">
@@ -1464,7 +1550,7 @@ black / darkGray / mediumGray / lightGray token sets
           <tr><td>4.4 Typography and icon set</td><td><span class="status-badge done">Done</span></td><td>Segoe UI, sentence case, 19 line icons.</td></tr>
           <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge done">Done</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
           <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge done">Done</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
-          <tr><td>4.7 Verification, documentation and release</td><td><span class="status-badge current">current</span></td><td>Four-theme checks, docs sync, 1.2.0 <code>.ccx</code>.</td></tr>
+          <tr><td>4.7 Verification, documentation and release</td><td><span class="status-badge done">Done</span></td><td>Resets, GitHub link, keyboard forwarding, docs sync, 1.2.0 <code>.ccx</code>.</td></tr>
         </tbody>
       </table>
 
@@ -1506,18 +1592,64 @@ black / darkGray / mediumGray / lightGray token sets
           </p>
         </div>
         <div class="card">
-          <h4>Scope</h4>
+          <h4>Scope (V1.2)</h4>
           <p style="font-size:13px;">
-            No renderer, framing, lighting, atmosphere or swatch-math changes. If a task needs one, stop and ask.
+            V1.2 made no renderer, framing, lighting, atmosphere or swatch-math changes. V1.3 is the first phase to
+            touch framing: camera and slot positions are re-solved per aspect; everything else stays frozen.
           </p>
         </div>
       </div>
 
+      <h3>V1.3 - Workspace Layout</h3>
+      <p>
+        The 3D canvas is a reference sheet, but its fixed 412:227 shape is only 130-145 px tall in a docked column.
+        V1.3 gives the preview any shape from the reference up to 1:1, with a splitter directly under it, a fixed
+        dock for the preview, Time of Day and the ramp, and a section list that can be hidden to zero.
+      </p>
+
+      <h4>Locked decisions (W1-W14)</h4>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Decision</th><th>Locked value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>W1</td><td>Phase</td><td>V1.3, Stage 5, after 1.2.0 closes out.</td></tr>
+          <tr><td>W2</td><td>Aspect range</td><td>Bounded, never portrait: <code>height &lt;= width</code>; snaps at 412:227 and 1:1.</td></tr>
+          <tr><td>W3</td><td>Framing</td><td>Fill: spheres keep the reference fractions of height and width; camera and slots are re-solved per aspect; nothing clips.</td></tr>
+          <tr><td>W4</td><td>Resize</td><td>Photoshop resizes the panel; a 6 px splitter under the preview sets its height.</td></tr>
+          <tr><td>W5</td><td>Width change</td><td>Keep the chosen height, clamp to the new width; double-click toggles reference &lt;-&gt; 1:1.</td></tr>
+          <tr><td>W6</td><td>Splitter</td><td>Hover highlight, <code>row-resize</code>, separator role; Arrow 8 px, Shift+Arrow 32 px, Home/End snaps.</td></tr>
+          <tr><td>W7</td><td>Dock order</td><td>Header, preview, splitter, Time of Day row, Ramp row, scrolling list, status bar.</td></tr>
+          <tr><td>W8</td><td>List minimum</td><td>None; it can be hidden to 0. The splitter stays reachable; Reset layout restores.</td></tr>
+          <tr><td>W9</td><td>Wheel</td><td>Hovering the preview or the dock never scrolls anything.</td></tr>
+          <tr><td>W10</td><td>Time of Day</td><td>Row with state, reset and chevron; collapsed, a bare slider floats on the preview at 35 / 100 / 35 % opacity.</td></tr>
+          <tr><td>W11</td><td>Ramp</td><td>No in-body header; row with sphere name and five mini chips; body is five squares with tooltip/aria.</td></tr>
+          <tr><td>W12</td><td>Persistence</td><td>Preview height, collapsed essentials and section states in <code>localStorage</code>; Reset layout in the guide.</td></tr>
+          <tr><td>W13</td><td>Resets</td><td>The four per-panel resets and the Time of Day reset are unchanged.</td></tr>
+          <tr><td>W14</td><td>Scope</td><td>Framing plus panel DOM/CSS only; no lighting, material, atmosphere, shader or swatch change.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Stage 5 Roadmap</h4>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>5.1 Aspect-aware framing</td><td><span class="status-badge current">current</span></td><td><code>buildFraming(aspect)</code>; identical at 412:227, no clip at 1:1.</td></tr>
+          <tr><td>5.2 Fixed dock, splitter and scroll region</td><td><span class="status-badge planned">planned</span></td><td>Scrollbar beside the sections only; splitter snaps and 0-height list.</td></tr>
+          <tr><td>5.3 Collapsible Time of Day and floating slider</td><td><span class="status-badge planned">planned</span></td><td>Icons + slider expanded; bare 35/100/35 % track collapsed.</td></tr>
+          <tr><td>5.4 Compact 5-Value Ramp</td><td><span class="status-badge planned">planned</span></td><td>No in-body header; five squares; tooltip/aria metadata.</td></tr>
+          <tr><td>5.5 Layout persistence and Reset layout</td><td><span class="status-badge planned">planned</span></td><td>Layout survives reloads; Reset layout in the guide.</td></tr>
+          <tr><td>5.6 Verification, documentation and release</td><td><span class="status-badge planned">planned</span></td><td>Matrix at 320/420/600 and in Photoshop; 1.3.0 <code>.ccx</code>.</td></tr>
+        </tbody>
+      </table>
+
       <div class="card">
         <h4>Source of Truth</h4>
         <p style="font-size:13px; margin-bottom:0;">
-          Locked plan, full task criteria and the verification matrix:
-          <code>Docs/AI_CONTEXT_UI.md</code> section 10. Parent roadmap: <code>Docs/AI_CONTEXT.md</code> Stage 4.
+          V1.2 plan, full task criteria and verification matrix: <code>Docs/AI_CONTEXT_UI.md</code> section 10.
+          V1.3 plan: section 11. Parent roadmap: <code>Docs/AI_CONTEXT.md</code> Stages 4-5.
           Local reference: <a href="../_UI/ps-references/ps-reference.png" target="_blank" style="color:#93c5fd;">ps-reference.png</a>.
         </p>
       </div>
