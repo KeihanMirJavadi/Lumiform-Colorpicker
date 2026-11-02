@@ -403,30 +403,34 @@ html, body {
   line-height: 1.4;
 }
 
-/* Persistent Draggable Color Picker Puck (Decoupled Color Target) */
+/* Persistent draggable color target. The puck box is exactly the ring, so the
+   element centre, the crosshair and the sampled pixel are one point; the hex
+   badge hangs below it and never shifts that anchor. */
 .color-picker-puck {
   position: absolute;
   top: 44%;
   left: 44%;
+  width: 28px;
+  height: 28px;
   transform: translate(-50%, -50%);
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   z-index: 60;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  opacity: 0.35;
+  transition: opacity 0.12s ease;
   pointer-events: auto;
   touch-action: none;
 }
 
 .color-picker-puck.dragging {
   cursor: grabbing;
+  opacity: 1;
 }
 
 .puck-ring {
-  width: 28px;
-  height: 28px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   border: 2.5px solid #ffffff;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 3px 10px rgba(0, 0, 0, 0.7);
@@ -448,23 +452,33 @@ html, body {
 
 .puck-crosshair-h {
   position: absolute;
-  width: 100%;
+  left: 0;
+  right: 0;
+  top: 50%;
   height: 1px;
+  transform: translateY(-50%);
   background-color: rgba(255, 255, 255, 0.5);
   pointer-events: none;
 }
 
 .puck-crosshair-v {
   position: absolute;
-  height: 100%;
+  top: 0;
+  bottom: 0;
+  left: 50%;
   width: 1px;
+  transform: translateX(-50%);
   background-color: rgba(255, 255, 255, 0.5);
   pointer-events: none;
 }
 
 .puck-center-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 4px;
   height: 4px;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   background-color: #ffffff;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
@@ -472,8 +486,12 @@ html, body {
   pointer-events: none;
 }
 
+/* The hex readout appears only while the puck is being dragged. */
 .puck-badge {
-  margin-top: 5px;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(16, 16, 16, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #f8fafc;
@@ -484,7 +502,15 @@ html, body {
   border-radius: 3px;
   white-space: nowrap;
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.color-picker-puck.dragging .puck-badge {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Section Cards */

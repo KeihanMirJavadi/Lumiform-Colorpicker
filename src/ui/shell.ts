@@ -86,7 +86,7 @@ export class AppShell {
       <header class="panel-header">
         <div class="title-group">
           <h1>Lumiform Colorpicker</h1>
-          <span class="badge">v1.3.0</span>
+          <span class="badge">v1.3.1</span>
         </div>
         <!-- Opens the full-panel Controls Guide takeover. -->
         <button
@@ -480,7 +480,7 @@ export class AppShell {
 
             <section class="guide-section">
               <h3>Canvas &amp; Brush</h3>
-              <p>Drag the circular reticle to sample the rendered colour under it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H Â· S Â· B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
+              <p>Drag the circular reticle to sample the rendered colour under it. It rests at 35 % opacity and shows its hex readout only while you drag it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H Â· S Â· B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
             </section>
 
             <section class="guide-section">
