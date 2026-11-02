@@ -36,8 +36,8 @@ jobs:
         with:
           name: lumiform-colorpicker-release
           path: |
-            release/*.ccx
-            release/*.zip
+            release/Lumiform-Colorpicker.ccx
+            release/Lumiform-Colorpicker.zip
             release/SHA256SUMS.txt
           if-no-files-found: error
 
@@ -46,7 +46,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/*.ccx
-            release/*.zip
+            release/Lumiform-Colorpicker.ccx
+            release/Lumiform-Colorpicker.zip
             release/SHA256SUMS.txt
           generate_release_notes: true

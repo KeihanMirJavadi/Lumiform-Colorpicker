@@ -76,8 +76,6 @@ const hash = async (file) => {
 };
 
 const sums = [
-  `${await hash(ccxPath)}  ${ccxName}`,
-  `${await hash(zipPath)}  ${zipName}`,
   `${await hash(path.join(releaseDir, 'Lumiform-Colorpicker.ccx'))}  Lumiform-Colorpicker.ccx`,
   `${await hash(path.join(releaseDir, 'Lumiform-Colorpicker.zip'))}  Lumiform-Colorpicker.zip`,
 ];
