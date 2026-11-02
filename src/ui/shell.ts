@@ -1186,10 +1186,12 @@ export class AppShell {
       if (section.open) {
         overlay.hidden = true;
         frame?.classList.remove('is-slider-revealed');
+        frame?.classList.remove('is-slider-floating');
         strip.appendChild(slider);
       } else {
         overlay.appendChild(slider);
         overlay.hidden = false;
+        frame?.classList.add('is-slider-floating');
       }
     };
 
@@ -1204,7 +1206,7 @@ export class AppShell {
     if (frame && card && overlay) {
       frame.addEventListener('pointermove', (event) => {
         if (overlay.hidden) return;
-        const rect = card.getBoundingClientRect();
+        const rect = frame.getBoundingClientRect();
         frame.classList.toggle(
           'is-slider-revealed',
           event.clientY >= rect.bottom - 28

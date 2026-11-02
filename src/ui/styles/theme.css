@@ -1532,17 +1532,24 @@ body {
   border-bottom: 0;
 }
 
+/* The floating slider gets its own breathing room below the canvas: the frame
+   grows by 26 px while the Time of Day body is collapsed, and the bare track
+   sits centred in that matte band instead of touching the render. */
+.viewport-frame.is-slider-floating {
+  padding-bottom: 28px;
+}
+
 /* Floating Time of Day slider (5.3): one input, moved here while the section
-   is collapsed. The wrapper is inert so the eyedropper keeps the band; only
+   is collapsed. The wrapper is inert so the eyedropper keeps the canvas; only
    the track itself takes the pointer. */
 .preview-time-slider {
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: 2px;
+  bottom: 0;
   height: 28px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   pointer-events: none;
   z-index: 2;
@@ -1570,7 +1577,7 @@ body {
   max-width: none;
   aspect-ratio: 412 / 227;
   background-color: var(--ps-workspace);
-  border: 1px solid var(--ps-line-strong);
+  border: 0;
   border-radius: 2px;
   box-shadow: none;
 }
