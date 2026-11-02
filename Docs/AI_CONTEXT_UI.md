@@ -19,7 +19,7 @@
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built and installed) |
 | Next release | v1.3.0 |
-| Current task | **5.5 - Layout persistence and Reset layout** |
+| Current task | **5.6 - Verification, documentation and release** |
 | Renderer changes | None in V1.1/V1.2. V1.3 re-solves `src/core/framing.ts` (camera and slot positions per aspect); sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The WebView keyboard focus handoff (Adobe Windows UXP bug) stays open; shortcut forwarding is the shipped workaround. |
@@ -772,7 +772,7 @@ shaders and swatch maths stay exactly as they are.
 
 ### 11.2 Stage 5 roadmap
 
-States follow the parent protocol. Only **5.5** is `current`.
+States follow the parent protocol. Only **5.6** is `current`.
 
 * [x] **Task 5.1: Aspect-aware framing**
   * **State:** `Done`
@@ -828,15 +828,19 @@ States follow the parent protocol. Only **5.5** is `current`.
   * **Evidence:** Expanded 5 labelled tiles (`HL #D3D0CC`) at 108 px; minimized 5 swatches, 132 x 24, centred, 8 px
     above the canvas; clicking TERM sets `#3D605E`; the row updates to `Mid` on selection. Commit `9c144ec`.
 
-* [ ] **Task 5.5: Layout persistence and Reset layout**
-  * **State:** `current`
-  * **Description:** Persist the layout state in `localStorage`, restore it before first paint where possible, and
-    add "Reset layout" to the Controls Guide.
-  * **Acceptance Criteria:** A pinned height, collapsed essentials and open sections survive a panel reload;
-    corrupt or out-of-range values fall back safely; Reset layout restores the defaults.
+* [x] **Task 5.5: Layout persistence and Reset layout**
+  * **State:** `Done`
+  * **Description:** A versioned `lumiform.layout.v1` entry stores the preview height, Time of Day and Ramp disclosure
+    and the four section open states. It is restored before the widgets bind; the splitter saves on commit and every
+    disclosure saves on `toggle`. The guide gained a Layout section with Reset layout.
+  * **Acceptance Criteria:** Met - the pinned height, both essentials' collapsed state and the open sections survive a
+    reload; corrupt or out-of-range values fall back to defaults; Reset layout restores the shipped state.
+  * **Evidence:** 1:1 + Time collapsed + Ramp collapsed + Spheres/Ground open restored exactly after reload; corrupt
+    JSON produced the reference layout with no error; Reset layout returned 268 px, both essentials open and all
+    sections closed. Commit `4d34e69`.
 
 * [ ] **Task 5.6: Verification, documentation and release**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Verify the matrix in 11.3 at 320/420/600 and in Photoshop, update the three docs, bump to
     1.3.0 and build the `.ccx`.
   * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; the matrix is demonstrated;
@@ -914,4 +918,5 @@ States follow the parent protocol. Only **5.5** is `current`.
 | 2026-11-02 | Task 5.1 Done. `buildFraming(aspect)` keeps the lens, camera, horizon and depth fixed and moves only the horizontal slot positions, so the sphere sizes, haze and swatch ramp are invariant while the composition fits any frame from 1:1 to a wide strip. `Viewport` re-solves on resize; `test:framing` covers the reference identity, 1:1, wide strips, clipping and invalid aspects. |
 | 2026-11-02 | Task 5.2 Done. The panel is a fixed dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list whose scrollbar sits only beside the four sections. The splitter has pointer capture, rAF-throttled heights, reference/1:1 snaps, a double-click toggle and Arrow/Home/End keys; short panels collapse the list. |
 | 2026-11-02 | Task 5.3 Done. Time of Day is a details row and, collapsed, moves its single slider into a full-bleed band below the canvas (35 / 100 / 35 % opacity, 36 px band, the whole band drags the splitter except the track). The canvas lost its matte, border and radius: it now meets the panel edges. |
-| 2026-11-02 | Task 5.4 Done. The ramp matches the approved mockup: expanded keeps the fully labelled tiles and the row carries the albedo dot + sphere name; minimized hides the body and floats five 24 px swatches 8 px above the canvas bottom, with the same click-to-paint path. Task 5.5 is current. |
+| 2026-11-02 | Task 5.4 Done. The ramp matches the approved mockup: expanded keeps the fully labelled tiles and the row carries the albedo dot + sphere name; minimized hides the body and floats five 24 px swatches 8 px above the canvas bottom, with the same click-to-paint path. |
+| 2026-11-02 | Task 5.5 Done. The layout persists in `lumiform.layout.v1` (preview height, both essentials' disclosure and the four section rows), restores before bind, and falls back to the shipped defaults on corrupt data. The guide gained a Layout section with Reset layout. Task 5.6 is current. |

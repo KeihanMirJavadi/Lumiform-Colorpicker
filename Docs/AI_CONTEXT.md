@@ -394,12 +394,12 @@ shaders and swatch maths stay untouched.
   * **Description:** Expanded keeps the fully labelled ramp tiles with the albedo dot and sphere name in the row. Minimized hides the body and floats five 24 px swatches centred 8 px above the canvas bottom, sharing the click-to-paint path.
   * **Acceptance Criteria:** Met - both surfaces paint, the ramp follows the sphere and lighting, and the floating palette appears only while the section is closed.
 
-* [ ] **Task 5.5: Layout persistence and Reset layout**
-  * **State:** `current`
-  * **Description:** Persist preview height, collapsed essentials and section open states in `localStorage`; add Reset layout to the guide.
-  * **Acceptance Criteria:** State survives a panel reload, invalid values fall back safely, and Reset layout restores the defaults.
+* [x] **Task 5.5: Layout persistence and Reset layout**
+  * **State:** `Done`
+  * **Description:** The preview height, both essentials' disclosure and the four section rows persist in a versioned `localStorage` entry, restored before the widgets bind; corrupt values fall back to defaults. The guide gained a Layout section with Reset layout.
+  * **Acceptance Criteria:** Met - the full layout survives a reload, corrupt data is safe, and Reset layout restores the shipped state.
 
 * [ ] **Task 5.6: Verification, documentation and release**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Run the section 11.3 matrix at 320/420/600 and in Photoshop, sync the three docs, bump to 1.3.0 and build the `.ccx`.
   * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; the matrix is demonstrated; `Lumiform-Colorpicker-1.3.0.ccx` is produced.
