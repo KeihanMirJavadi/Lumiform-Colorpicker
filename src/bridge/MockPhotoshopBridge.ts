@@ -1,7 +1,7 @@
 import { RGBColor } from '../core/types';
 import { rgbToHex, hexToRgb } from '../core/color';
 import { DEFAULT_ALBEDO_HEX } from '../core/defaults';
-import { IPhotoshopBridge, ColorChangeEvent, ShortcutPayload } from './IPhotoshopBridge';
+import { IPhotoshopBridge, ColorChangeEvent } from './IPhotoshopBridge';
 
 export class MockPhotoshopBridge implements IPhotoshopBridge {
   readonly name = 'MockPhotoshopBridge';
@@ -80,24 +80,6 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
       return;
     }
     window.open(url, '_blank', 'noopener');
-  }
-
-  focusPhotoshop(): void {
-    // Browser dev has no Photoshop window to focus back. The counter is a
-    // development hook proving that the UI released keyboard focus.
-    const devWindow = window as Window & { __lumiformFocusCalls?: number };
-    devWindow.__lumiformFocusCalls = (devWindow.__lumiformFocusCalls ?? 0) + 1;
-  }
-
-  sendShortcut(payload: ShortcutPayload): void {
-    const devWindow = window as Window & {
-      __lumiformShortcuts?: ShortcutPayload[];
-    };
-    devWindow.__lumiformShortcuts = [...(devWindow.__lumiformShortcuts ?? []), payload];
-  }
-
-  endShortcutSession(): void {
-    // Browser dev has no host session.
   }
 
   onStatusChange(callback: (status: string) => void): () => void {

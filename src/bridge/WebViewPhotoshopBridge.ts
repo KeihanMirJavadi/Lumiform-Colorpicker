@@ -1,7 +1,7 @@
 import { RGBColor } from '../core/types';
 import { rgbToHex, hexToRgb } from '../core/color';
 import { DEFAULT_ALBEDO_HEX } from '../core/defaults';
-import { IPhotoshopBridge, ColorChangeEvent, ShortcutPayload } from './IPhotoshopBridge';
+import { IPhotoshopBridge, ColorChangeEvent } from './IPhotoshopBridge';
 
 /**
  * Messages exchanged with the UXP host panel (`plugin/main.js`).
@@ -13,12 +13,11 @@ import { IPhotoshopBridge, ColorChangeEvent, ShortcutPayload } from './IPhotosho
  */
 export interface WebToHostMessage {
   source: 'lumiform-web';
-  type: 'ready' | 'set-foreground' | 'get-foreground' | 'open-url' | 'focus-photoshop' | 'shortcut' | 'shortcut-session-end';
+  type: 'ready' | 'set-foreground' | 'get-foreground' | 'open-url';
   requestId?: number;
   rgb?: RGBColor;
   hex?: string;
   url?: string;
-  shortcut?: ShortcutPayload;
 }
 
 export interface HostToWebMessage {
@@ -141,25 +140,6 @@ export class WebViewPhotoshopBridge implements IPhotoshopBridge {
       return;
     }
     this.post({ source: 'lumiform-web', type: 'open-url', url });
-  }
-
-  focusPhotoshop(): void {
-    try {
-      // Ask the embedded window to give up keyboard focus before the host
-      // moves it to Photoshop. Harmless if the runtime ignores it.
-      window.blur();
-    } catch (error) {
-      // Ignore: the host-side release is the authoritative path.
-    }
-    this.post({ source: 'lumiform-web', type: 'focus-photoshop' });
-  }
-
-  sendShortcut(payload: ShortcutPayload): void {
-    this.post({ source: 'lumiform-web', type: 'shortcut', shortcut: payload });
-  }
-
-  endShortcutSession(): void {
-    this.post({ source: 'lumiform-web', type: 'shortcut-session-end' });
   }
 
   async getForegroundColor(): Promise<RGBColor | null> {
