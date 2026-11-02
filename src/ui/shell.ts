@@ -86,7 +86,7 @@ export class AppShell {
       <header class="panel-header">
         <div class="title-group">
           <h1>Lumiform Colorpicker</h1>
-          <span class="badge">v1.3.0</span>
+          <span class="badge">v1.3.2</span>
         </div>
         <!-- Opens the full-panel Controls Guide takeover. -->
         <button
@@ -480,7 +480,7 @@ export class AppShell {
 
             <section class="guide-section">
               <h3>Canvas &amp; Brush</h3>
-              <p>Drag the circular reticle to sample the rendered colour under it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H Â· S Â· B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
+              <p>Drag the circular reticle to sample the rendered colour under it. It rests at 35 % opacity and shows its hex readout only while you drag it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H Â· S Â· B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
             </section>
 
             <section class="guide-section">
@@ -642,7 +642,6 @@ export class AppShell {
     this.bindPanelResets();
     this.bindPreviewSplitter();
     this.bindLayoutPersistence();
-    this.bindShortcutForwarding();
 
     this.syncSphereUI();
   }
@@ -876,58 +875,6 @@ export class AppShell {
       this.setDetailsOpen(id, false);
     }
     clearLayout();
-  }
-
-  /**
-   * Windows UXP keeps keyboard focus inside the WebView, so Photoshop never
-   * sees the tool, brush-size or menu shortcuts. Forward the keys to the host,
-   * which runs the equivalent Photoshop action. Text fields and the guide keep
-   * the keyboard to themselves.
-   */
-  private bindShortcutForwarding(): void {
-    const guideIsOpen = (): boolean => {
-      const guide = this.root.querySelector<HTMLElement>('#guide-overlay');
-      return Boolean(guide && !guide.hidden);
-    };
-
-    const isTextEntry = (target: EventTarget | null): boolean =>
-      target instanceof Element &&
-      target.closest(
-        'input[type="text"], input[type="number"], input[type="search"], textarea, select, [contenteditable="true"]'
-      ) !== null;
-
-    document.addEventListener(
-      'keydown',
-      (event) => {
-        if (guideIsOpen()) return;
-        if (isTextEntry(event.target)) return;
-        if (event.altKey) return;
-
-        const key = event.key;
-        const letter = /^[a-z]$/i.test(key);
-        const bracket = key === '[' || key === ']' || key === '{' || key === '}';
-        if (!letter && !bracket) return;
-
-        event.preventDefault();
-        event.stopPropagation();
-        this.bridge.sendShortcut({
-          key,
-          code: event.code,
-          ctrlKey: event.ctrlKey,
-          metaKey: event.metaKey,
-          altKey: event.altKey,
-          shiftKey: event.shiftKey,
-          repeat: event.repeat,
-        });
-      },
-      true
-    );
-
-    // Release Photoshop's modal scope as soon as the pointer leaves the panel,
-    // so a brush stroke on the canvas is never blocked by a shortcut session.
-    this.root.addEventListener('pointerleave', () => {
-      this.bridge.endShortcutSession();
-    });
   }
 
   /**
