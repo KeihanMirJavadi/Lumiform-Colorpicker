@@ -1098,22 +1098,22 @@
             <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">5.4 Compact 5-Value Ramp</div>
-              <div class="task-desc">Remove the in-body header; the row shows the sphere name and five mini chips; the body is five colour squares with tooltip/aria metadata.</div>
-              <div class="task-criteria">Criteria: click-to-paint and live recalculation are unchanged and no tag or hex text remains in the body.</div>
+              <div class="task-desc">Expanded keeps the fully labelled tiles and the row carries the albedo dot + sphere name. Minimized hides the body and floats five 24 px swatches centred 8 px above the canvas bottom, with the same click-to-paint path.</div>
+              <div class="task-criteria">Met: both surfaces paint, the ramp follows the selected sphere and lighting, and the floating palette appears only while the section is closed.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">5.5 Layout persistence and Reset layout</div>
               <div class="task-desc">Persist preview height, collapsed essentials and section open states in <code>localStorage</code>; add Reset layout to the guide.</div>
               <div class="task-criteria">Criteria: state survives a panel reload, invalid values fall back safely, and Reset layout restores the defaults.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -1639,8 +1639,8 @@ black / darkGray / mediumGray / lightGray token sets
           <tr><td>5.1 Aspect-aware framing</td><td><span class="status-badge done">Done</span></td><td><code>buildFraming(aspect)</code>; identical at 412:227, no clip at 1:1.</td></tr>
           <tr><td>5.2 Fixed dock, splitter and scroll region</td><td><span class="status-badge done">Done</span></td><td>Scrollbar beside the sections only; splitter snaps and 0-height list.</td></tr>
           <tr><td>5.3 Collapsible Time of Day and floating slider</td><td><span class="status-badge done">Done</span></td><td>Icons + slider expanded; bare 35/100/35 % band collapsed.</td></tr>
-          <tr><td>5.4 Compact 5-Value Ramp</td><td><span class="status-badge current">current</span></td><td>No in-body header; five squares; tooltip/aria metadata.</td></tr>
-          <tr><td>5.5 Layout persistence and Reset layout</td><td><span class="status-badge planned">planned</span></td><td>Layout survives reloads; Reset layout in the guide.</td></tr>
+          <tr><td>5.4 Compact 5-Value Ramp</td><td><span class="status-badge done">Done</span></td><td>Expanded labels; minimized floating swatches.</td></tr>
+          <tr><td>5.5 Layout persistence and Reset layout</td><td><span class="status-badge current">current</span></td><td>Layout survives reloads; Reset layout in the guide.</td></tr>
           <tr><td>5.6 Verification, documentation and release</td><td><span class="status-badge planned">planned</span></td><td>Matrix at 320/420/600 and in Photoshop; 1.3.0 <code>.ccx</code>.</td></tr>
         </tbody>
       </table>

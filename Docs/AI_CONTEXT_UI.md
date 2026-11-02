@@ -19,7 +19,7 @@
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built and installed) |
 | Next release | v1.3.0 |
-| Current task | **5.4 - Compact 5-Value Ramp** |
+| Current task | **5.5 - Layout persistence and Reset layout** |
 | Renderer changes | None in V1.1/V1.2. V1.3 re-solves `src/core/framing.ts` (camera and slot positions per aspect); sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The WebView keyboard focus handoff (Adobe Windows UXP bug) stays open; shortcut forwarding is the shipped workaround. |
@@ -772,7 +772,7 @@ shaders and swatch maths stay exactly as they are.
 
 ### 11.2 Stage 5 roadmap
 
-States follow the parent protocol. Only **5.4** is `current`.
+States follow the parent protocol. Only **5.5** is `current`.
 
 * [x] **Task 5.1: Aspect-aware framing**
   * **State:** `Done`
@@ -817,15 +817,19 @@ States follow the parent protocol. Only **5.4** is `current`.
     the canvas is full-bleed (border 0, padding 0) with 13 px above and 19 px below the track. Commits `1191005`,
     `acfd09e`, `14053a0`, `2ddbb09`.
 
-* [ ] **Task 5.4: Compact 5-Value Ramp**
-  * **State:** `current`
-  * **Description:** Remove the in-body header, keep the row with the sphere name and five mini chips, and shrink
-    the expanded body to five squares with tooltip/aria metadata.
-  * **Acceptance Criteria:** Clicking still paints; the ramp still follows the selected sphere and every lighting
-    change; no tag or hex text remains in the body.
+* [x] **Task 5.4: Compact 5-Value Ramp**
+  * **State:** `Done`
+  * **Description:** The ramp matches the approved mockup. Expanded, the section body keeps the full labelled
+    `HL / HT / TERM / CORE / BNC` tiles with hex values; the row carries the albedo dot and the selected sphere
+    name. Minimized, the body is hidden and five 24 px swatches float centred 8 px above the canvas bottom, sharing
+    the click-to-paint path and the flash feedback.
+  * **Acceptance Criteria:** Met - clicking still paints from both surfaces, the ramp follows the selected sphere
+    and every lighting change, and the minimized palette appears only while the section is closed.
+  * **Evidence:** Expanded 5 labelled tiles (`HL #D3D0CC`) at 108 px; minimized 5 swatches, 132 x 24, centred, 8 px
+    above the canvas; clicking TERM sets `#3D605E`; the row updates to `Mid` on selection. Commit `9c144ec`.
 
 * [ ] **Task 5.5: Layout persistence and Reset layout**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Persist the layout state in `localStorage`, restore it before first paint where possible, and
     add "Reset layout" to the Controls Guide.
   * **Acceptance Criteria:** A pinned height, collapsed essentials and open sections survive a panel reload;
@@ -909,4 +913,5 @@ States follow the parent protocol. Only **5.4** is `current`.
 | 2026-11-02 | V1.3 plan locked as Stage 5 (section 11). The preview becomes a resizable reference sheet: bounded aspect from 412:227 to 1:1, fill framing with re-solved slots, a splitter under the preview, a fixed dock for the preview + Time of Day + Ramp, a scrolling section list that can be hidden to 0, a bare floating time slider at 35/100/35 % opacity, a compact ramp with no in-body header, and persisted layout state. No lighting, material, atmosphere, shader or swatch change. |
 | 2026-11-02 | Task 5.1 Done. `buildFraming(aspect)` keeps the lens, camera, horizon and depth fixed and moves only the horizontal slot positions, so the sphere sizes, haze and swatch ramp are invariant while the composition fits any frame from 1:1 to a wide strip. `Viewport` re-solves on resize; `test:framing` covers the reference identity, 1:1, wide strips, clipping and invalid aspects. |
 | 2026-11-02 | Task 5.2 Done. The panel is a fixed dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list whose scrollbar sits only beside the four sections. The splitter has pointer capture, rAF-throttled heights, reference/1:1 snaps, a double-click toggle and Arrow/Home/End keys; short panels collapse the list. |
-| 2026-11-02 | Task 5.3 Done. Time of Day is a details row and, collapsed, moves its single slider into a full-bleed band below the canvas (35 / 100 / 35 % opacity, 36 px band, the whole band drags the splitter except the track). The canvas lost its matte, border and radius: it now meets the panel edges. Task 5.4 is current. |
+| 2026-11-02 | Task 5.3 Done. Time of Day is a details row and, collapsed, moves its single slider into a full-bleed band below the canvas (35 / 100 / 35 % opacity, 36 px band, the whole band drags the splitter except the track). The canvas lost its matte, border and radius: it now meets the panel edges. |
+| 2026-11-02 | Task 5.4 Done. The ramp matches the approved mockup: expanded keeps the fully labelled tiles and the row carries the albedo dot + sphere name; minimized hides the body and floats five 24 px swatches 8 px above the canvas bottom, with the same click-to-paint path. Task 5.5 is current. |

@@ -389,13 +389,13 @@ shaders and swatch maths stay untouched.
   * **Description:** Time of Day is a `<details>` row with title, state, reset and chevron. Collapsed, one slider instance moves into a full-bleed band below the canvas: 35 % at rest, 100 % inside the band, clickable throughout; the whole band also drags the splitter except the track. The canvas is full-bleed with no matte or border.
   * **Acceptance Criteria:** Met - both states stay in sync with the lighting engine, the reset works in both and never toggles, the floating slider and the preview resize coexist, and sampling is untouched.
 
-* [ ] **Task 5.4: Compact 5-Value Ramp**
-  * **State:** `current`
-  * **Description:** Remove the in-body header; the row shows the sphere name and five mini chips; the body is five colour squares with tooltip/aria metadata.
-  * **Acceptance Criteria:** Click-to-paint and live recalculation are unchanged and no tag/hex text remains in the body.
+* [x] **Task 5.4: Compact 5-Value Ramp**
+  * **State:** `Done`
+  * **Description:** Expanded keeps the fully labelled ramp tiles with the albedo dot and sphere name in the row. Minimized hides the body and floats five 24 px swatches centred 8 px above the canvas bottom, sharing the click-to-paint path.
+  * **Acceptance Criteria:** Met - both surfaces paint, the ramp follows the sphere and lighting, and the floating palette appears only while the section is closed.
 
 * [ ] **Task 5.5: Layout persistence and Reset layout**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Persist preview height, collapsed essentials and section open states in `localStorage`; add Reset layout to the guide.
   * **Acceptance Criteria:** State survives a panel reload, invalid values fall back safely, and Reset layout restores the defaults.
 
