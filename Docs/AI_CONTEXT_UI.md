@@ -14,18 +14,19 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, complete) · **V1.3 - Workspace Layout** (Stage 5, 5.6 current) |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, complete) · **V1.3 - Workspace Layout** (Stage 5, complete) |
 | Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin`; V1.3: `feature/5.1-workspace-layout` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.3.0 - `release/Lumiform-Colorpicker-1.3.0.ccx` (built and installed) |
 | Next release | Not planned; V1.3.0 is the current release. |
-| Current task | **5.6 - Verification, documentation and release** |
+| Current task | None - Stage 5 is complete and v1.3.0 is shipped. |
 | Renderer changes | None in V1.1/V1.2. V1.3 re-solves `src/core/framing.ts` (camera and slot positions per aspect); sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The WebView keyboard focus handoff (Adobe Windows UXP bug) stays open; shortcut forwarding is the shipped workaround. |
 
 The V1.1 panel is built and packaged. V1.2 restyles its chrome to Photoshop's four built-in themes and V1.3 turns
-the 3D preview into a resizable reference sheet. The V1.2 plan is section 10; the V1.3 plan is section 11.
+the 3D preview into a resizable reference sheet. All three phases are complete; V1.3 shipped as
+`release/Lumiform-Colorpicker-1.3.0.ccx`. The V1.2 plan is section 10; the V1.3 plan is section 11.
 
 ---
 
@@ -35,7 +36,7 @@ the 3D preview into a resizable reference sheet. The V1.2 plan is section 10; th
    the single-`current` rule and the approval gate.
 2. Read this file end to end before writing UI code.
 3. Find the active task: section 6 (V1.1, complete), section 10 (V1.2, complete) or section 11 (V1.3,
-   active). Only **5.1** is `current`; implement only that task.
+   complete). No task is `current`; the next phase needs a fresh plan.
 4. Report, wait for approval, then sync states in **three** places: `AI_CONTEXT.md`, this file and
    `Docs/index.html`.
 
@@ -773,7 +774,7 @@ per aspect, while sphere geometry, materials, lighting, atmosphere, shaders and 
 
 ### 11.2 Stage 5 roadmap
 
-States follow the parent protocol. Only **5.6** is `current`.
+States follow the parent protocol. Stage 5 is complete; no task is `current`.
 
 * [x] **Task 5.1: Aspect-aware framing**
   * **State:** `Done`
@@ -839,12 +840,17 @@ States follow the parent protocol. Only **5.6** is `current`.
     JSON produced the reference layout with no error; Reset layout returned 268 px, both essentials open and all
     sections closed. Commit `4d34e69`.
 
-* [ ] **Task 5.6: Verification, documentation and release**
-  * **State:** `current`
-  * **Description:** Verify the matrix in 11.3 at 320/420/600 and in Photoshop, update the three docs, bump to
-    1.3.0 and build the `.ccx`.
-  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; the matrix is demonstrated;
-    the docs match; `Lumiform-Colorpicker-1.3.0.ccx` is produced.
+* [x] **Task 5.6: Verification, documentation and release**
+  * **State:** `Done`
+  * **Description:** The 11.3 matrix ran in the browser at 320/420/600 and in Photoshop, the three docs were synced to
+    the revised scroll order, the version moved to 1.3.0 and the `.ccx` was built, installed and accepted.
+  * **Acceptance Criteria:** Met - `tsc --noEmit`, `npm run build`, the framing and queue tests and `npm run plugin`
+    pass; the browser matrix and the in-Photoshop pass both hold; the docs match; `Lumiform-Colorpicker-1.3.0.ccx` is
+    produced.
+  * **Evidence:** Reference 320x176 / 420x231 / 600x331 and 1:1 320x320 / 420x420 / 600x550 (height-capped) with no
+    horizontal overflow; a 320x420 panel clamps to 277 and the list goes to 0; widening 320 -> 420 keeps the set
+    height; the four themes map to `#323232`, `#535353`, `#B8B8B8`, `#F0F0F0`; the 1.3.0 build was installed with all
+    six files hash-matching and passed the user's in-Photoshop check. Commits `c76ac64`, `13b5d47`.
 
 ### 11.3 Verification matrix
 
@@ -921,4 +927,5 @@ States follow the parent protocol. Only **5.6** is `current`.
 | 2026-11-02 | Task 5.4 Done. The ramp matches the approved mockup: expanded keeps the fully labelled tiles and the row carries the albedo dot + sphere name; minimized hides the body and floats five 24 px swatches 8 px above the canvas bottom, with the same click-to-paint path. |
 | 2026-11-02 | Task 5.5 Done. The layout persists in `lumiform.layout.v1` (preview height, both essentials' disclosure and the four section rows), restores before bind, and falls back to the shipped defaults on corrupt data. The guide gained a Layout section with Reset layout. |
 | 2026-11-02 | Revision during 5.6: Time of Day and the 5-Value Ramp moved from the fixed dock into the scrolling list, so only the preview and splitter stay fixed and one scrollbar covers every row. The floating slider and the floating ramp swatches stay on the preview when those rows are collapsed. |
-| 2026-11-02 | Task 5.6 release pass: browser matrix at 320/420/600 (reference, 1:1, height clamp, 0-height list, width-change height retention, four themes), version 1.3.0 packaged and installed. In-Photoshop acceptance is the remaining manual check. |
+| 2026-11-02 | Task 5.6 release pass: browser matrix at 320/420/600 (reference, 1:1, height clamp, 0-height list, width-change height retention, four themes), version 1.3.0 packaged and installed. |
+| 2026-11-02 | Task 5.6 Done and V1.3 closed. The 11.3 matrix passed at 320/420/600 (reference and 1:1 renders, height clamp, 0-height list, width-change height retention, floating slider and ramp, four themes) plus the manual Photoshop pass (splitter drag/Home/End/double-click, floating controls, persistence, Reset layout, forwarded shortcuts). `release/Lumiform-Colorpicker-1.3.0.ccx` is built, installed and accepted. |

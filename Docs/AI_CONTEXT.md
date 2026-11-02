@@ -399,7 +399,7 @@ per aspect. Sphere geometry, materials, lighting, atmosphere, shaders and swatch
   * **Description:** The preview height, both essentials' disclosure and the four section rows persist in a versioned `localStorage` entry, restored before the widgets bind; corrupt values fall back to defaults. The guide gained a Layout section with Reset layout.
   * **Acceptance Criteria:** Met - the full layout survives a reload, corrupt data is safe, and Reset layout restores the shipped state.
 
-* [ ] **Task 5.6: Verification, documentation and release**
-  * **State:** `current`
-  * **Description:** Run the section 11.3 matrix at 320/420/600 and in Photoshop, sync the three docs, bump to 1.3.0 and build the `.ccx`.
-  * **Acceptance Criteria:** `tsc --noEmit`, `npm run build` and `npm run plugin` pass; the matrix is demonstrated; `Lumiform-Colorpicker-1.3.0.ccx` is produced.
+* [x] **Task 5.6: Verification, documentation and release**
+  * **State:** `Done`
+  * **Description:** The 11.3 matrix ran at 320/420/600 and in Photoshop, the three docs were synced to the revised scroll order, the version moved to 1.3.0 and the `.ccx` was built, installed and accepted.
+  * **Acceptance Criteria:** Met - `tsc --noEmit`, `npm run build`, the framing and queue tests and `npm run plugin` pass; the browser matrix and the manual Photoshop pass both hold; `Lumiform-Colorpicker-1.3.0.ccx` is produced.
