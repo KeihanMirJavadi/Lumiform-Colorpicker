@@ -19,7 +19,7 @@
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built and installed) |
 | Next release | v1.3.0 |
-| Current task | **5.1 - Aspect-aware framing** |
+| Current task | **5.3 - Collapsible Time of Day and floating slider** |
 | Renderer changes | None in V1.1/V1.2. V1.3 re-solves `src/core/framing.ts` (camera and slot positions per aspect); sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The WebView keyboard focus handoff (Adobe Windows UXP bug) stays open; shortcut forwarding is the shipped workaround. |
@@ -772,29 +772,39 @@ shaders and swatch maths stay exactly as they are.
 
 ### 11.2 Stage 5 roadmap
 
-States follow the parent protocol. Only **5.1** is `current`.
+States follow the parent protocol. Only **5.3** is `current`.
 
-* [ ] **Task 5.1: Aspect-aware framing**
-  * **State:** `current`
-  * **Description:** Turn `src/core/framing.ts` into a pure `buildFraming(aspect)` that returns the camera Z, the
-    vertical FOV, the horizon pitch and the three slot positions for any aspect in `[1.0, 1.815]`. Keep the
-    exported reference `FRAMING` for the initial build so `sphereSlots.ts` and every consumer stay source
-    compatible. `Viewport.handleResize` re-solves the camera and moves the three meshes when the container aspect
-    changes, inside one animation frame.
-  * **Acceptance Criteria:** At 412:227 the render is pixel-identical to V1.2. At 1:1 the near/mid/far spheres keep
-    40.0/27.8/10.4 % of frame height, their centre X fractions, and the horizon at 55.1 %; nothing clips. No
-    lighting, material, atmosphere or shader value changes. `tsc --noEmit` passes.
+* [x] **Task 5.1: Aspect-aware framing**
+  * **State:** `Done`
+  * **Description:** `src/core/framing.ts` now exposes a pure `buildFraming(aspect)` and keeps the reference
+    `FRAMING`. The lens, camera, horizon and the three depth distances stay fixed, so the sphere diameters remain
+    fractions of the frame height and every world-space haze constant keeps its meaning; only the horizontal slot
+    positions follow the frame width, solving each centre back onto its reference width fraction. `Viewport`
+    rebuilds the framing on every resize and moves the three meshes in one callback, and the swatch ramp reads the
+    fixed view depth instead of the Euclidean distance.
+  * **Acceptance Criteria:** Met - at 412:227 the framing is arithmetically identical (asserted by test); at 1:1
+    the three spheres keep 40.0/27.8/10.4 % of height and 49.9/79.0/18.8 % of width, the horizon stays at 55.1 %,
+    and no sphere clips from 1:1 to 6:1. No lighting, material, atmosphere or shader value changed.
+  * **Evidence:** `npm run test:framing` (5 tests), `tsc --noEmit`, `npm run build`; browser checks at 1:1 and
+    3.26:1. Commit `d07615e`.
 
-* [ ] **Task 5.2: Fixed dock, splitter and scroll region**
-  * **State:** `planned`
-  * **Description:** Restructure the panel into a non-scrolling dock (preview, splitter, Time of Day row, Ramp row)
-    and a scrolling section list. Implement the splitter as a focusable separator with the snap stops, hover
-    treatment, pointer capture, double-click toggle and rAF-throttled height updates.
-  * **Acceptance Criteria:** The scrollbar exists only beside the four sections; the preview never moves when the
-    list scrolls; the splitter reaches both snaps and 0-height list; keyboard and pointer both work.
+* [x] **Task 5.2: Fixed dock, splitter and scroll region**
+  * **State:** `Done`
+  * **Description:** The panel is now a non-scrolling dock (preview, splitter, Time of Day, Ramp) plus a scrolling
+    section list. The splitter is a focusable `separator` with a 6 px grab strip inside the 8 px matte, pointer
+    capture, rAF-throttled height updates, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End keys.
+    The preview height is clamped from live panel, dock and frame measurements so a short panel collapses the list
+    instead of squeezing the dock.
+  * **Acceptance Criteria:** Met - the scrollbar exists only beside the four sections, scrolling the list leaves the
+    preview fixed, the splitter reaches reference, 1:1 and a 0-height list on a short panel, and both pointer and
+    keyboard work.
+  * **Evidence:** Preview stays at `y = 36` while the list scrolls 300 px; the panel and `document` never scroll;
+    drag 268 -> 348 px, `End` -> 486 (square), `Home` -> 268 (reference), double-click toggles; a 620 px panel
+    clamps to 409 px and the list becomes 0. `tsc`, `npm run build`, framing and queue tests pass. Commit
+    `8f54584`.
 
 * [ ] **Task 5.3: Collapsible Time of Day and floating slider**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Convert the Time of Day section to `<details>` with the row described in W10 and move the
     slider to a floating overlay on the preview while collapsed. One slider instance, moved in the DOM, keeps the
     value authoritative.
@@ -891,4 +901,6 @@ States follow the parent protocol. Only **5.1** is `current`.
 | 2026-11-01 | Task 4.5 Done. The host relays `document.theme` live and appends `?theme=` to the WebView URL; the bridge exposes `onThemeChange`; the guide's Appearance row offers Auto plus the four themes and persists the choice in `localStorage`. Verified in the browser with the mock: Auto follows simulated host switches, a pinned theme survives reloads and ignores host changes, and the URL bootstrap paints the right palette before the shell renders. The 1.2.0 package was rebuilt with the relay. Task 4.6 is current. |
 | 2026-11-01 | Task 4.6 Done. The guide is a flat native dialog (1 px border, 2 px radius, compact title bar, hairline section dividers, no shadow) with the Appearance row above GitHub; Back/Esc/backdrop all close it. The UXP loading/error shell now follows the four themes through `prefers-color-scheme` with `--uxp-host-*` fallbacks, a neutral spinner and no blue. Verified in the browser; the host-shell theme check remains for 4.7, which is current. |
 | 2026-11-02 | Task 4.7 Done and V1.2 closed. Per-panel reset buttons for Spheres, Sun & Atmosphere, Ground Surface & Color and Surface Finish & Reflectivity; the time-of-day slider re-centred at 320/420/600; the GitHub link fixed through `launchProcess.schemes: ["https"]`; Windows UXP keyboard forwarding added (`command-queue.js`, one interactive modal session reused across a burst, released after 750 ms idle or pointer-leave). `tsc`/build/plugin pass, `Lumiform-Colorpicker-1.2.0.ccx` packaged and installed, docs synced. |
-| 2026-11-02 | V1.3 plan locked as Stage 5 (section 11). The preview becomes a resizable reference sheet: bounded aspect from 412:227 to 1:1, fill framing with re-solved camera and slots, a splitter under the preview, a fixed dock for the preview + Time of Day + Ramp, a scrolling section list that can be hidden to 0, a bare floating time slider at 35/100/35 % opacity, a compact ramp with no in-body header, and persisted layout state. No lighting, material, atmosphere, shader or swatch change. Task 5.1 is current. |
+| 2026-11-02 | V1.3 plan locked as Stage 5 (section 11). The preview becomes a resizable reference sheet: bounded aspect from 412:227 to 1:1, fill framing with re-solved slots, a splitter under the preview, a fixed dock for the preview + Time of Day + Ramp, a scrolling section list that can be hidden to 0, a bare floating time slider at 35/100/35 % opacity, a compact ramp with no in-body header, and persisted layout state. No lighting, material, atmosphere, shader or swatch change. |
+| 2026-11-02 | Task 5.1 Done. `buildFraming(aspect)` keeps the lens, camera, horizon and depth fixed and moves only the horizontal slot positions, so the sphere sizes, haze and swatch ramp are invariant while the composition fits any frame from 1:1 to a wide strip. `Viewport` re-solves on resize; `test:framing` covers the reference identity, 1:1, wide strips, clipping and invalid aspects. |
+| 2026-11-02 | Task 5.2 Done. The panel is a fixed dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list whose scrollbar sits only beside the four sections. The splitter has pointer capture, rAF-throttled heights, reference/1:1 snaps, a double-click toggle and Arrow/Home/End keys; short panels collapse the list. Task 5.3 is current. |

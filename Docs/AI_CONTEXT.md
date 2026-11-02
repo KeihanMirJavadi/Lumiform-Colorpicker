@@ -374,18 +374,18 @@ dock; only the four section rows scroll. It is the first phase since V1.0 that t
 solves the camera and the three slot positions per aspect. Sphere geometry, materials, lighting, atmosphere,
 shaders and swatch maths stay untouched.
 
-* [ ] **Task 5.1: Aspect-aware framing**
-  * **State:** `current`
-  * **Description:** Turn `src/core/framing.ts` into a pure `buildFraming(aspect)` that returns the vertical FOV, camera Z, horizon pitch and the three slot positions for any aspect in `[1.0, 1.815]`. Keep the reference `FRAMING` export. `Viewport.handleResize` re-solves the camera and moves the three meshes inside one animation frame.
-  * **Acceptance Criteria:** At 412:227 the render is unchanged. At 1:1 the spheres keep 40.0/27.8/10.4 % of frame height and their centre X fractions, the horizon stays at 55.1 %, nothing clips, and no lighting/material/shader value changes.
+* [x] **Task 5.1: Aspect-aware framing**
+  * **State:** `Done`
+  * **Description:** `src/core/framing.ts` exposes a pure `buildFraming(aspect)` and keeps the reference `FRAMING`. The lens, camera, horizon and the three depth distances stay fixed, so the sphere diameters remain fractions of the frame height and every world-space haze constant keeps its meaning; only the horizontal slot positions follow the frame width. `Viewport` rebuilds the framing on resize and moves the three meshes in one callback; the swatch ramp reads the fixed view depth.
+  * **Acceptance Criteria:** Met - at 412:227 the framing is arithmetically identical, at 1:1 the spheres keep their reference height and width fractions with the horizon at 55.1 %, and nothing clips from 1:1 to 6:1. No lighting, material, atmosphere or shader value changed.
 
-* [ ] **Task 5.2: Fixed dock, splitter and scroll region**
-  * **State:** `planned`
-  * **Description:** Split the panel into a non-scrolling dock (preview, splitter, Time of Day row, Ramp row) and a scrolling section list. The splitter is a focusable separator with reference and 1:1 snaps, hover treatment, pointer capture and double-click toggle.
-  * **Acceptance Criteria:** The scrollbar exists only beside the four sections, the preview never moves when the list scrolls, and the splitter reaches both snaps and a 0-height list.
+* [x] **Task 5.2: Fixed dock, splitter and scroll region**
+  * **State:** `Done`
+  * **Description:** The panel is a non-scrolling dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list. The splitter is a focusable separator with a 6 px grab strip, pointer capture, rAF-throttled heights, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End keys. The preview is clamped from live panel, dock and frame measurements.
+  * **Acceptance Criteria:** Met - the scrollbar exists only beside the four sections, the preview never moves when the list scrolls, the splitter reaches both snaps and a 0-height list on a short panel, and pointer and keyboard both work.
 
 * [ ] **Task 5.3: Collapsible Time of Day and floating slider**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Convert Time of Day to `<details>` with title, state, reset and chevron. Collapsed, one slider instance moves to a bare overlay on the preview's bottom edge: 35 % at rest, 100 % inside the bottom 28 px band, clickable throughout.
   * **Acceptance Criteria:** Both states stay in sync with the lighting engine, the reset works in both, and sampling under the band still works unless the track is pressed.
 

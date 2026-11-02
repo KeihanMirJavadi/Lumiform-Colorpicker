@@ -1071,31 +1071,31 @@
         </div>
         <div class="task-list">
 
-          <div class="task-item" data-status="current">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">5.1 Aspect-aware framing</div>
-              <div class="task-desc">Turn <code>src/core/framing.ts</code> into a pure <code>buildFraming(aspect)</code> that returns the vertical FOV, camera Z, horizon pitch and the three slot positions for any aspect in <code>[1.0, 1.815]</code>. Keep the reference <code>FRAMING</code> export. <code>Viewport.handleResize</code> re-solves the camera and moves the three meshes inside one animation frame.</div>
-              <div class="task-criteria">Criteria: at 412:227 the render is unchanged; at 1:1 the spheres keep 40.0/27.8/10.4 % of frame height and their centre X fractions, the horizon stays at 55.1 %, nothing clips, and no lighting, material or shader value changes.</div>
+              <div class="task-desc"><code>src/core/framing.ts</code> exposes a pure <code>buildFraming(aspect)</code>. The lens, camera, horizon and depth distances stay fixed; only the horizontal slot positions follow the frame width, so the sphere sizes, haze model and swatch ramp are invariant at any aspect.</div>
+              <div class="task-criteria">Met: at 412:227 the framing is arithmetically identical; at 1:1 the spheres keep 40.0/27.8/10.4 % of height and 49.9/79.0/18.8 % of width with the horizon at 55.1 %; no clipping from 1:1 to 6:1; no lighting, material or shader change.</div>
             </div>
-            <span class="status-badge current">current</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="done">
             <div class="task-info">
               <div class="task-name">5.2 Fixed dock, splitter and scroll region</div>
-              <div class="task-desc">Split the panel into a non-scrolling dock (preview, splitter, Time of Day row, Ramp row) and a scrolling section list. The splitter is a focusable separator with reference and 1:1 snaps, hover treatment, pointer capture and a double-click toggle.</div>
-              <div class="task-criteria">Criteria: the scrollbar exists only beside the four sections, the preview never moves when the list scrolls, and the splitter reaches both snaps and a 0-height list.</div>
+              <div class="task-desc">The panel is a non-scrolling dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list. The splitter is a focusable separator with a 6 px grab strip, pointer capture, rAF-throttled heights, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End keys.</div>
+              <div class="task-criteria">Met: the scrollbar exists only beside the four sections, the preview stays fixed while the list scrolls, the splitter reaches both snaps and a 0-height list on a short panel, and pointer and keyboard both work.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge done">Done</span>
           </div>
 
-          <div class="task-item" data-status="planned">
+          <div class="task-item" data-status="current">
             <div class="task-info">
               <div class="task-name">5.3 Collapsible Time of Day and floating slider</div>
               <div class="task-desc">Convert Time of Day to <code>&lt;details&gt;</code> with title, state, reset and chevron. Collapsed, one slider instance moves to a bare overlay on the preview's bottom edge: 35 % at rest, 100 % inside the bottom 28 px band, clickable throughout.</div>
               <div class="task-criteria">Criteria: both states stay in sync with the lighting engine, the reset works in both, and sampling under the band still works unless the track is pressed.</div>
             </div>
-            <span class="status-badge planned">planned</span>
+            <span class="status-badge current">current</span>
           </div>
 
           <div class="task-item" data-status="planned">
@@ -1636,9 +1636,9 @@ black / darkGray / mediumGray / lightGray token sets
           <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
         </thead>
         <tbody>
-          <tr><td>5.1 Aspect-aware framing</td><td><span class="status-badge current">current</span></td><td><code>buildFraming(aspect)</code>; identical at 412:227, no clip at 1:1.</td></tr>
-          <tr><td>5.2 Fixed dock, splitter and scroll region</td><td><span class="status-badge planned">planned</span></td><td>Scrollbar beside the sections only; splitter snaps and 0-height list.</td></tr>
-          <tr><td>5.3 Collapsible Time of Day and floating slider</td><td><span class="status-badge planned">planned</span></td><td>Icons + slider expanded; bare 35/100/35 % track collapsed.</td></tr>
+          <tr><td>5.1 Aspect-aware framing</td><td><span class="status-badge done">Done</span></td><td><code>buildFraming(aspect)</code>; identical at 412:227, no clip at 1:1.</td></tr>
+          <tr><td>5.2 Fixed dock, splitter and scroll region</td><td><span class="status-badge done">Done</span></td><td>Scrollbar beside the sections only; splitter snaps and 0-height list.</td></tr>
+          <tr><td>5.3 Collapsible Time of Day and floating slider</td><td><span class="status-badge current">current</span></td><td>Icons + slider expanded; bare 35/100/35 % track collapsed.</td></tr>
           <tr><td>5.4 Compact 5-Value Ramp</td><td><span class="status-badge planned">planned</span></td><td>No in-body header; five squares; tooltip/aria metadata.</td></tr>
           <tr><td>5.5 Layout persistence and Reset layout</td><td><span class="status-badge planned">planned</span></td><td>Layout survives reloads; Reset layout in the guide.</td></tr>
           <tr><td>5.6 Verification, documentation and release</td><td><span class="status-badge planned">planned</span></td><td>Matrix at 320/420/600 and in Photoshop; 1.3.0 <code>.ccx</code>.</td></tr>
