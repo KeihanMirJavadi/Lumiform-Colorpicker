@@ -1,18 +1,34 @@
 import * as THREE from 'three';
-import { OrbitCamera } from './OrbitCamera';
 import { LightingEngine } from './LightingEngine';
 import { ColorPickerTarget } from './ColorPickerTarget';
 import { createLumiformMaterial, LumiformShaderUniforms } from './shaders/lumiformShader';
+import { createSkyDomeMaterial, SkyShaderUniforms } from './shaders/skyShader';
+import { createGroundMaterial, GroundShaderUniforms } from './shaders/groundShader';
 import { LightingPreset, SurfaceFinish, RGBColor } from '../core/types';
+import { effectiveHaze } from '../core/atmosphere';
 import { SURFACE_FINISHES } from '../core/material';
-
-export type MeshGeometryType = 'sphere' | 'cube';
+import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
+import { buildFraming, Framing, REFERENCE_ASPECT } from '../core/framing';
+import {
+  BASE_SPHERE_RADIUS,
+  GROUND_Y,
+  SPHERE_SLOTS,
+  SphereSlotConfig,
+  SphereSlotId,
+} from '../core/sphereSlots';
 
 export interface ViewportOptions {
   container: HTMLElement;
-  sphereRadius?: number;
   initialColor?: string | number;
-  initialMeshType?: MeshGeometryType;
+}
+
+interface SphereRuntime {
+  config: SphereSlotConfig;
+  mesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
+  material: THREE.ShaderMaterial;
+  albedoHex: string;
+  size: number;
+  active: boolean;
 }
 
 export class Viewport {
@@ -20,92 +36,150 @@ export class Viewport {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private orbitCamera: OrbitCamera;
+  /** Composition for the current frame aspect (V1.3). */
+  private framing: Framing = buildFraming(REFERENCE_ASPECT);
   private lightingEngine: LightingEngine;
   private colorPickerTarget: ColorPickerTarget;
 
-  // 3D Object Mesh & Group (allows isolated local object rotation)
-  private meshGroup: THREE.Group;
-  private targetMesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
-  private sphereGeometry: THREE.SphereGeometry;
-  private cubeGeometry: THREE.BoxGeometry;
-  private currentMeshType: MeshGeometryType = 'sphere';
+  private spheres: SphereRuntime[] = [];
+  private selectedId: SphereSlotId = 'center';
+  private linkedColors = false;
+  private linkedSizes = false;
+  private haze = 0.5;
 
-  private raycaster: THREE.Raycaster;
-  private pointer: THREE.Vector2;
+  private sphereGeometry: THREE.SphereGeometry;
+  private selectionFlash: THREE.Sprite;
+  private flashStart = 0;
+
+  private skyGeometry: THREE.SphereGeometry;
+  private skyMesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
+  private groundGeometry: THREE.PlaneGeometry;
+  private groundMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
+
+  private raycaster = new THREE.Raycaster();
+  private pointer = new THREE.Vector2();
+
   private resizeObserver: ResizeObserver;
   private animationFrameId: number | null = null;
   private isDisposed = false;
 
-  // Interaction tracking (Sun drag, Mesh rotation, Camera orbit)
-  private interactionMode: 'none' | 'orbit-camera' | 'orbit-light' | 'rotate-mesh' = 'none';
-  private previousPointerPos = { x: 0, y: 0 };
-  private currentFinish: SurfaceFinish = 'satin';
+  private currentFinish: SurfaceFinish = DEFAULT_SURFACE_FINISH;
+  // Seed roughness/specular from the default finish so the first frame already
+  // matches the selected material instead of falling back to matte.
+  private currentRoughness =
+    DEFAULT_SURFACE_FINISH === 'custom'
+      ? 1.0
+      : SURFACE_FINISHES[DEFAULT_SURFACE_FINISH].roughness;
+  private currentSpecular =
+    DEFAULT_SURFACE_FINISH === 'custom'
+      ? 0.0
+      : SURFACE_FINISHES[DEFAULT_SURFACE_FINISH].specularIntensity;
 
-  private finishListeners: Set<(finish: SurfaceFinish) => void> = new Set();
+  private finishListeners: Set<(finish: SurfaceFinish, roughness: number, specular: number) => void> = new Set();
   private sampleListeners: Set<(rgb: RGBColor, hex: string) => void> = new Set();
-  private meshTypeListeners: Set<(type: MeshGeometryType) => void> = new Set();
+  private selectionListeners: Set<(id: SphereSlotId) => void> = new Set();
 
   constructor(options: ViewportOptions) {
     this.container = options.container;
 
-    // 1. Three.js Scene Setup (clean dark canvas, only sun and mesh, NO lines)
+    // 1. Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x181818);
 
-    // 2. Perspective Camera
-    const aspect = (this.container.clientWidth || 300) / (this.container.clientHeight || 300);
-    this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-    this.camera.position.set(0, 0, 4.2);
+    // 2. Camera — fixed lens and depth (see core/framing.ts). The aspect only
+    //    moves the sphere slots horizontally; the camera never moves, so the
+    //    sphere sizes, the horizon and every world-space haze constant hold.
+    const aspect =
+      this.container.clientWidth > 0 && this.container.clientHeight > 0
+        ? this.container.clientWidth / this.container.clientHeight
+        : REFERENCE_ASPECT;
+    this.framing = buildFraming(aspect);
+    this.camera = new THREE.PerspectiveCamera(
+      THREE.MathUtils.radToDeg(this.framing.verticalFovRad),
+      aspect,
+      0.1,
+      600
+    );
+    this.camera.position.set(0, this.framing.cameraY, this.framing.cameraZ);
+    this.camera.lookAt(0, 0, 0);
+    // The eye line is the horizon. Tilt up so it lands on the reference's
+    // 55.1% instead of dead centre. The camera never moves after this.
+    this.camera.rotateX(this.framing.pitchRad);
 
-    // 3. WebGL Renderer
+    // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
       preserveDrawingBuffer: true,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(this.container.clientWidth || 300, this.container.clientHeight || 300);
+    this.renderer.setSize(this.container.clientWidth || 300, this.container.clientHeight || 165);
 
     const canvas = this.renderer.domElement;
     canvas.style.display = 'block';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.touchAction = 'none';
-    canvas.style.cursor = 'grab';
+    canvas.style.cursor = 'default';
 
     this.container.innerHTML = '';
     this.container.appendChild(canvas);
 
-    // 4. Camera Orbit Controls (for background dragging)
-    this.orbitCamera = new OrbitCamera(this.camera, {
-      radius: 4.2,
-      rotateSpeed: 0.006,
-    });
+    // 4. Sky dome. It must enclose the far sphere slot (the farthest geometry
+    //    in the scene), otherwise the sky would be occluded by its own shell.
+    this.skyGeometry = new THREE.SphereGeometry(300, 36, 24);
+    const skyMaterial = createSkyDomeMaterial();
+    this.skyMesh = new THREE.Mesh(this.skyGeometry, skyMaterial);
+    this.skyMesh.renderOrder = -1;
+    this.scene.add(this.skyMesh);
 
-    // 5. High-Resolution Geometries (Sphere and Cube)
-    const sphereRadius = options.sphereRadius ?? 1.25;
-    this.sphereGeometry = new THREE.SphereGeometry(sphereRadius, 96, 96);
-    this.cubeGeometry = new THREE.BoxGeometry(1.8, 1.8, 1.8);
+    // 5. Ground plane. Its far edge must reach the eye line (see framing.ts),
+    //    otherwise the visible horizon sits below the true horizon.
+    this.groundGeometry = new THREE.PlaneGeometry(1600, 1600, 1, 1);
+    const groundMaterial = createGroundMaterial();
+    this.groundMesh = new THREE.Mesh(this.groundGeometry, groundMaterial);
+    this.groundMesh.position.set(0, GROUND_Y, 0);
+    this.groundMesh.rotation.x = -Math.PI / 2;
+    this.scene.add(this.groundMesh);
 
-    const material = createLumiformMaterial(options.initialColor ?? 0xEB5757);
+    // 6. Three spheres in fixed depth slots
+    this.sphereGeometry = new THREE.SphereGeometry(BASE_SPHERE_RADIUS, 96, 96);
+    const initialHex = options.initialColor !== undefined ? `#${new THREE.Color(options.initialColor).getHexString()}` : DEFAULT_ALBEDO_HEX;
 
-    // Mesh Group allows local rotation completely independent from light and camera
-    this.meshGroup = new THREE.Group();
-    this.targetMesh = new THREE.Mesh(this.sphereGeometry, material);
-    this.meshGroup.add(this.targetMesh);
-    this.scene.add(this.meshGroup);
+    for (const config of SPHERE_SLOTS) {
+      const material = createLumiformMaterial(initialHex);
+      const mesh = new THREE.Mesh(this.sphereGeometry, material);
+      const slot = this.framing.slots[config.framingKey];
+      mesh.position.set(slot.x, GROUND_Y + BASE_SPHERE_RADIUS, slot.z);
+      mesh.scale.setScalar(1);
+      mesh.userData.slotId = config.id;
+      this.scene.add(mesh);
 
-    // 6. Lighting Engine & Sun Indicator (Only the glowing sun itself, NO lines/rings)
+      this.spheres.push({
+        config,
+        mesh,
+        material,
+        albedoHex: initialHex,
+        size: 1,
+        active: true,
+      });
+    }
+
+    // 7. Lighting engine — bind every sphere material
     this.lightingEngine = new LightingEngine();
-    this.lightingEngine.bindUniforms(material.uniforms as LumiformShaderUniforms);
-    this.scene.add(this.lightingEngine.getSunIndicator().group);
+    this.haze = this.lightingEngine.getEnvironment().hazePreset;
+    this.lightingEngine.bindUniforms(
+      this.spheres.map((s) => s.material.uniforms as LumiformShaderUniforms),
+      skyMaterial.uniforms as SkyShaderUniforms,
+      groundMaterial.uniforms as GroundShaderUniforms
+    );
 
     this.lightingEngine.onEnvironmentChange(() => {
+      this.syncAtmosphereUniforms();
       this.colorPickerTarget?.scheduleResample();
     });
 
-    // 7. Persistent Draggable Color Picker Puck
+    // 8. Eyedropper puck
     this.colorPickerTarget = new ColorPickerTarget({
       container: this.container,
       renderer: this.renderer,
@@ -116,166 +190,482 @@ export class Viewport {
       },
     });
 
-    // 8. Raycasting & Pointer Events
-    this.raycaster = new THREE.Raycaster();
-    this.pointer = new THREE.Vector2();
+    // 9. Transient selection ring
+    this.selectionFlash = this.createSelectionFlash();
+    this.scene.add(this.selectionFlash);
 
-    this.bindPointerEvents(canvas);
+    // 10. Input: sphere selection. The camera is fixed; the wheel is swallowed
+    //     so the viewport never zooms or scrolls under the pointer.
+    canvas.addEventListener('wheel', (event) => event.preventDefault(), { passive: false });
+    this.bindSphereSelection(canvas);
 
-    // 9. Resize Handling
+    // 11. Resize + render loop
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(this.container);
 
-    // 10. Start Render Loop
     this.animate = this.animate.bind(this);
     this.startLoop();
 
-    // Initial resample once rendered
+    this.syncSphereUniforms();
+
     requestAnimationFrame(() => {
       this.colorPickerTarget.resampleImmediate();
     });
   }
 
-  public setMeshType(type: MeshGeometryType): void {
-    this.currentMeshType = type;
-    if (type === 'cube') {
-      this.targetMesh.geometry = this.cubeGeometry;
-    } else {
-      this.targetMesh.geometry = this.sphereGeometry;
+  // --- Public API -----------------------------------------------------------
+
+  public onColorSample(callback: (rgb: RGBColor, hex: string) => void): () => void {
+    this.sampleListeners.add(callback);
+    return () => this.sampleListeners.delete(callback);
+  }
+
+  public onSelectionChange(callback: (id: SphereSlotId) => void): () => void {
+    this.selectionListeners.add(callback);
+    return () => this.selectionListeners.delete(callback);
+  }
+
+  public getSelectedSphereId(): SphereSlotId {
+    return this.selectedId;
+  }
+
+  public getSelectedSphereColor(): string {
+    return this.getSphere(this.selectedId).albedoHex;
+  }
+
+  public getSelectedSphereSize(): number {
+    return this.getSphere(this.selectedId).size;
+  }
+
+  public getSelectedSphereDistance(): number {
+    // Depth along the view axis, not the Euclidean distance: the slot X moves
+    // with the frame width in V1.3, and the swatch ramp's haze calibration is
+    // authored against these reference depths (near 13.7, mid 18.4, far 52.6).
+    return this.framing.distances[this.getSphere(this.selectedId).config.framingKey];
+  }
+
+  public isSphereActive(id: SphereSlotId): boolean {
+    return this.getSphere(id).active;
+  }
+
+  public getActiveCount(): number {
+    return this.spheres.filter((s) => s.active).length;
+  }
+
+  public selectSphere(id: SphereSlotId): void {
+    const sphere = this.getSphere(id);
+    if (!sphere.active) return;
+
+    this.selectedId = id;
+    this.startSelectionFlash();
+    this.selectionListeners.forEach((cb) => cb(id));
+    this.colorPickerTarget.scheduleResample();
+  }
+
+  /**
+   * Enables a hidden sphere, restores the colour and size it owned before it
+   * was hidden, and selects it. With a link on, the sphere joins the shared
+   * value instead of resurrecting its old one.
+   */
+  public enableSphere(id: SphereSlotId): void {
+    const sphere = this.getSphere(id);
+    if (sphere.active) {
+      this.selectSphere(id);
+      return;
     }
-    this.meshTypeListeners.forEach((cb) => cb(type));
+
+    const selected = this.getSphere(this.selectedId);
+    sphere.active = true;
+    if (this.linkedColors) sphere.albedoHex = selected.albedoHex;
+    if (this.linkedSizes) sphere.size = selected.size;
+
+    this.selectedId = id;
+    this.startSelectionFlash();
+    this.selectionListeners.forEach((cb) => cb(id));
+    this.syncSphereUniforms();
+  }
+
+  /**
+   * Hides a sphere. The last remaining sphere cannot be hidden, and hiding the
+   * selected sphere falls back to the first enabled slot in Near -> Mid -> Far
+   * order. The rest of the sphere's state is kept for a later re-enable.
+   */
+  public disableSphere(id: SphereSlotId): boolean {
+    const sphere = this.getSphere(id);
+    if (!sphere.active || this.getActiveCount() <= 1) return false;
+
+    sphere.active = false;
+    if (this.selectedId === id) {
+      this.selectedId = this.findSelectionFallback();
+      this.startSelectionFlash();
+      this.selectionListeners.forEach((cb) => cb(this.selectedId));
+    }
+    this.syncSphereUniforms();
+    return true;
+  }
+
+  private findSelectionFallback(): SphereSlotId {
+    for (const id of ['center', 'right', 'left'] as SphereSlotId[]) {
+      if (this.getSphere(id).active) return id;
+    }
+    return 'center';
+  }
+
+  public setSphereColor(hex: string): void {
+    const color = new THREE.Color(hex);
+    const resolved = `#${color.getHexString()}`;
+
+    if (this.linkedColors) {
+      for (const sphere of this.spheres) {
+        if (sphere.active) sphere.albedoHex = resolved;
+      }
+    } else {
+      this.getSphere(this.selectedId).albedoHex = resolved;
+    }
+
+    this.syncSphereUniforms();
+  }
+
+  public setLinkedColors(linked: boolean): void {
+    this.linkedColors = linked;
+    if (linked) {
+      const shared = this.getSphere(this.selectedId).albedoHex;
+      for (const sphere of this.spheres) {
+        if (sphere.active) sphere.albedoHex = shared;
+      }
+    }
+    this.syncSphereUniforms();
+  }
+
+  public getLinkedColors(): boolean {
+    return this.linkedColors;
+  }
+
+  public setLinkedSizes(linked: boolean): void {
+    this.linkedSizes = linked;
+    if (linked) {
+      const shared = this.getSphere(this.selectedId).size;
+      for (const sphere of this.spheres) {
+        if (sphere.active) sphere.size = shared;
+      }
+    }
+    this.syncSphereUniforms();
+  }
+
+  public getLinkedSizes(): boolean {
+    return this.linkedSizes;
+  }
+
+  public setSelectedSphereSize(size: number): void {
+    const clamped = Math.max(0.2, Math.min(1.0, size));
+    if (this.linkedSizes) {
+      for (const sphere of this.spheres) {
+        if (sphere.active) sphere.size = clamped;
+      }
+    } else {
+      this.getSphere(this.selectedId).size = clamped;
+    }
+    this.syncSphereUniforms();
+  }
+
+  /**
+   * Restores the Spheres panel to its initial state: every slot visible,
+   * Near selected, both links off, and size/albedo back to the defaults.
+   */
+  public resetSpheres(): void {
+    this.linkedColors = false;
+    this.linkedSizes = false;
+
+    for (const sphere of this.spheres) {
+      sphere.active = true;
+      sphere.albedoHex = DEFAULT_ALBEDO_HEX;
+      sphere.size = 1;
+    }
+
+    this.selectedId = 'center';
+    this.syncSphereUniforms();
+    this.selectionListeners.forEach((cb) => cb('center'));
     this.colorPickerTarget.scheduleResample();
   }
 
-  public resetMeshRotation(): void {
-    this.meshGroup.rotation.set(0, 0, 0);
+  public getHaze(): number {
+    return this.haze;
+  }
+
+  public setHaze(haze: number): void {
+    this.haze = Math.max(0, Math.min(1, haze));
+    // Haze is one of the six preset-owned lighting values; moving it detaches
+    // the look from the time-of-day preset without touching the spheres.
+    this.lightingEngine.markManualEdit();
+    this.syncSphereUniforms();
+  }
+
+  public setPreset(preset: LightingPreset): void {
+    this.lightingEngine.setPreset(preset);
+    // The preset owns its haze amount. Keep the slider/render in sync here so
+    // every caller of setPreset gets the same calibrated atmosphere.
+    this.haze = this.lightingEngine.getEnvironment().hazePreset;
+    this.syncSphereUniforms();
     this.colorPickerTarget.scheduleResample();
   }
 
-  public getMeshType(): MeshGeometryType {
-    return this.currentMeshType;
+  public setLightAngles(azimuth: number, elevation: number): void {
+    this.lightingEngine.setLightAngles(azimuth, elevation);
+    this.colorPickerTarget.scheduleResample();
   }
 
-  public onMeshTypeChange(callback: (type: MeshGeometryType) => void): () => void {
-    this.meshTypeListeners.add(callback);
-    callback(this.currentMeshType);
-    return () => {
-      this.meshTypeListeners.delete(callback);
-    };
+  public setLightColor(colorHex: string | number | THREE.Color): void {
+    const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
+    this.lightingEngine.setKeyLightColor(col);
+    this.colorPickerTarget.scheduleResample();
   }
 
-  private bindPointerEvents(canvas: HTMLCanvasElement): void {
-    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
-      canvas.setPointerCapture(e.pointerId);
-      this.updatePointerCoordinates(e);
-      this.previousPointerPos = { x: e.clientX, y: e.clientY };
+  /** Hardens or softens the terminator by changing the key light's angular size. */
+  public setKeyAngularRadius(radians: number): void {
+    this.lightingEngine.setKeyAngularRadius(radians);
+    this.colorPickerTarget.scheduleResample();
+  }
 
-      this.raycaster.setFromCamera(this.pointer, this.camera);
+  public setGroundColor(colorHex: string | number | THREE.Color): void {
+    const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
+    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+    groundUniforms.uGroundAlbedo.value.copy(col);
+    this.lightingEngine.setGroundColor(col);
+    this.colorPickerTarget.scheduleResample();
+  }
 
-      // 1. Check Sun Handle hit (direct drag on the 3D Sun)
-      const sunHits = this.raycaster.intersectObjects(this.lightingEngine.getSunIndicator().getHitObjects(), true);
-      if (sunHits.length > 0) {
-        this.interactionMode = 'orbit-light';
-        canvas.style.cursor = 'crosshair';
-        this.lightingEngine.getSunIndicator().onPointerDown(e.clientX, e.clientY);
-        return;
-      }
+  public getGroundColor(): THREE.Color {
+    return this.lightingEngine.getGroundColor();
+  }
 
-      // 2. Check 3D Mesh hit (Isolated 3D Object Rotation)
-      const meshHits = this.raycaster.intersectObject(this.targetMesh);
-      if (meshHits.length > 0 && !e.altKey) {
-        this.interactionMode = 'rotate-mesh';
-        canvas.style.cursor = 'grabbing';
-        return;
-      }
+  public setSurfaceFinish(finish: SurfaceFinish): void {
+    if (finish !== 'custom' && finish in SURFACE_FINISHES) {
+      const config = SURFACE_FINISHES[finish as Exclude<SurfaceFinish, 'custom'>];
+      this.currentFinish = finish;
+      this.currentRoughness = config.roughness;
+      this.currentSpecular = config.specularIntensity;
+      this.syncSurfaceUniforms();
+      this.finishListeners.forEach((cb) => cb(this.currentFinish, this.currentRoughness, this.currentSpecular));
+      this.colorPickerTarget.scheduleResample();
+    }
+  }
 
-      // 3. Otherwise: Camera Orbit around the scene
-      this.interactionMode = 'orbit-camera';
-      canvas.style.cursor = 'grabbing';
-      this.orbitCamera.onPointerDown(e.clientX, e.clientY);
-    });
+  public setRoughnessAndSpecular(roughness: number, specular: number): void {
+    this.currentRoughness = Math.max(0, Math.min(1, roughness));
+    this.currentSpecular = Math.max(0, Math.min(1, specular));
 
-    canvas.addEventListener('pointermove', (e: PointerEvent) => {
-      if (this.interactionMode === 'orbit-light') {
-        this.lightingEngine.getSunIndicator().onPointerMove(e.clientX, e.clientY);
-        this.colorPickerTarget.scheduleResample();
-        return;
-      }
+    if (Math.abs(this.currentRoughness - 1.0) < 0.01 && this.currentSpecular < 0.01) {
+      this.currentFinish = 'matte';
+    } else if (Math.abs(this.currentRoughness - 0.45) < 0.02 && Math.abs(this.currentSpecular - 0.4) < 0.02) {
+      this.currentFinish = 'satin';
+    } else if (Math.abs(this.currentRoughness - 0.08) < 0.02 && Math.abs(this.currentSpecular - 0.95) < 0.02) {
+      this.currentFinish = 'glossy';
+    } else {
+      this.currentFinish = 'custom';
+    }
 
-      if (this.interactionMode === 'rotate-mesh') {
-        const deltaX = e.clientX - this.previousPointerPos.x;
-        const deltaY = e.clientY - this.previousPointerPos.y;
-        this.previousPointerPos = { x: e.clientX, y: e.clientY };
+    this.syncSurfaceUniforms();
+    this.finishListeners.forEach((cb) => cb(this.currentFinish, this.currentRoughness, this.currentSpecular));
+    this.colorPickerTarget.scheduleResample();
+  }
 
-        // Rotate only the 3D mesh locally (decoupled from scene and camera)
-        this.meshGroup.rotation.y += deltaX * 0.008;
-        this.meshGroup.rotation.x += deltaY * 0.008;
+  public getSurfaceFinish(): SurfaceFinish {
+    return this.currentFinish;
+  }
 
-        this.colorPickerTarget.scheduleResample();
-        return;
-      }
+  public getRoughness(): number {
+    return this.currentRoughness;
+  }
 
-      if (this.interactionMode === 'orbit-camera') {
-        this.orbitCamera.onPointerMove(e.clientX, e.clientY);
-        this.colorPickerTarget.scheduleResample();
-        return;
-      }
+  public getSpecular(): number {
+    return this.currentSpecular;
+  }
 
-      // Hover feedback when not dragging
-      this.updatePointerCoordinates(e);
-      this.raycaster.setFromCamera(this.pointer, this.camera);
+  public onSurfaceFinishChange(callback: (finish: SurfaceFinish, roughness: number, specular: number) => void): () => void {
+    this.finishListeners.add(callback);
+    callback(this.currentFinish, this.currentRoughness, this.currentSpecular);
+    return () => this.finishListeners.delete(callback);
+  }
 
-      const sunHits = this.raycaster.intersectObjects(this.lightingEngine.getSunIndicator().getHitObjects(), true);
-      if (sunHits.length > 0) {
-        canvas.style.cursor = 'pointer';
-        return;
-      }
+  public getLightingEngine(): LightingEngine {
+    return this.lightingEngine;
+  }
 
-      const meshHits = this.raycaster.intersectObject(this.targetMesh);
-      if (meshHits.length > 0) {
-        canvas.style.cursor = 'grab';
+  public getCanvas(): HTMLCanvasElement {
+    return this.renderer.domElement;
+  }
+
+  // --- Internals ------------------------------------------------------------
+
+  private getSphere(id: SphereSlotId): SphereRuntime {
+    const sphere = this.spheres.find((s) => s.config.id === id);
+    if (!sphere) throw new Error(`Unknown sphere slot: ${id}`);
+    return sphere;
+  }
+
+  private syncSurfaceUniforms(): void {
+    for (const sphere of this.spheres) {
+      const uniforms = sphere.material.uniforms as LumiformShaderUniforms;
+      uniforms.uRoughness.value = this.currentRoughness;
+      uniforms.uSpecularIntensity.value = this.currentSpecular;
+    }
+  }
+
+  /** Pushes sphere state into mesh transforms, per-sphere materials, and the ground arrays. */
+  private syncSphereUniforms(): void {
+    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+
+    this.spheres.forEach((sphere, index) => {
+      const radius = BASE_SPHERE_RADIUS * sphere.size;
+      sphere.mesh.visible = sphere.active;
+      sphere.mesh.scale.setScalar(sphere.size);
+      const slot = this.framing.slots[sphere.config.framingKey];
+      sphere.mesh.position.set(slot.x, GROUND_Y + radius, slot.z);
+
+      const uniforms = sphere.material.uniforms as LumiformShaderUniforms;
+      uniforms.uAlbedo.value.set(sphere.albedoHex);
+      uniforms.uSphereCenter.value.copy(sphere.mesh.position);
+      uniforms.uRoughness.value = this.currentRoughness;
+      uniforms.uSpecularIntensity.value = this.currentSpecular;
+
+      if (sphere.active) {
+        groundUniforms.uSphereCenters.value[index].copy(sphere.mesh.position);
+        groundUniforms.uSphereRadii.value[index] = radius;
+        groundUniforms.uSphereAlbedos.value[index].set(sphere.albedoHex);
       } else {
-        canvas.style.cursor = 'default';
+        groundUniforms.uSphereRadii.value[index] = 0;
       }
     });
 
-    const endPointerAction = (e: PointerEvent) => {
-      if (canvas.hasPointerCapture(e.pointerId)) {
-        canvas.releasePointerCapture(e.pointerId);
-      }
-
-      if (this.interactionMode === 'orbit-light') {
-        this.lightingEngine.getSunIndicator().onPointerUp();
-      } else if (this.interactionMode === 'orbit-camera') {
-        this.orbitCamera.onPointerUp();
-      }
-
-      this.interactionMode = 'none';
-      canvas.style.cursor = 'grab';
-    };
-
-    canvas.addEventListener('pointerup', endPointerAction);
-    canvas.addEventListener('pointercancel', endPointerAction);
+    this.syncAtmosphereUniforms();
+    this.updateSelectionFlashTransform();
+    this.colorPickerTarget.scheduleResample();
   }
 
-  private updatePointerCoordinates(e: PointerEvent): void {
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  /**
+   * Single place that maps the Haze slider and the phase's turbidity onto the
+   * shader uniforms. The preset's own Haze value is the calibrated atmosphere;
+   * below it fades to clear, above it reaches full fog. The horizon band widens
+   * with haze, which is what makes the ground/sky seam dissolve in hazy phases.
+   */
+  private syncAtmosphereUniforms(): void {
+    const env = this.lightingEngine.getEnvironment();
+    const optical = effectiveHaze(this.haze, env.hazeStrength, env.hazePreset);
+    const groundOptical = effectiveHaze(
+      this.haze,
+      env.groundHazeStrength,
+      env.hazePreset
+    );
+
+    const preset = Math.max(0.01, Math.min(0.99, env.hazePreset));
+    const t = Math.max(0, Math.min(1, this.haze / preset));
+    const bandFactor =
+      this.haze <= preset
+        ? t * t * (3 - 2 * t)
+        : 1 + ((this.haze - preset) / (1 - preset)) * 0.3;
+    const band = env.horizonBand * bandFactor;
+
+    for (const sphere of this.spheres) {
+      const uniforms = sphere.material.uniforms as LumiformShaderUniforms;
+      uniforms.uEffectiveHaze.value = optical;
+      uniforms.uHorizonHaze.value.copy(env.horizonHaze);
+      uniforms.uHorizonBand.value = band;
+      uniforms.uGroundHaze.value.copy(env.groundHaze);
+    }
+
+    const groundUniforms = this.groundMesh.material.uniforms as GroundShaderUniforms;
+    groundUniforms.uGroundEffectiveHaze.value = groundOptical;
+    groundUniforms.uGroundHaze.value.copy(env.groundHaze);
+
+    const skyUniforms = this.skyMesh.material.uniforms as SkyShaderUniforms;
+    skyUniforms.uHorizonHaze.value.copy(env.horizonHaze);
+    skyUniforms.uHorizonBand.value = band;
+    skyUniforms.uGroundHaze.value.copy(env.groundHaze);
+  }
+
+  private createSelectionFlash(): THREE.Sprite {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, 128, 128);
+      ctx.beginPath();
+      ctx.arc(64, 64, 51, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.lineWidth = 5;
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const sprite = new THREE.Sprite(material);
+    sprite.visible = false;
+    sprite.renderOrder = 50;
+    return sprite;
+  }
+
+  private startSelectionFlash(): void {
+    this.selectionFlash.visible = true;
+    (this.selectionFlash.material as THREE.SpriteMaterial).opacity = 1;
+    this.flashStart = performance.now();
+    this.updateSelectionFlashTransform();
+  }
+
+  private updateSelectionFlashTransform(): void {
+    const sphere = this.spheres.find((s) => s.config.id === this.selectedId);
+    if (!sphere || !sphere.active) {
+      this.selectionFlash.visible = false;
+      return;
+    }
+    this.selectionFlash.position.copy(sphere.mesh.position);
+    const ringSize = BASE_SPHERE_RADIUS * sphere.size * 2.7;
+    this.selectionFlash.scale.set(ringSize, ringSize, 1);
+  }
+
+  private bindSphereSelection(canvas: HTMLCanvasElement): void {
+    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.camera);
+
+      const activeMeshes = this.spheres.filter((s) => s.active).map((s) => s.mesh);
+      const hits = this.raycaster.intersectObjects(activeMeshes, false);
+      if (hits.length > 0) {
+        const id = hits[0].object.userData.slotId as SphereSlotId;
+        this.selectSphere(id);
+      }
+    });
   }
 
   private handleResize(): void {
     if (this.isDisposed) return;
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
-
     if (width === 0 || height === 0) return;
 
-    this.camera.aspect = width / height;
+    const aspect = width / height;
+    this.framing = buildFraming(aspect);
+    this.camera.aspect = aspect;
+    // The lens is fixed; only the horizontal slot positions follow the width.
+    this.camera.fov = THREE.MathUtils.radToDeg(this.framing.verticalFovRad);
     this.camera.updateProjectionMatrix();
-
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    this.syncSphereUniforms();
+    this.updateSelectionFlashTransform();
 
     this.colorPickerTarget.updatePositionDOM();
     this.colorPickerTarget.scheduleResample();
@@ -289,66 +679,20 @@ export class Viewport {
 
   private animate(): void {
     if (this.isDisposed) return;
+
+    // Transient selection ring: full opacity on selection, fades out over ~1s.
+    const flashMaterial = this.selectionFlash.material as THREE.SpriteMaterial;
+    if (this.selectionFlash.visible) {
+      const elapsed = (performance.now() - this.flashStart) / 1000;
+      flashMaterial.opacity = Math.max(0, 1 - elapsed);
+      if (flashMaterial.opacity <= 0.001) {
+        flashMaterial.opacity = 0;
+        this.selectionFlash.visible = false;
+      }
+    }
+
     this.renderer.render(this.scene, this.camera);
     this.animationFrameId = requestAnimationFrame(this.animate);
-  }
-
-  public setSphereColor(colorHex: string | number | THREE.Color): void {
-    const col = colorHex instanceof THREE.Color ? colorHex : new THREE.Color(colorHex);
-    const uniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
-    uniforms.uAlbedo.value.copy(col);
-    this.colorPickerTarget.scheduleResample();
-  }
-
-  public setSurfaceFinish(finish: SurfaceFinish): void {
-    this.currentFinish = finish;
-    const config = SURFACE_FINISHES[finish];
-    const uniforms = this.targetMesh.material.uniforms as LumiformShaderUniforms;
-    uniforms.uRoughness.value = config.roughness;
-    uniforms.uSpecularIntensity.value = config.specularIntensity;
-    this.finishListeners.forEach((cb) => cb(finish));
-    this.colorPickerTarget.scheduleResample();
-  }
-
-  public getSurfaceFinish(): SurfaceFinish {
-    return this.currentFinish;
-  }
-
-  public onSurfaceFinishChange(callback: (finish: SurfaceFinish) => void): () => void {
-    this.finishListeners.add(callback);
-    callback(this.currentFinish);
-    return () => {
-      this.finishListeners.delete(callback);
-    };
-  }
-
-  public onColorSample(callback: (rgb: RGBColor, hex: string) => void): () => void {
-    this.sampleListeners.add(callback);
-    return () => {
-      this.sampleListeners.delete(callback);
-    };
-  }
-
-  public getColorPickerTarget(): ColorPickerTarget {
-    return this.colorPickerTarget;
-  }
-
-  public setPreset(preset: LightingPreset): void {
-    this.lightingEngine.setPreset(preset);
-    this.colorPickerTarget.scheduleResample();
-  }
-
-  public setLightAngles(azimuth: number, elevation: number): void {
-    this.lightingEngine.setLightAngles(azimuth, elevation);
-    this.colorPickerTarget.scheduleResample();
-  }
-
-  public getLightingEngine(): LightingEngine {
-    return this.lightingEngine;
-  }
-
-  public getCanvas(): HTMLCanvasElement {
-    return this.renderer.domElement;
   }
 
   public dispose(): void {
@@ -358,9 +702,16 @@ export class Viewport {
       this.animationFrameId = null;
     }
     this.resizeObserver.disconnect();
+    this.skyGeometry.dispose();
+    this.skyMesh.material.dispose();
+    this.groundGeometry.dispose();
+    this.groundMesh.material.dispose();
     this.sphereGeometry.dispose();
-    this.cubeGeometry.dispose();
-    this.targetMesh.material.dispose();
+    for (const sphere of this.spheres) {
+      sphere.material.dispose();
+    }
+    (this.selectionFlash.material as THREE.SpriteMaterial).map?.dispose();
+    (this.selectionFlash.material as THREE.SpriteMaterial).dispose();
     this.lightingEngine.dispose();
     this.colorPickerTarget.dispose();
     this.renderer.dispose();

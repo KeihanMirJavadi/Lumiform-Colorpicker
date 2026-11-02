@@ -10,9 +10,16 @@ export interface HSBColor {
   b: number; // 0 - 100
 }
 
-export type SurfaceFinish = 'matte' | 'satin' | 'glossy';
+export type SurfaceFinish = 'matte' | 'satin' | 'glossy' | 'custom';
 
-export type LightingPreset = 'daylight' | 'golden-hour' | 'night';
+export type LightingPreset =
+  | 'morning'
+  | 'midday'
+  | 'afternoon'
+  | 'near-sunset'
+  | 'golden-hour'
+  | 'night'
+  | 'early-morning';
 
 export type SwatchRole = 'highlight' | 'halftone' | 'terminator' | 'core-shadow' | 'bounce-light';
 

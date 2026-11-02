@@ -1,10 +1,13 @@
 import { HSBColor, RGBColor } from '../core/types';
 import { hsbToRgb, rgbToHsb, rgbToHex, hexToRgb } from '../core/color';
+import { DEFAULT_ALBEDO_HEX } from '../core/defaults';
 
 export interface ColorControlsOptions {
   container: HTMLElement;
   initialHex?: string;
   onChange?: (hsb: HSBColor, rgb: RGBColor, hex: string) => void;
+  /** Clicking the albedo chip sends that exact hex to Photoshop. */
+  onAlbedoClick?: (hex: string) => void;
 }
 
 export class ColorControls {
@@ -21,17 +24,19 @@ export class ColorControls {
   private briNum!: HTMLInputElement;
   private hexInput!: HTMLInputElement;
   private swatchPreview!: HTMLElement;
+  private onAlbedoClick?: (hex: string) => void;
 
   constructor(options: ColorControlsOptions) {
     this.container = options.container;
 
-    const initialHex = options.initialHex ?? '#EB5757';
-    const initialRgb = hexToRgb(initialHex) ?? { r: 235, g: 87, b: 87 };
+    const initialHex = options.initialHex ?? DEFAULT_ALBEDO_HEX;
+    const initialRgb = hexToRgb(initialHex) ?? { r: 227, g: 227, b: 227 };
     this.hsb = rgbToHsb(initialRgb);
 
     if (options.onChange) {
       this.listeners.add(options.onChange);
     }
+    this.onAlbedoClick = options.onAlbedoClick;
 
     this.render();
     this.bindEvents();
@@ -41,45 +46,57 @@ export class ColorControls {
   private render(): void {
     this.container.innerHTML = `
       <div class="color-controls-panel">
-        <div class="section-header">
-          <h2>Base Color & Sliders (Decoupled Albedo)</h2>
+        <div class="field-row albedo-row">
+          <span class="field-label">Albedo</span>
           <div class="hex-group">
-            <div class="albedo-swatch" id="albedo-swatch-preview" title="Current Base Albedo"></div>
-            <input type="text" class="ps-input-hex" id="input-hex" maxlength="7" spellcheck="false" value="#EB5757" />
+            <button
+              type="button"
+              class="albedo-swatch albedo-send-btn"
+              id="albedo-swatch-preview"
+              title="Send the selected sphere's albedo to Photoshop"
+              aria-label="Send the selected sphere's albedo to Photoshop"
+            ></button>
+            <input type="text" class="ps-input-hex" id="input-hex" maxlength="7" spellcheck="false" aria-label="Albedo hex" value="${DEFAULT_ALBEDO_HEX}" />
           </div>
         </div>
 
-        <div class="slider-group">
-          <!-- Hue -->
-          <div class="slider-row">
-            <span class="slider-label">H</span>
-            <div class="slider-track-wrap">
-              <input type="range" class="ps-slider hue-slider" id="slider-hue" min="0" max="360" value="${this.hsb.h}" />
+        <details class="hsb-disclosure" id="hsb-disclosure">
+          <summary class="hsb-summary">
+            <span class="hsb-title">H · S · B</span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="slider-group">
+            <!-- Hue -->
+            <div class="slider-row">
+              <span class="slider-label">H</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider hue-slider" id="slider-hue" min="0" max="360" value="${this.hsb.h}" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-hue" min="0" max="360" value="${this.hsb.h}" />
+              <span class="slider-unit">°</span>
             </div>
-            <input type="number" class="ps-input-num" id="num-hue" min="0" max="360" value="${this.hsb.h}" />
-            <span class="slider-unit">°</span>
-          </div>
 
-          <!-- Saturation -->
-          <div class="slider-row">
-            <span class="slider-label">S</span>
-            <div class="slider-track-wrap">
-              <input type="range" class="ps-slider sat-slider" id="slider-sat" min="0" max="100" value="${this.hsb.s}" />
+            <!-- Saturation -->
+            <div class="slider-row">
+              <span class="slider-label">S</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider sat-slider" id="slider-sat" min="0" max="100" value="${this.hsb.s}" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-sat" min="0" max="100" value="${this.hsb.s}" />
+              <span class="slider-unit">%</span>
             </div>
-            <input type="number" class="ps-input-num" id="num-sat" min="0" max="100" value="${this.hsb.s}" />
-            <span class="slider-unit">%</span>
-          </div>
 
-          <!-- Brightness -->
-          <div class="slider-row">
-            <span class="slider-label">B</span>
-            <div class="slider-track-wrap">
-              <input type="range" class="ps-slider bri-slider" id="slider-bri" min="0" max="100" value="${this.hsb.b}" />
+            <!-- Brightness -->
+            <div class="slider-row">
+              <span class="slider-label">B</span>
+              <div class="slider-track-wrap">
+                <input type="range" class="ps-slider bri-slider" id="slider-bri" min="0" max="100" value="${this.hsb.b}" />
+              </div>
+              <input type="number" class="ps-input-num" id="num-bri" min="0" max="100" value="${this.hsb.b}" />
+              <span class="slider-unit">%</span>
             </div>
-            <input type="number" class="ps-input-num" id="num-bri" min="0" max="100" value="${this.hsb.b}" />
-            <span class="slider-unit">%</span>
           </div>
-        </div>
+        </details>
       </div>
     `;
 
@@ -132,8 +149,14 @@ export class ColorControls {
       this.updateUI(true);
     });
 
-    // Hex input validation and synchronization
-    this.hexInput.addEventListener('change', () => {
+    // Albedo chip: send the exact hex immediately (D21).
+    this.swatchPreview.addEventListener('click', () => {
+      this.onAlbedoClick?.(this.getHex());
+    });
+
+    // Hex input: a complete valid value streams live; blur/Enter normalizes
+    // the field to the canonical hex (and discards partial input).
+    this.hexInput.addEventListener('input', () => {
       let raw = this.hexInput.value.trim();
       if (!raw.startsWith('#')) {
         raw = '#' + raw;
@@ -142,11 +165,11 @@ export class ColorControls {
       if (rgb) {
         this.hsb = rgbToHsb(rgb);
         this.updateUI(true);
-      } else {
-        // Reset to current valid hex
-        const currentRgb = hsbToRgb(this.hsb);
-        this.hexInput.value = rgbToHex(currentRgb);
       }
+    });
+
+    this.hexInput.addEventListener('change', () => {
+      this.hexInput.value = rgbToHex(hsbToRgb(this.hsb));
     });
 
     this.hexInput.addEventListener('keydown', (e) => {

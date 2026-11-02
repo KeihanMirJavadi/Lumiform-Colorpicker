@@ -1,0 +1,191 @@
+/*
+ * Lumiform UXP host shell (V1.2, task 4.6).
+ *
+ * This document is the UXP panel that hosts the WebView. It cannot read the
+ * WebView's `data-ps-theme`, so it follows Photoshop with the same
+ * `prefers-color-scheme` tokens Adobe uses in `Required/UXP/host-theme.css`.
+ * Each block also falls back to explicit palette values because some builds do
+ * not expose `--uxp-host-*` to third-party panels.
+ */
+
+:root {
+  /* Default: Dark Gray (the V1.2 fallback). */
+  --host-bg: #535353;
+  --host-text: #ffffff;
+  --host-secondary: #e5e5e5;
+  --host-muted: #747474;
+  --host-border: #454545;
+  --host-field: #454545;
+  --host-strong: #5a5a5a;
+}
+
+@media (prefers-color-scheme: darkest) {
+  :root {
+    --host-bg: #323232;
+    --host-text: #ffffff;
+    --host-secondary: #9b9b9b;
+    --host-muted: #525252;
+    --host-border: #292929;
+    --host-field: #262626;
+    --host-strong: #494949;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --host-bg: #535353;
+    --host-text: #ffffff;
+    --host-secondary: #e5e5e5;
+    --host-muted: #747474;
+    --host-border: #454545;
+    --host-field: #454545;
+    --host-strong: #5a5a5a;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --host-bg: #b8b8b8;
+    --host-text: #424242;
+    --host-secondary: #424242;
+    --host-muted: #8e8e8e;
+    --host-border: #9c9c9c;
+    --host-field: #e2e2e2;
+    --host-strong: #cacaca;
+  }
+}
+
+@media (prefers-color-scheme: lightest) {
+  :root {
+    --host-bg: #f0f0f0;
+    --host-text: #4b4b4b;
+    --host-secondary: #606060;
+    --host-muted: #bdbdbd;
+    --host-border: #d1d1d1;
+    --host-field: #ffffff;
+    --host-strong: #d3d3d3;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--uxp-host-background-color, var(--host-bg));
+  color: var(--uxp-host-text-color, var(--host-text));
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+#panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: var(--uxp-host-background-color, var(--host-bg));
+}
+
+/* Focus is moved here deliberately to release the WebView's keyboard. */
+#panel:focus {
+  outline: none;
+}
+
+#lumiformView {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--uxp-host-background-color, var(--host-bg));
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--uxp-host-background-color, var(--host-bg));
+  z-index: 10;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 300px;
+  padding: 18px;
+  text-align: center;
+}
+
+.overlay-card strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--uxp-host-text-color-secondary, var(--host-secondary));
+  font-size: 11px;
+}
+
+.small {
+  font-size: 10px;
+  color: var(--uxp-host-text-color-secondary, var(--host-muted));
+}
+
+#errorMessage {
+  margin: 0;
+  word-break: break-word;
+}
+
+#reloadButton {
+  margin-top: 4px;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid var(--uxp-host-border-color, var(--host-border));
+  border-radius: 2px;
+  background-color: var(--uxp-host-widget-hover-background-color, var(--host-field));
+  color: var(--uxp-host-text-color, var(--host-text));
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+#reloadButton:hover {
+  background-color: var(--uxp-host-widget-hover-background-color, var(--host-strong));
+}
+
+#reloadButton:focus-visible {
+  outline: 1px solid var(--uxp-host-text-color, var(--host-text));
+  outline-offset: 1px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--uxp-host-border-color, var(--host-border));
+  border-top-color: var(--uxp-host-text-color, var(--host-text));
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

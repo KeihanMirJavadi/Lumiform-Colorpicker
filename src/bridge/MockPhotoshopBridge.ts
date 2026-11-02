@@ -1,14 +1,40 @@
 import { RGBColor } from '../core/types';
 import { rgbToHex, hexToRgb } from '../core/color';
-import { IPhotoshopBridge, ColorChangeEvent } from './IPhotoshopBridge';
+import { DEFAULT_ALBEDO_HEX } from '../core/defaults';
+import { IPhotoshopBridge, ColorChangeEvent, ShortcutPayload } from './IPhotoshopBridge';
 
 export class MockPhotoshopBridge implements IPhotoshopBridge {
   readonly name = 'MockPhotoshopBridge';
   private _isConnected = true;
   private _status = 'Connected (Browser Dev Mode)';
-  private _currentColor: RGBColor = { r: 235, g: 87, b: 87 }; // Default warm coral
+  private _currentColor: RGBColor = hexToRgb(DEFAULT_ALBEDO_HEX) ?? { r: 227, g: 227, b: 227 };
   private _statusListeners: Set<(status: string) => void> = new Set();
   private _colorListeners: Set<(event: ColorChangeEvent) => void> = new Set();
+  private _themeListeners: Set<(hostTheme: string | null) => void> = new Set();
+  private _hostTheme: string | null = 'dark';
+
+  constructor() {
+    // Browser dev mirrors the host: ?theme=<token> bootstraps the simulation,
+    // and Dark Gray is the default when no parameter is present.
+    try {
+      const bootstrap = new URLSearchParams(window.location.search).get('theme');
+      if (bootstrap && bootstrap.trim()) this._hostTheme = bootstrap.trim();
+    } catch (error) {
+      // Keep the default.
+    }
+
+    // Browser-dev hook: simulate Photoshop theme switches without Photoshop.
+    const devWindow = window as Window & {
+      __lumiformMockTheme?: (theme: string | null) => void;
+    };
+    devWindow.__lumiformMockTheme = (theme) => this.setHostTheme(theme);
+  }
+
+  /** Updates the simulated host token; used by browser development. */
+  setHostTheme(theme: string | null): void {
+    this._hostTheme = theme;
+    this._themeListeners.forEach((cb) => cb(theme));
+  }
 
   get isConnected(): boolean {
     return this._isConnected;
@@ -48,6 +74,32 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
     return { ...this._currentColor };
   }
 
+  async openUrl(url: string): Promise<void> {
+    if (!/^https:\/\//i.test(url)) {
+      console.warn(`[MockBridge] Refusing to open a non-https URL: ${url}`);
+      return;
+    }
+    window.open(url, '_blank', 'noopener');
+  }
+
+  focusPhotoshop(): void {
+    // Browser dev has no Photoshop window to focus back. The counter is a
+    // development hook proving that the UI released keyboard focus.
+    const devWindow = window as Window & { __lumiformFocusCalls?: number };
+    devWindow.__lumiformFocusCalls = (devWindow.__lumiformFocusCalls ?? 0) + 1;
+  }
+
+  sendShortcut(payload: ShortcutPayload): void {
+    const devWindow = window as Window & {
+      __lumiformShortcuts?: ShortcutPayload[];
+    };
+    devWindow.__lumiformShortcuts = [...(devWindow.__lumiformShortcuts ?? []), payload];
+  }
+
+  endShortcutSession(): void {
+    // Browser dev has no host session.
+  }
+
   onStatusChange(callback: (status: string) => void): () => void {
     this._statusListeners.add(callback);
     callback(this._status);
@@ -64,6 +116,14 @@ export class MockPhotoshopBridge implements IPhotoshopBridge {
     });
     return () => {
       this._colorListeners.delete(callback);
+    };
+  }
+
+  onThemeChange(callback: (hostTheme: string | null) => void): () => void {
+    this._themeListeners.add(callback);
+    callback(this._hostTheme);
+    return () => {
+      this._themeListeners.delete(callback);
     };
   }
 }

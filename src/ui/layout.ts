@@ -1,0 +1,273 @@
+/**
+ * Preview splitter controller (V1.3, task 5.2).
+ *
+ * The splitter is a focusable `separator` between the 3D preview and the rest
+ * of the dock. It owns pointer capture, the two snap stops and the keyboard
+ * contract; the shell owns the actual height, the clamping policy and the
+ * layout persistence.
+ */
+
+export interface SplitterBounds {
+  min: number;
+  max: number;
+}
+
+export interface SplitterSnaps {
+  /** Height of the reference 412:227 frame at the current width. */
+  reference: number;
+  /** Height of the 1:1 frame at the current width. */
+  square: number;
+}
+
+export interface SplitterOptions {
+  element: HTMLElement;
+  getBounds: () => SplitterBounds;
+  getSnaps: () => SplitterSnaps;
+  getHeight: () => number;
+  setHeight: (height: number) => void;
+  onCommit?: (height: number) => void;
+  /** Keyboard step, in pixels. */
+  step?: number;
+  /** Shift + arrow step, in pixels. */
+  largeStep?: number;
+}
+
+export interface SplitterController {
+  /** Re-sync the aria values after the shell changes the height externally. */
+  refresh: () => void;
+  /** Start a drag from an alternative surface, such as the floating band. */
+  beginDrag: (event: PointerEvent) => void;
+  destroy: () => void;
+}
+
+/**
+ * Persisted layout (V1.3, task 5.5). Everything here is presentation state:
+ * the preview height, the two essentials' disclosure and the four section
+ * rows. Colours, lighting and selection are intentionally not stored.
+ */
+export interface LayoutState {
+  /** Card height in px; null follows the reference 412:227 snap. */
+  previewHeight: number | null;
+  timeCollapsed: boolean;
+  rampCollapsed: boolean;
+  /** Ids of the four section `<details>` that are open. */
+  openSections: string[];
+}
+
+const STORAGE_KEY = 'lumiform.layout.v1';
+
+export const DEFAULT_LAYOUT: LayoutState = {
+  previewHeight: null,
+  timeCollapsed: false,
+  rampCollapsed: false,
+  openSections: [],
+};
+
+function defaultLayout(): LayoutState {
+  return { ...DEFAULT_LAYOUT, openSections: [] };
+}
+
+export function readLayout(): LayoutState {
+  try {
+    const raw = globalThis.localStorage?.getItem(STORAGE_KEY);
+    if (!raw) return defaultLayout();
+    const parsed = JSON.parse(raw) as Partial<LayoutState>;
+    const height =
+      typeof parsed.previewHeight === 'number' &&
+      Number.isFinite(parsed.previewHeight) &&
+      parsed.previewHeight > 0
+        ? Math.round(parsed.previewHeight)
+        : null;
+
+    return {
+      previewHeight: height,
+      timeCollapsed: parsed.timeCollapsed === true,
+      rampCollapsed: parsed.rampCollapsed === true,
+      openSections: Array.isArray(parsed.openSections)
+        ? parsed.openSections.filter((id): id is string => typeof id === 'string')
+        : [],
+    };
+  } catch {
+    return defaultLayout();
+  }
+}
+
+export function saveLayout(state: LayoutState): void {
+  try {
+    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // A blocked or full storage must never break the panel.
+  }
+}
+
+export function clearLayout(): void {
+  try {
+    globalThis.localStorage?.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignore.
+  }
+}
+
+export function bindSplitter(options: SplitterOptions): SplitterController {
+  const { element } = options;
+  const step = options.step ?? 8;
+  const largeStep = options.largeStep ?? 32;
+
+  let dragging = false;
+  let startY = 0;
+  let startHeight = 0;
+  let frame = 0;
+  let pendingHeight = 0;
+
+  const clamp = (height: number): number => {
+    const { min, max } = options.getBounds();
+    return Math.max(Math.min(min, max), Math.min(height, max));
+  };
+
+  const applyPending = (): void => {
+    frame = 0;
+    options.setHeight(pendingHeight);
+  };
+
+  const schedule = (height: number): void => {
+    pendingHeight = height;
+    if (frame === 0) {
+      frame = requestAnimationFrame(applyPending);
+    }
+  };
+
+  const cancelPending = (): void => {
+    if (frame !== 0) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    }
+  };
+
+  const refresh = (): void => {
+    const { min, max } = options.getBounds();
+    const height = Math.round(options.getHeight());
+    element.setAttribute('aria-valuemin', String(Math.round(Math.min(min, max))));
+    element.setAttribute('aria-valuemax', String(Math.round(max)));
+    element.setAttribute('aria-valuenow', String(height));
+    element.setAttribute('aria-valuetext', `${height} pixels tall`);
+  };
+
+  const commit = (): void => {
+    // Flush the last scheduled move: a fast drag can end before its frame.
+    if (frame !== 0) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      options.setHeight(pendingHeight);
+    }
+    options.onCommit?.(options.getHeight());
+    refresh();
+  };
+
+  const finishDrag = (commitMove: boolean): void => {
+    if (!dragging) return;
+    dragging = false;
+    element.dataset.dragging = 'false';
+    window.removeEventListener('pointermove', onWindowMove);
+    window.removeEventListener('pointerup', onWindowUp);
+    window.removeEventListener('pointercancel', onWindowUp);
+
+    if (commitMove) {
+      commit();
+    } else {
+      cancelPending();
+      refresh();
+    }
+  };
+
+  const onWindowMove = (event: PointerEvent): void => {
+    if (!dragging) return;
+    event.preventDefault();
+    schedule(clamp(startHeight + (event.clientY - startY)));
+  };
+
+  const onWindowUp = (event: PointerEvent): void => {
+    finishDrag(event.type === 'pointerup');
+  };
+
+  /**
+   * A drag can start on the splitter itself or on any surface that forwards
+   * its pointerdown here (the floating slider band). Move/up live on the
+   * window so the drag keeps working when the pointer leaves the handle.
+   */
+  const beginDrag = (event: PointerEvent): void => {
+    if (dragging || event.button !== 0) return;
+    event.preventDefault();
+    dragging = true;
+    startY = event.clientY;
+    startHeight = options.getHeight();
+    element.dataset.dragging = 'true';
+    element.focus();
+    window.addEventListener('pointermove', onWindowMove);
+    window.addEventListener('pointerup', onWindowUp);
+    window.addEventListener('pointercancel', onWindowUp);
+  };
+
+  const onPointerDown = (event: PointerEvent): void => {
+    beginDrag(event);
+  };
+
+  const onDoubleClick = (event: MouseEvent): void => {
+    event.preventDefault();
+    const snaps = options.getSnaps();
+    const current = options.getHeight();
+    // Toggle to whichever calibrated shape is farther away.
+    const toReference =
+      Math.abs(current - snaps.square) <= Math.abs(current - snaps.reference);
+    options.setHeight(clamp(toReference ? snaps.reference : snaps.square));
+    options.onCommit?.(options.getHeight());
+    refresh();
+  };
+
+  const onKeyDown = (event: KeyboardEvent): void => {
+    const snaps = options.getSnaps();
+    let next: number;
+
+    switch (event.key) {
+      case 'ArrowUp':
+        next = options.getHeight() - (event.shiftKey ? largeStep : step);
+        break;
+      case 'ArrowDown':
+        next = options.getHeight() + (event.shiftKey ? largeStep : step);
+        break;
+      case 'Home':
+        next = snaps.reference;
+        break;
+      case 'End':
+        next = snaps.square;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    options.setHeight(clamp(next));
+    options.onCommit?.(options.getHeight());
+    refresh();
+  };
+
+  element.addEventListener('pointerdown', onPointerDown);
+  element.addEventListener('dblclick', onDoubleClick);
+  element.addEventListener('keydown', onKeyDown);
+
+  refresh();
+
+  return {
+    refresh,
+    beginDrag,
+    destroy(): void {
+      cancelPending();
+      window.removeEventListener('pointermove', onWindowMove);
+      window.removeEventListener('pointerup', onWindowUp);
+      window.removeEventListener('pointercancel', onWindowUp);
+      element.removeEventListener('pointerdown', onPointerDown);
+      element.removeEventListener('dblclick', onDoubleClick);
+      element.removeEventListener('keydown', onKeyDown);
+    },
+  };
+}

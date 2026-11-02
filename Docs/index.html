@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumiform Colorpicker - Design Document & Roadmap</title>
+  <style>
+    :root {
+      --bg-dark: #181818;
+      --bg-panel: #222222;
+      --bg-card: #2c2c2c;
+      --bg-card-hover: #363636;
+      --border-color: #3e3e3e;
+      --text-main: #f0f0f0;
+      --text-muted: #aaaaaa;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --status-done: #10b981;
+      --status-done-bg: rgba(16, 185, 129, 0.15);
+      --status-current: #f59e0b;
+      --status-current-bg: rgba(245, 158, 11, 0.2);
+      --status-planned: #6b7280;
+      --status-planned-bg: rgba(107, 114, 128, 0.2);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding-bottom: 60px;
+    }
+
+    header {
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 24px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-title h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-title p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .badge-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 4px;
+      max-width: 100%;
+      background-color: #1a1a1a;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      color: var(--text-main);
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-btn.active {
+      color: #fff;
+      background-color: var(--accent);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.25s ease forwards;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 20px 0 10px 0;
+      color: #e2e8f0;
+    }
+
+    p {
+      margin-bottom: 12px;
+      color: #d1d5db;
+      font-size: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .card h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #93c5fd;
+    }
+
+    .metric-box {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    .metric-box code {
+      color: #38bdf8;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+    }
+
+    /* Roadmap Styles */
+    .roadmap-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      background: var(--bg-panel);
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      border-color: var(--accent);
+      color: #fff;
+      background-color: rgba(59, 130, 246, 0.2);
+    }
+
+    .stage-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .stage-header {
+      padding: 16px 20px;
+      background: #252525;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stage-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .task-list {
+      padding: 12px 20px;
+    }
+
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-info {
+      flex: 1;
+      padding-right: 20px;
+    }
+
+    .task-name {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .task-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .task-criteria {
+      font-size: 12px;
+      color: #94a3b8;
+      background: #1a1a1a;
+      padding: 6px 10px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .status-badge.done {
+      background-color: var(--status-done-bg);
+      color: var(--status-done);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .status-badge.current {
+      background-color: var(--status-current-bg);
+      color: var(--status-current);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      animation: pulse 2s infinite;
+    }
+
+    .status-badge.planned {
+      background-color: var(--status-planned-bg);
+      color: var(--status-planned);
+      border: 1px solid rgba(107, 114, 128, 0.3);
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.8; }
+      50% { opacity: 1; filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6)); }
+      100% { opacity: 0.8; }
+    }
+
+    pre {
+      font-family: Consolas, "Courier New", monospace;
+      white-space: pre;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #282828;
+      color: #93c5fd;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background-color: #242424;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-title">
+      <h1>
+        Lumiform Colorpicker
+        <span class="badge-tag" style="background:#1e40af; color:#bfdbfe;">Design Doc & Roadmap</span>
+      </h1>
+      <p>Real-Time 3D Color Picker & Light Simulator for Photoshop 2025</p>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-btn active" onclick="switchTab('overview')">1. Overview</button>
+      <button class="nav-btn" onclick="switchTab('specs')">2. Architecture</button>
+      <button class="nav-btn" onclick="switchTab('lighting')">3. Lighting</button>
+      <button class="nav-btn" onclick="switchTab('color')">4. Color</button>
+      <button class="nav-btn" onclick="switchTab('roadmap')">5. Roadmap</button>
+      <button class="nav-btn" onclick="switchTab('depth')">6. Depth</button>
+      <button class="nav-btn" onclick="switchTab('ui')">7. V1.1 UI</button>
+      <button class="nav-btn" onclick="switchTab('ps-skin')">8. Skins &amp; Layout</button>
+    </nav>
+  </header>
+
+  <div class="container">
+
+    <!-- TAB 1: OVERVIEW -->
+    <div id="overview" class="tab-content active">
+      <h2>Project Overview & Vision</h2>
+      <p>
+        <strong>Lumiform Colorpicker</strong> is an interactive 3D color preview and light simulation plugin designed for digital painters, concept artists, and illustrators. It addresses the fundamental flaw of 2D flat color pickers: <em>muddy, unnatural shadows and chalky highlights</em> caused by naive value shifts.
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>The Problem in 2D Painting</h4>
+          <p>When artists pick shadow colors using traditional 2D swatches, they typically shift brightness down toward black or desaturate. In reality, shadows are illuminated by ambient skylight and ground bounce light.</p>
+          <div class="metric-box">
+            <code>Failure Mode: Desaturated, dead shadows lacking ambient color temperature and form clarity.</code>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>The 3D Solution</h4>
+          <p>By mapping the local base color onto a real-time lit 3D sphere, artists immediately see how warm sunlight, cool sky fill, and ground bounce naturally interact. The artist clicks directly on the sphere or the value ramp to paint with physical light.</p>
+          <div class="metric-box">
+            <code>Outcome: Vibrant, accurate lighting ramps with instant one-click brush application.</code>
+          </div>
+        </div>
+      </div>
+
+      <h3>Core Design Pillars</h3>
+      <div class="grid-3">
+        <div class="card">
+          <h4>1. In-Panel 3D Viewport</h4>
+          <p>Three.js WebGL viewport rendering up to three grounded spheres in fixed near/mid/far slots, with a fixed camera, a per-sphere size slider, and Orbit/Height light-direction sliders.</p>
+        </div>
+        <div class="card">
+          <h4>2. Physical Light Simulation</h4>
+          <p>Directional key light with 3-zone ambient environment (Sky, Horizon, Ground bounce) and seven calibrated Time-of-Day presets, each with its own Haze amount.</p>
+        </div>
+        <div class="card">
+          <h4>3. Live 5-Value Swatch Ramp</h4>
+          <p>Mathematically accurate real-time swatches: Highlight, Half-Tone, Terminator, Core Shadow, and Bounce Light.</p>
+        </div>
+      </div>
+
+      <h3>Photoshop Add-on (v1.1)</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Dockable UXP Panel</h4>
+          <p>
+            The first Photoshop version ships as a UXP Manifest v5 panel. It hosts the existing Three.js renderer in a
+            local WebView, so the lighting, haze, swatches, and eyedropper are identical to the browser build.
+            <span class="badge-tag" style="background:rgba(59,130,246,0.2); color:#93c5fd; border:1px solid rgba(59,130,246,0.4);">Packaged</span>
+          </p>
+        </div>
+        <div class="card">
+          <h4>Foreground Color Bridge</h4>
+          <p>
+            Picking a sphere, swatch, or reticle posts the color to the UXP host, which writes Photoshop's
+            <code>app.foregroundColor</code>. External brush changes flow back to the panel status bar.
+            <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Running in Photoshop</span>
+          </p>
+        </div>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">
+        Install: download <code>Lumiform-Colorpicker-1.3.0.ccx</code> (or build it with <code>npm run plugin</code>),
+        double-click it through Creative Cloud, or load <code>plugin/manifest.json</code> through UXP Developer Tool.
+        Full guide: <code>Docs/PHOTOSHOP.md</code>.
+      </p>
+
+      <h3>V1.1 - UI Design <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span></h3>
+      <div class="card">
+        <p>
+          The v1.0 panel works, but its controls were assembled in development order. V1.1 restructures the panel
+          without touching the lighting engine: a fixed spine, four collapsible sections that start closed and show
+          live state, a single-row time-of-day strip with a snapping slider, Near / Mid / Far sphere toggles instead
+          of a count control and Delete, a sphere-labelled 5-value ramp, and a full-panel Controls Guide overlay.
+        </p>
+        <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
+          Decisions, onboarding and the Stage 3 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> -
+          see <a href="#" onclick="switchTab('ui'); return false;" style="color:#93c5fd;">tab 7</a>.
+        </p>
+      </div>
+
+      <h3>V1.2 - Native Photoshop Skin <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span></h3>
+      <div class="card">
+        <p>
+          Photoshop's chrome is a neutral gray system; Lumiform's is still a dark web card stack with a bright blue
+          accent. V1.2 reskins the entire chrome - flat surfaces, 1 px dividers, 2 px radii, compact 22-24 px
+          controls, Segoe UI, line icons and a sampled neutral selection - without touching the renderer, framing,
+          lighting or swatch mathematics. The time-of-day gradient stays exactly as it is.
+        </p>
+        <p>
+          It follows all four Photoshop themes (Black, Dark Gray, Medium Gray, Light Gray) through a UXP host relay
+          of <code>document.theme</code>, with a manual Appearance override in the guide. Task 4.1 verified the
+          reference capture as Dark Gray and froze all four palettes from Adobe's own theme files. The release also
+          added per-panel resets, fixed the GitHub link, and shipped Windows keyboard forwarding with a command queue
+          and a reused modal session.
+        </p>
+        <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
+          Locked decisions P1-P24, sampled palette, theme architecture and the Stage 4 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> section 10 -
+          see <a href="#" onclick="switchTab('ps-skin'); return false;" style="color:#93c5fd;">tab 8</a>.
+        </p>
+      </div>
+
+      <h3>V1.3 - Workspace Layout <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span></h3>
+      <div class="card">
+        <p>
+          The 3D canvas is a reference sheet, but its fixed 412:227 shape is 130-145 px tall in a docked column. V1.3
+          lets the preview take any shape from the reference up to 1:1, with a splitter directly under it and a
+          bounded fill that keeps the three spheres composed without clipping.
+        </p>
+        <p>
+          Only the preview page stays fixed: Time of Day, the 5-Value Ramp and the four collapsible sections share
+          one scrollbar below it, and that list can be dragged to zero. Time of Day folds to a row with the slider
+          floating on the preview's bottom edge, and the ramp folds to five floating swatches. Layout state persists.
+          Shipped as 1.3.0 and accepted in Photoshop.
+        </p>
+        <p style="margin-bottom:0; font-size:13px; color:var(--text-muted);">
+          Locked decisions W1-W14, the framing contract and the Stage 5 roadmap: <code>Docs/AI_CONTEXT_UI.md</code> section 11 -
+          see <a href="#" onclick="switchTab('ps-skin'); return false;" style="color:#93c5fd;">tab 8</a>.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 2: SPECS -->
+    <div id="specs" class="tab-content">
+      <h2>Technical Architecture & Specifications</h2>
+      <p>The system utilizes a dual-target architecture: a high-velocity <strong>Web Application</strong> for rapid iteration, followed by an <strong>Adobe UXP Panel Plugin</strong> for Photoshop 2025.</p>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <h4>System Architecture Diagram</h4>
+        <pre style="background:#191919; padding:16px; border-radius:6px; color:#38bdf8; font-size:12px; overflow-x:auto;">
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Panel UI (Adobe Dark Theme)                     │
+│  ┌───────────────────────┐  ┌──────────────────┐  ┌─────────────────┐  │
+│  │  HSB & Hex Controls   │  │ Time-of-Day Bar  │  │ Surface Finish  │  │
+│  └───────────┬───────────┘  └────────┬─────────┘  └────────┬────────┘  │
+│              └───────────────────────┼─────────────────────┘           │
+│                                      ▼                                 │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                    3D Viewport (Three.js WebGL)                  │  │
+│  │  - Up to 3 Grounded Spheres (near / mid / far)                   │  │
+│  │  - Aerial Perspective (distance haze + horizon tint)             │  │
+│  │  - PBR Shader (GGX + Sky/Horizon/Ground Ambient)                 │  │
+│  │  - Orbit & Height Sun Sliders (no in-canvas marker)              │  │
+│  │  - Persistent Draggable Color Picker Target                      │  │
+│  └───────────────────────────────────┬──────────────────────────────┘  │
+│                                      ▼                                 │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │               Analytical 5-Value Swatch Generator                │  │
+│  │    [Highlight]  [Half-Tone]  [Terminator]  [Core]  [Bounce]      │  │
+│  └───────────────────────────────────┬──────────────────────────────┘  │
+└──────────────────────────────────────┼─────────────────────────────────┘
+                                       ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                Photoshop Bridge Interface (IPhotoshopBridge)           │
+│  ├─ MockPhotoshopBridge       (Browser dev: logs & visual swatch)       │
+│  └─ WebView bridge + UXP host (Photoshop: app.foregroundColor)          │
+└────────────────────────────────────────────────────────────────────────┘
+        </pre>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <h4>Photoshop Add-on Runtime (UXP Panel + Local WebView)</h4>
+        <p>
+          UXP panels do not provide WebGL, so the dockable Photoshop panel hosts the built Three.js app in a
+          <strong>local UXP WebView</strong> (<code>plugin:/web/index.html</code>). WebView2 on Windows and WKWebView on
+          macOS provide the WebGL context, so the existing renderer, shaders, and eyedropper run unchanged.
+        </p>
+        <ul style="font-size:13px; margin-left:18px; margin-top:8px; color:#cbd5e1;">
+          <li><strong>Panel shell:</strong> <code>plugin/index.html</code> — full-size WebView plus loading/error overlays.</li>
+          <li><strong>Host relay:</strong> <code>plugin/main.js</code> — reads/writes <code>app.foregroundColor</code>, coalesces rapid samples, polls external changes.</li>
+          <li><strong>WebView bridge:</strong> <code>src/bridge/WebViewPhotoshopBridge.ts</code> — implements the same bridge interface as the mock.</li>
+          <li><strong>Package:</strong> <code>npm run plugin</code> → <code>release/Lumiform-Colorpicker-1.3.0.ccx</code>.</li>
+        </ul>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
+          The web app is inlined into one HTML file to avoid module/asset resolution on the <code>plugin:/</code> origin.
+          Requirements: Photoshop 2025 (26.0+) or 2026; install via the <code>.ccx</code>, UXP Developer Tool, or the
+          Photoshop <code>Plug-ins</code> folder. See <code>Docs/PHOTOSHOP.md</code>.
+        </p>
+      </div>
+
+      <h3>Technology Stack</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Technology</th>
+            <th>Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>3D Graphics</td>
+            <td>Three.js (WebGL, inside a local UXP WebView)</td>
+            <td>Lightweight, flexible custom GLSL shaders, fast canvas pixel readback. The WebView supplies the WebGL context that a UXP panel lacks.</td>
+          </tr>
+          <tr>
+            <td>Build System</td>
+            <td>Vite + TypeScript</td>
+            <td>Instant HMR, strict type safety, and a plugin build that inlines the app into one HTML file.</td>
+          </tr>
+          <tr>
+            <td>UI Styling</td>
+            <td>Custom CSS (Photoshop Dark #1e1e1e)</td>
+            <td>Matches native Adobe UI look and feel; zero heavy external UI dependencies.</td>
+          </tr>
+          <tr>
+            <td>Plugin Target</td>
+            <td>Adobe UXP Manifest v5 + local WebView</td>
+            <td>Modern Photoshop 2025+ standard, replaces deprecated CEP panels; WebView preserves the existing WebGL renderer.</td>
+          </tr>
+          <tr>
+            <td>Photoshop Bridge</td>
+            <td>WebView <code>postMessage</code> + UXP <code>app.foregroundColor</code></td>
+            <td>Isolates Photoshop API access in the panel host and coalesces eyedropper updates before they reach the brush.</td>
+          </tr>
+          <tr>
+            <td>Distribution</td>
+            <td>Unsigned <code>.ccx</code> (ZIP)</td>
+            <td>Double-click install through Creative Cloud/UPIA, or load the manifest through UXP Developer Tool.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TAB 3: LIGHTING -->
+    <div id="lighting" class="tab-content">
+      <h2>3D & Lighting Physics Engine</h2>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>3-Zone Ambient & Directional Key Light</h4>
+          <p>Realistic illumination is represented by combining directional sun rays with hemispherical and ground-reflected scatter:</p>
+          <div class="metric-box">
+            <code>I_total = I_key * max(0, N · L) + I_ambient(N) + I_specular</code>
+          </div>
+          <p style="margin-top:8px; font-size:13px;">Where ambient lighting interpolates across three vertical bands:</p>
+          <ul style="font-size:12px; margin-left:20px; color:#cbd5e1;">
+            <li><strong>Sky (Zenith):</strong> Affects surfaces facing upward ($\hat{N}_y > 0$).</li>
+            <li><strong>Horizon:</strong> Affects lateral glancing angles ($\hat{N}_y \approx 0$).</li>
+            <li><strong>Ground Bounce:</strong> Affects downward undersides ($\hat{N}_y < 0$).</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h4>Surface Finish Modes</h4>
+          <p>The sphere material dynamically switches between three physical finishes:</p>
+          <ul style="font-size:13px; margin-left:16px; margin-top:8px;">
+            <li><strong>Matte (default):</strong> Roughness 1.0, 0% Reflectance. Pure Lambertian diffuse (skin, chalk, matte fabric).</li>
+            <li><strong>Satin:</strong> Roughness 0.45, 40% Reflectance. Broad, soft GGX highlight (leather, smooth plastic).</li>
+            <li><strong>Glossy:</strong> Roughness 0.08, 95% Reflectance. Tight GGX highlight with Fresnel edge (metal, wet surfaces).</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Seven Time-of-Day Presets</h3>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">
+        Each preset restores its own key light, sky, ground albedo, horizon haze, and calibrated Haze amount. Haze is expressed as a fraction of the maximum: 0% is clear air, the preset value reproduces that phase's measured atmosphere, and 100% is maximum fog.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Preset</th>
+            <th>Key Light</th>
+            <th>Sky / Atmosphere</th>
+            <th>Ground</th>
+            <th>Haze</th>
+            <th>Artistic Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Early Morning</strong></td>
+            <td>Pre-sunrise cool ambient (22°, very soft)</td>
+            <td>Lavender-pink above a blue-gray horizon haze layer</td>
+            <td>Blue-gray, cool bounce</td>
+            <td>60%</td>
+            <td>Cool dawn, very soft edges.</td>
+          </tr>
+          <tr>
+            <td><strong>Morning</strong></td>
+            <td>Soft warm low key (24°, broad terminator)</td>
+            <td>Pale cream horizon, soft blue zenith, wide haze band</td>
+            <td>Pale olive-green, gentle bounce</td>
+            <td>43%</td>
+            <td>Pastel dawn, soft low-contrast forms.</td>
+          </tr>
+          <tr>
+            <td><strong>Midday</strong></td>
+            <td>High side sun (58°, crisp terminator)</td>
+            <td>Deep blue zenith, cyan equator, thin cyan horizon band</td>
+            <td>Saturated green, strong green bounce</td>
+            <td>3%</td>
+            <td>Clear reference light, crisp form and shadow.</td>
+          </tr>
+          <tr>
+            <td><strong>Afternoon</strong></td>
+            <td>Crisp warm side sun (19°, hard terminator)</td>
+            <td>Deep blue sky with a broad pale cream horizon band</td>
+            <td>Vivid green, olive toward the horizon</td>
+            <td>9%</td>
+            <td>Strong warm/cool form contrast.</td>
+          </tr>
+          <tr>
+            <td><strong>Near Sunset</strong></td>
+            <td>Low amber sun (13°, soft terminator)</td>
+            <td>Lilac upper sky, peach horizon band</td>
+            <td>Warm brown-gold, long shadows</td>
+            <td>60%</td>
+            <td>Long shadows, warm rim light.</td>
+          </tr>
+          <tr>
+            <td><strong>Golden Hour</strong></td>
+            <td>Lowest orange sun (10°, soft terminator)</td>
+            <td>Rose/lilac upper sky, bright orange horizon</td>
+            <td>Dark warm earth, golden horizon</td>
+            <td>70%</td>
+            <td>Cinematic sunset, saturated warmth.</td>
+          </tr>
+          <tr>
+            <td><strong>Night</strong></td>
+            <td>Dim cool moonlight (16°, soft terminator)</td>
+            <td>Deep navy sky with a blue-gray horizon band</td>
+            <td>Dark teal, near-black</td>
+            <td>15%</td>
+            <td>Moody night, faint edge light.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TAB 4: COLOR -->
+    <div id="color" class="tab-content">
+      <h2>Color Controls & Swatch Ramp</h2>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>Self-Contained In-Panel Controls</h4>
+          <p>The panel includes dedicated HSB sliders and a Hex input:</p>
+          <ul style="font-size:13px; margin-left:16px;">
+            <li><strong>Hue:</strong> 0° to 360° gradient slider.</li>
+            <li><strong>Saturation:</strong> 0% to 100% dynamic saturation gradient.</li>
+            <li><strong>Brightness:</strong> 0% to 100% value slider.</li>
+            <li><strong>Hex Input:</strong> Bidirectional hex sync with validation.</li>
+          </ul>
+          <p style="margin-top:10px; font-size:12px; color:#f59e0b;">
+            <strong>Decoupled Input Guarantee:</strong> The 3D sphere is driven strictly by panel controls to prevent unwanted canvas feedback loops while painting.
+          </p>
+        </div>
+
+        <div class="card">
+          <h4>Analytical 5-Value Swatch Calculation</h4>
+          <p>Rather than reading arbitrary screen pixels, the 5 value swatches are evaluated mathematically from the lighting model at canonical surface normal angles:</p>
+          <table style="margin: 8px 0; font-size:12px;">
+            <tr>
+              <td><strong>Highlight</strong></td>
+              <td>Half-vector $\hat{H} = \text{normalize}(\hat{L} + \hat{V})$</td>
+            </tr>
+            <tr>
+              <td><strong>Half-Tone</strong></td>
+              <td>Surface normal at $45^\circ$ toward light vector $\hat{L}$</td>
+            </tr>
+            <tr>
+              <td><strong>Terminator</strong></td>
+              <td>Normal perpendicular to light ($\hat{N} \cdot \hat{L} = 0$)</td>
+            </tr>
+            <tr>
+              <td><strong>Core Shadow</strong></td>
+              <td>Normal facing opposite light before ground bounce</td>
+            </tr>
+            <tr>
+              <td><strong>Bounce Light</strong></td>
+              <td>Normal pointing directly down toward ground reflection</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: ROADMAP -->
+    <div id="roadmap" class="tab-content">
+      <h2>Development Roadmap & Task Tracker</h2>
+      <p>
+        AI Agents follow this roadmap sequentially. Only one task may be in the <code>current</code> state at any time. When a task is completed, the agent requests user approval before marking it <code>Done</code> and moving to the next.
+      </p>
+
+      <div class="roadmap-controls">
+        <div style="font-size: 13px; color: var(--text-muted);">
+          Filter tasks by status:
+        </div>
+        <div class="filter-buttons">
+          <button class="filter-btn active" onclick="filterRoadmap('all')">All</button>
+          <button class="filter-btn" onclick="filterRoadmap('current')">Current</button>
+          <button class="filter-btn" onclick="filterRoadmap('planned')">Planned</button>
+          <button class="filter-btn" onclick="filterRoadmap('done')">Done</button>
+        </div>
+      </div>
+
+      <!-- STAGE 1 -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">Stage 1: Web Application Prototype (Vite + TypeScript + Three.js)</div>
+          <span class="status-badge done" id="stage1-badge">Complete</span>
+        </div>
+        <div class="task-list">
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.1 Project Scaffolding & Build Configuration</div>
+              <div class="task-desc">Set up Vite, TypeScript, Three.js, ESLint, and Photoshop-dark CSS layout template with mock bridge.</div>
+              <div class="task-criteria">Criteria: Clean <code>npm run dev</code> starts without warnings, builds cleanly to <code>dist/</code>.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.2 3D Viewport & Sphere Rendering</div>
+              <div class="task-desc">Implement Three.js scene, fixed perspective camera (no zoom), grounded sphere geometry, and resize handling.</div>
+              <div class="task-criteria">Criteria: 60fps rendering, static camera framing, no background-drag camera orbit, resize observer.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.3 Lighting Engine & Sun Sliders</div>
+              <div class="task-desc">Implement directional key light driven by Orbit/Height sliders, dynamic 3-zone ambient (Sky/Horizon/Ground), and seven calibrated time-of-day presets (Early Morning, Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night). No in-canvas sun marker.</div>
+              <div class="task-criteria">Criteria: Orbit/Height sliders reposition the light smoothly; each preset restores its own key, sky, ground albedo, and calibrated Haze amount.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.4 Surface Finish (Matte / Satin / Glossy)</div>
+              <div class="task-desc">Implement a PBR metallic/roughness finish selector with GGX specular, Smith geometry, and Schlick Fresnel.</div>
+              <div class="task-criteria">Criteria: Switching states updates highlight sharpness and energy-conserving response immediately.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.5 In-Panel HSB & Hex Color Controls</div>
+              <div class="task-desc">Build compact HSB sliders and hex code input that update the 3D sphere's base albedo color.</div>
+              <div class="task-criteria">Criteria: Sliding Hue/Sat/Val immediately updates base sphere material; valid hex input syncs.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.6 Viewport Eyedropper Sampling & Throttling</div>
+              <div class="task-desc">Implement the persistent draggable eyedropper puck with WebGL readPixels sampling, throttled to requestAnimationFrame.</div>
+              <div class="task-criteria">Criteria: Dragging target samples lit color under reticle; updates active brush color and status bar smoothly.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.7 Analytical 5-Value Swatch Ramp</div>
+              <div class="task-desc">Compute Highlight, Half-Tone, Terminator, Core Shadow, and Bounce Light swatches from normal vectors. Clicking any swatch applies it.</div>
+              <div class="task-criteria">Criteria: 5 swatches update in real time; clicking swatch updates active color and shows tooltip.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.8 Multi-Sphere Depth Staging</div>
+              <div class="task-desc">Extend the viewport from one sphere to three fixed composition slots (center/near, right/mid, left/far) with a 1 / 2 / 3 count control, explicit Delete for the selected non-center sphere, nearest-empty refill, grounded placement, independent mesh instances, and a per-selected-sphere size control.</div>
+              <div class="task-criteria">Criteria: Count changes and Delete add/remove the correct spheres without moving the others; refills copy the center's current color at 100% size; every sphere rests on the ground; per-sphere sizes persist while the sphere exists; composition matches the reference at 60fps.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.9 Aerial Perspective & Atmosphere</div>
+              <div class="task-desc">Add single-scattering depth fog for spheres and ground: per-channel extinction plus in-scattering toward the local background (sky with a horizon haze band above the eye line, phase ground haze below). Each time-of-day preset carries its own calibrated Haze amount, and selecting it resets the slider to that value.</div>
+              <div class="task-criteria">Criteria: Far sphere is hazier and lower-contrast than mid, mid hazier than near; the far sphere desaturates toward its background without a halo; ground fades into a horizon haze band that meets the sky; near sphere stays exactly clear.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">1.10 Per-Sphere Color, Selection & Link Toggle</div>
+              <div class="task-desc">Give each sphere an independent albedo, add sphere selection (viewport click + panel selector with a transient highlight flash), and add a Link Colors toggle that applies edits to all visible spheres at once.</div>
+              <div class="task-criteria">Criteria: Unlinked edits affect only the selected sphere; linked edits affect all visible spheres; selection falls back to center when deleted; the swatch ramp (including depth haze) and eyedropper follow selection.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STAGE 2 -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">Stage 2: Adobe Photoshop UXP Plugin Porting</div>
+          <span class="status-badge current" id="stage2-badge">In Progress</span>
+        </div>
+        <div class="task-list">
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">2.1 UXP Manifest v5 & Packaging Configuration</div>
+              <div class="task-desc">Configure <code>manifest.json</code> with a dockable panel entry point, Photoshop 2025+ host requirements, local WebView permissions, panel icons, and a repeatable <code>.ccx</code> packaging script. Build the web app into a single inlined HTML file for the <code>plugin:/</code> origin.</div>
+              <div class="task-criteria">Criteria: Manifest follows the UXP v5 schema; <code>npm run plugin</code> produces a <code>.ccx</code> whose root contains <code>manifest.json</code>, the panel shell, icons, and the inlined web app. UDT validation is rechecked on first load.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">2.2 Photoshop Bridge Implementation (WebViewPhotoshopBridge)</div>
+              <div class="task-desc">Connect color sampling to Photoshop's <code>app.foregroundColor</code>. The WebView-side bridge sends <code>ready</code>/<code>set-foreground</code>/<code>get-foreground</code> messages to <code>plugin/main.js</code>, which reads/writes a <code>SolidColor</code>, coalesces rapid eyedropper samples, and pushes external foreground changes back to the panel.</div>
+              <div class="task-criteria">Criteria: Clicking a sphere, swatch, or dragging the picker changes the active brush color with no visible lag; external Photoshop color changes update the panel status bar. Protocol harness passes and the packaged panel runs in Photoshop.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="planned">
+            <div class="task-info">
+              <div class="task-name">2.3 End-to-End Photoshop Verification & Polish</div>
+              <div class="task-desc">Load the packaged plugin in Adobe Photoshop 2025+ via UDT or the <code>.ccx</code>, test panel docking, resizing, high-DPI scaling, WebGL startup, and paint responsiveness.</div>
+              <div class="task-criteria">Criteria: Plugin runs stably in Photoshop 2025+ with full bi-directional brush responsiveness and no panel-layout regressions.</div>
+            </div>
+            <span class="status-badge planned">planned</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STAGE 3 -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">Stage 3: V1.1 - UI Design (Panel Redesign)</div>
+          <span class="status-badge done" id="stage3-badge">Complete</span>
+        </div>
+        <div class="task-list">
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">3.1 Panel spine, collapsible sections &amp; live headers</div>
+              <div class="task-desc">Rebuild the panel shell into the V1.1 spine: header, canvas, time of day, ramp, spheres, sun &amp; atmosphere, ground, surface finish, status bar. Replace section cards with <code>&lt;details&gt;</code> blocks that start closed, add the header info affordance and live collapsed-header summaries.</div>
+              <div class="task-criteria">Criteria: At 320/420/600 px the panel shows the new spine with four closed, correctly summarised sections; opening each reveals its controls; the status bar stays pinned.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">3.2 Time-of-day strip (icons + snapped slider + detach / &#8634;)</div>
+              <div class="task-desc">Seven icon buttons in one row above a snapping slider, chronological preset order (Early Morning first), live relighting, and the detach rule for all six lighting controls with the <code>&middot; edited &#8634;</code> reset label.</div>
+              <div class="task-criteria">Criteria: Clicking and dragging agree; crossing a stop relights immediately; moving any lighting control clears all buttons and shows <code>edited</code>; <code>&#8634;</code> restores the calibrated preset; one line at 320 px.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">3.3 Sphere model - Near / Mid / Far toggles, merged panel, size link</div>
+              <div class="task-desc">Rename spheres to Near / Mid / Far, replace the count control and Delete with three-state toggles, add the last-sphere guard, restore-on-re-enable, selection fallback Near &rarr; Mid &rarr; Far, Link Size, and the merged panel with size, albedo and the nested H/S/B disclosure.</div>
+              <div class="task-criteria">Criteria: Toggles enable / select / disable as specified; the last sphere cannot be disabled; re-enabling restores colour and size; link toggles equalise immediately; no count or Delete control remains.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">3.4 Ramp header, sphere indicator &amp; albedo dot</div>
+              <div class="task-desc">Retitle the ramp with a read-only Near / Mid / Far chip and an albedo dot; keep the grid, the recomputation triggers and click-to-paint behaviour.</div>
+              <div class="task-criteria">Criteria: Chip follows selection; dot matches albedo; swatches still update on lighting, haze and finish changes; clicks still write to Photoshop.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">3.5 Light row and live foreground streaming</div>
+              <div class="task-desc">Move the light chip into a labelled <code>Light</code> row in Sun &amp; Atmosphere, make the sphere albedo chip send on click, and stream H/S/B and hex edits at one write per animation frame.</div>
+              <div class="task-criteria">Criteria: The light chip is discoverable at 320 px; the albedo chip sets the Photoshop foreground; H/S/B dragging streams without flooding the host; light and ground edits detach the preset.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">3.6 Controls Guide takeover and GitHub row</div>
+              <div class="task-desc">Header info button opens a full-panel guide overlay with its own header and <strong>Back</strong>, rewrites the guide for the new UI, adds the GitHub row, and adds the <code>open-url</code> bridge message with an <code>uxp.shell.openExternal</code> host handler.</div>
+              <div class="task-criteria">Criteria: Overlay covers the whole panel; Esc, backdrop and Back return to the tool; the GitHub row opens the repository externally; non-https URLs are rejected.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">3.7 Verification, polish and documentation sync</div>
+              <div class="task-desc">Verify at 320/420/600 px and inside Photoshop across the detach, toggle and streaming paths; polish spacing, focus states and 320 px truncation; sync the three docs and rebuild the <code>.ccx</code>.</div>
+              <div class="task-criteria">Criteria: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; every earlier criterion is demonstrated; docs match the shipped UI.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STAGE 4 -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">Stage 4: V1.2 - Native Photoshop Skin</div>
+          <span class="status-badge done" id="stage4-badge">Complete</span>
+        </div>
+        <div class="task-list">
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">4.1 Theme probe, reference freeze and token foundation</div>
+              <div class="task-desc">Added a temporary UXP theme probe (<code>tools/theme-probe/</code>, packaged by <code>npm run probe:package</code>) reporting <code>document.theme.getCurrent()</code>, live theme changes, <code>--uxp-host-*</code>, <code>app.appSkinInfo</code> and a timestamped log, writing one JSON snapshot per theme. Confirmed Black/Dark Gray/Medium Gray/Light Gray &rarr; <code>darkest</code>/<code>dark</code>/<code>light</code>/<code>lightest</code>; froze the four palettes and token sheet from Adobe's own theme files.</div>
+              <div class="task-criteria">Criteria met: a theme name was captured for each of the four Photoshop themes, live changes were observed, four palettes and the token sheet are documented, and no reskin behaviour shipped.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">4.2 Flat shell, compact header and status bar</div>
+              <div class="task-desc">Replaced section cards with flat rows, 1 px dividers, no shadows and 2 px radii. Added the 28 px header, workspace matte around the unchanged 412:227 canvas and 24 px status bar. Added the four frozen palettes behind <code>data-ps-theme</code> (Dark Gray default) and neutralised the blue chrome.</div>
+              <div class="task-criteria">Criteria met: no card look at 320/420/600, compact header, pinned 24 px status bar, live closed summaries and the active palette applied.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">4.3 Control reskin</div>
+              <div class="task-desc">Reskinned buttons, sphere toggles, links, a custom checkbox, hex/number fields, disclosures, swatches and sliders at 24 px with 2 px radii. Neutral selected states, 1 px ink focus, Segoe UI tabular numerals. Slider changes are scoped with <code>:not(.time-range)</code>.</div>
+              <div class="task-criteria">Criteria met: every control fits at 320 px (ground presets reflow to 2x2), selected states use the sampled tint, no blue chrome or hover lift, and the time control is unchanged.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">4.4 Typography and icon set</div>
+              <div class="task-desc">Segoe UI at 11 px, sentence-case section titles and tabular numerals. All 14 emoji and the info/reset/close/external glyphs are replaced with 19 inline 16 px line SVGs (1.5 px stroke, <code>currentColor</code>).</div>
+              <div class="task-criteria">Criteria met: no emoji remains, icons render at 16 px and inherit the theme ink, labels and aria text are intact, and the seven time icons stay on one row at 320 px.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">4.5 Live theme linking and Appearance override</div>
+              <div class="task-desc">The host relays <code>document.theme</code> live and appends <code>?theme=</code> to the WebView URL; the bridge exposes <code>onThemeChange</code>; the guide's Appearance row offers Auto plus the four themes and persists the choice in <code>localStorage</code>. The mock mirrors the host for browser development.</div>
+              <div class="task-criteria">Criteria met in the browser: Auto follows simulated host switches, a pinned choice survives reloads and ignores host changes, Auto resumes, the fallback is Dark Gray, no loop. In-Photoshop live check is part of 4.7.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">4.6 Guide and UXP host shell</div>
+              <div class="task-desc">The guide is a flat native dialog (1 px border, 2 px radius, compact title bar, hairline dividers, no shadow) with the Appearance row above GitHub. The UXP loading/error shell follows the four themes via <code>prefers-color-scheme</code> with <code>--uxp-host-*</code> fallbacks, a neutral spinner and no blue.</div>
+              <div class="task-criteria">Criteria met in the browser: readable in all four themes, Back/Esc/backdrop close, no blue in the guide or host shell. In-Photoshop host-shell check is part of 4.7.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">4.7 Verification, documentation and release</div>
+              <div class="task-desc">Verified 320/420/600 across all four themes and in Photoshop, and checked contrast, focus, truncation and the unchanged time gradient. Closed the install defects: per-panel resets for Spheres, Sun &amp; Atmosphere, Ground Surface &amp; Color and Surface Finish &amp; Reflectivity; the time-of-day slider alignment; the GitHub link (<code>launchProcess.schemes: ["https"]</code>); and Windows UXP keyboard forwarding (<code>command-queue.js</code>, one interactive modal session reused across a burst, released after 750 ms idle or pointer-leave). Synced the three docs, bumped to 1.2.0 and rebuilt the <code>.ccx</code>.</div>
+              <div class="task-criteria">Met: <code>tsc --noEmit</code>, <code>npm run build</code> and <code>npm run plugin</code> pass; every earlier criterion is demonstrated; the four-theme screenshots and docs match; <code>Lumiform-Colorpicker-1.2.0.ccx</code> is produced and installed. Session-modal latency remains a manual check; the WebView focus handoff stays an Adobe limitation, worked around by forwarding shortcuts.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STAGE 5 -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">Stage 5: V1.3 - Workspace Layout</div>
+          <span class="status-badge done" id="stage5-badge">Done</span>
+        </div>
+        <div class="task-list">
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">5.1 Aspect-aware framing</div>
+              <div class="task-desc"><code>src/core/framing.ts</code> exposes a pure <code>buildFraming(aspect)</code>. The lens, camera, horizon and depth distances stay fixed; only the horizontal slot positions follow the frame width, so the sphere sizes, haze model and swatch ramp are invariant at any aspect.</div>
+              <div class="task-criteria">Met: at 412:227 the framing is arithmetically identical; at 1:1 the spheres keep 40.0/27.8/10.4 % of height and 49.9/79.0/18.8 % of width with the horizon at 55.1 %; no clipping from 1:1 to 6:1; no lighting, material or shader change.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">5.2 Fixed dock, splitter and scroll region</div>
+              <div class="task-desc">Only the preview and splitter stay fixed; Time of Day, the Ramp and the four sections share one scrolling list with a single scrollbar. The splitter is a focusable separator with a 6 px grab strip, pointer capture, rAF-throttled heights, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End keys.</div>
+              <div class="task-criteria">Met: one scrollbar belongs to the list, the preview stays fixed, the splitter reaches both snaps and a 0-height list on a short panel, and pointer and keyboard both work.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">5.3 Collapsible Time of Day and floating slider</div>
+              <div class="task-desc">Time of Day is a <code>&lt;details&gt;</code> row. Collapsed, one slider instance moves into a full-bleed band below the canvas: 35 % at rest, 100 % inside the band, clickable throughout; the whole band also drags the splitter except the track.</div>
+              <div class="task-criteria">Met: both states stay in sync with the lighting engine, the reset works in both and never toggles, the floating slider and preview resize coexist, and sampling is untouched.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">5.4 Compact 5-Value Ramp</div>
+              <div class="task-desc">Expanded keeps the fully labelled tiles and the row carries the albedo dot + sphere name. Minimized hides the body and floats five 24 px swatches centred 8 px above the canvas bottom, with the same click-to-paint path.</div>
+              <div class="task-criteria">Met: both surfaces paint, the ramp follows the selected sphere and lighting, and the floating palette appears only while the section is closed.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">5.5 Layout persistence and Reset layout</div>
+              <div class="task-desc">Preview height, both essentials' disclosure and the four section rows persist in a versioned <code>localStorage</code> entry and restore before bind. The guide gained a Layout section with Reset layout.</div>
+              <div class="task-criteria">Met: the full layout survives a reload, corrupt data is safe, and Reset layout restores the shipped state.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+          <div class="task-item" data-status="done">
+            <div class="task-info">
+              <div class="task-name">5.6 Verification, documentation and release</div>
+              <div class="task-desc">The 11.3 matrix ran at 320/420/600 and in Photoshop, the three docs were synced to the revised scroll order, the version moved to 1.3.0 and the <code>.ccx</code> was built, installed and accepted.</div>
+              <div class="task-criteria">Met: <code>tsc --noEmit</code>, <code>npm run build</code>, the framing and queue tests and <code>npm run plugin</code> pass; the browser matrix and the manual Photoshop pass both hold; <code>Lumiform-Colorpicker-1.3.0.ccx</code> is produced.</div>
+            </div>
+            <span class="status-badge done">Done</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 6: DEPTH & ATMOSPHERE -->
+    <div id="depth" class="tab-content">
+      <h2>Depth, Atmosphere & Multi-Sphere Composition</h2>
+      <p>
+        The preview uses three fixed depth slots. The goal is for concept artists to compare how the same lighting behaves at near, mid,
+        and far distances, and to sample atmosphere-shifted colors directly from the render.
+        <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span>
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h4>1. Three Depth Slots</h4>
+          <p>Near sits closest to the camera, Mid at mid distance and Far near the horizon. All spheres start at the same base radius and rest on the ground; perspective creates the initial size difference, and each sphere can then be scaled independently.</p>
+        </div>
+        <div class="card">
+          <h4>2. Aerial Perspective</h4>
+          <p>Single-scattering depth fog that fades each surface toward the background actually behind it: sky with a smooth horizon haze band above the eye line, phase-tinted ground haze below. Contrast and saturation fall off with distance, so the far sphere dissolves into the scene instead of turning into a pale disc.</p>
+        </div>
+        <div class="card">
+          <h4>3. Per-Sphere Colour &amp; Size</h4>
+          <p>Each sphere has its own albedo and size. Link Colours and Link Size apply one edit to every enabled sphere, while unlinked edits affect only the selected sphere. Hidden spheres keep their values for restore-on-re-enable.</p>
+        </div>
+      </div>
+
+      <h3>Composition Slots</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Slot</th>
+            <th>Internal id</th>
+            <th>On-Screen Role</th>
+            <th>Atmosphere</th>
+            <th>Shadows</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Near</strong></td>
+            <td><code>center</code></td>
+            <td>Largest sphere, primary subject, closest to camera</td>
+            <td>Exactly clear: colour reference</td>
+            <td>Strongest contact AO and drop shadow</td>
+          </tr>
+          <tr>
+            <td><strong>Mid</strong></td>
+            <td><code>right</code></td>
+            <td>Secondary sphere, partially receding</td>
+            <td>Partial haze, softened contrast</td>
+            <td>Softer, shorter-looking shadow</td>
+          </tr>
+          <tr>
+            <td><strong>Far</strong></td>
+            <td><code>left</code></td>
+            <td>Smallest sphere near the horizon line</td>
+            <td>Strong haze, atmospheric color shift</td>
+            <td>Faint shadow, absorbs into ground haze</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="font-size:12px; color:#93c5fd; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.35); padding:10px 12px; border-radius:6px;">
+        <strong>V1.1 behaviour.</strong> Near / Mid / Far are three-state toggles that carry visibility and selection.
+        The last enabled sphere cannot be hidden, re-enabling restores that sphere's previous colour and size, and
+        Link Colours / Link Size keep every enabled sphere on the selected value. The v1.0 count control, Delete and
+        separate selector row no longer exist.
+      </p>
+
+      <h3>Controls</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Control</th>
+            <th>Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Near / Mid / Far</strong></td>
+            <td>Three-state toggles. Off enables and selects the sphere; on-but-unselected selects it; selected hides it. The last enabled sphere cannot be hidden. Hiding the selected sphere falls back in Near &rarr; Mid &rarr; Far order, and re-enabling restores the colour and size it owned before it was hidden.</td>
+          </tr>
+          <tr>
+            <td><strong>Link Colours / Link Size</strong></td>
+            <td>Each link adopts the selected sphere's value when enabled and keeps applying subsequent edits to every enabled sphere. Disabling a link keeps the shared value so spheres can diverge. Re-enabling a hidden sphere while a link is on joins the shared value.</td>
+          </tr>
+          <tr>
+            <td><strong>Size</strong></td>
+            <td>20%–100% of the base radius. Applies to the selected sphere, or to every enabled sphere when Link Size is on. Scaling pivots on the sphere's bottom-center so it stays grounded; the camera does not move.</td>
+          </tr>
+          <tr>
+            <td><strong>Albedo &amp; H &middot; S &middot; B</strong></td>
+            <td>The merged Spheres panel exposes the selected sphere's albedo chip and hex, with the HSB sliders behind a closed disclosure. The swatch ramp follows the selected sphere; its header names that sphere and shows an albedo dot.</td>
+          </tr>
+          <tr>
+            <td><strong>Eyedropper</strong></td>
+            <td>Samples the final, atmosphere-affected pixel from any sphere, so haze-shifted colors can be sent directly to Photoshop's brush.</td>
+          </tr>
+          <tr>
+            <td><strong>Time-of-Day Presets</strong></td>
+            <td>Seven calibrated phases: Early Morning, Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night. Selecting one restores its key light, sky, ground albedo, and Haze amount. The Haze slider moves to that preset's calibrated value (Midday 3% through Golden Hour 70%).</td>
+          </tr>
+          <tr>
+            <td><strong>Haze</strong></td>
+            <td>0% clears the atmosphere, the preset value reproduces that phase's measured depth fade, and 100% reaches maximum fog. The near sphere stays exactly clear; mid and far spheres dissolve into the horizon band. Manually changing the sun keeps the current Haze; selecting a preset resets it.</td>
+          </tr>
+          <tr>
+            <td><strong>Atmosphere</strong></td>
+            <td>Distance-based single scattering applied consistently to spheres and ground. The airlight is the local sky/ground behind each pixel, with a smooth horizon haze band; the ground-to-sky transition is spread across the band so hazy spheres do not show a seam at the eye line.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Implementation Notes</h3>
+      <div class="card">
+        <p style="font-size:13px; color:#cbd5e1;">
+          The ground shader accumulates drop shadows and contact AO across all visible spheres. Each sphere renders with its own material
+          instance so albedo and depth treatment stay independent. Atmosphere is evaluated per fragment as single-scattering depth fog:
+          the surface is attenuated by distance and mixed toward the background behind it (sky along the view ray with a horizon haze band,
+          or the phase's ground haze below the eye line). Distant objects therefore desaturate toward what is actually behind them and can
+          never become paler than that background. The near sphere sits inside the fog-free range so it stays an exact colour reference.
+          The ground-to-sky airlight transition is spread over the horizon band rather than snapped at the eye line, so a hazy sphere
+          reads as one form instead of two colours. Each preset owns its calibrated Haze amount, and selecting it resets the slider.
+          Picking reads the final framebuffer, which means the sampled color already includes haze. The analytical swatch ramp follows the
+          selected sphere, including its depth haze, and labels itself with that sphere's name and albedo dot.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 7: V1.1 UI DESIGN -->
+    <div id="ui" class="tab-content">
+      <h2>V1.1 - UI Design</h2>
+      <p>
+        V1.1 restructures the panel without touching the lighting engine, the atmosphere model or the swatch
+        mathematics. The goal is a panel where the preview is always visible, every section can be collapsed, and
+        the state of the scene is readable without opening anything.
+        <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Complete</span>
+      </p>
+
+      <div class="card" style="margin-bottom:20px;">
+        <h4>Panel Spine</h4>
+        <p style="font-size:13px; color:var(--text-muted);">
+          Whether a section is open or closed never changes the order. Everything marked collapsible starts closed.
+        </p>
+        <pre style="background:#191919; padding:16px; border-radius:6px; color:#38bdf8; font-size:12px; overflow-x:auto;">
++--------------------------------------------------------------+
+| HEADER   Lumiform Colorpicker        v1.3.0            [ i ] |
++--------------------------------------------------------------+
+| CANVAS   412:227, fixed camera, eyedropper reticle           |
++--------------------------------------------------------------+
+| TIME OF DAY   label row + 7 icon buttons + snapped slider    |
++--------------------------------------------------------------+
+| 5-VALUE RAMP   title + sphere chip + albedo dot              |
++--------------------------------------------------------------+
+| SPHERES                                     (collapsed)      |
++--------------------------------------------------------------+
+| SUN &amp; ATMOSPHERE                            (collapsed)      |
++--------------------------------------------------------------+
+| GROUND SURFACE &amp; COLOR                      (collapsed)      |
++--------------------------------------------------------------+
+| SURFACE FINISH &amp; REFLECTIVITY               (collapsed)      |
++--------------------------------------------------------------+
+| STATUS BAR   Photoshop connection                            |
++--------------------------------------------------------------+
+        </pre>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:0;">
+          Collapsed headers carry live state: <code>Spheres &middot; Near &middot; #E3E3E3</code>,
+          <code>Sun &amp; Atmosphere &middot; Midday &middot; edited</code>, <code>Ground &middot; #4A7C3F</code>,
+          <code>Surface Finish &middot; Matte</code>.
+        </p>
+      </div>
+
+      <h3>Design Decisions</h3>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Area</th><th>Decision</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>D1</td><td>Canvas</td><td>Keep 412:227. The 1:1 canvas is deferred; the framing contract is untouched.</td></tr>
+          <tr><td>D2</td><td>Spine</td><td>Header, canvas, time of day, ramp, spheres, sun &amp; atmosphere, ground, finish, status bar.</td></tr>
+          <tr><td>D3</td><td>Collapsing</td><td>Every collapsible section starts closed, including the nested H/S/B disclosure.</td></tr>
+          <tr><td>D4</td><td>Headers</td><td>Collapsed headers show live scene state, not static titles.</td></tr>
+          <tr><td>D5</td><td>Time of day</td><td>Chronological order: Early Morning, Morning, Midday, Afternoon, Near Sunset, Golden Hour, Night.</td></tr>
+          <tr><td>D6</td><td>Time of day</td><td>The slider snaps to seven stops and relights as it crosses them.</td></tr>
+          <tr><td>D7</td><td>Time of day</td><td>Seven icon-only buttons in one row; names in tooltips and in the row label.</td></tr>
+          <tr><td>D8</td><td>Presets</td><td>Moving any of the six lighting controls clears all seven buttons; there is no Custom button.</td></tr>
+          <tr><td>D9</td><td>Presets</td><td>The label reads <code>&lt;Last preset&gt; &middot; edited &#8634;</code>; <code>&#8634;</code> re-applies the calibrated preset.</td></tr>
+          <tr><td>D10</td><td>Presets</td><td>That reset touches only the six lighting values, never sphere colour, size, links or selection.</td></tr>
+          <tr><td>D11</td><td>Naming</td><td>Near / Mid / Far everywhere user-facing; internal ids stay center / right / left.</td></tr>
+          <tr><td>D12</td><td>Spheres</td><td>Three-state toggles (off, on-unselected, on-selected) replace the count control, Delete and the selector row.</td></tr>
+          <tr><td>D13</td><td>Spheres</td><td>The last enabled sphere cannot be disabled; re-enabling restores that sphere's previous colour and size.</td></tr>
+          <tr><td>D14</td><td>Spheres</td><td>Disabling the selected sphere moves selection Near &rarr; Mid &rarr; Far.</td></tr>
+          <tr><td>D15</td><td>Spheres</td><td>Link Colors and Link Size adopt the selected sphere's value on enable; disabling keeps it.</td></tr>
+          <tr><td>D16</td><td>Spheres</td><td>Merged panel: toggles, links, size, albedo chip + hex, nested H &middot; S &middot; B disclosure.</td></tr>
+          <tr><td>D17</td><td>Ramp</td><td><code>5-VALUE RAMP</code> title, read-only sphere chip and albedo dot; no selector in the ramp.</td></tr>
+          <tr><td>D18</td><td>Light</td><td>The light colour chip moves into a labelled <code>Light</code> row in Sun &amp; Atmosphere.</td></tr>
+          <tr><td>D19</td><td>Guide</td><td>Full-panel takeover overlay opened from the header <code>i</code>, with its own header and <strong>Back</strong>.</td></tr>
+          <tr><td>D20</td><td>Guide</td><td>One row links to the GitHub repository and opens in the system browser.</td></tr>
+          <tr><td>D21</td><td>Writes</td><td>Albedo chip click sends immediately; H/S/B and hex stream at one write per animation frame.</td></tr>
+          <tr><td>D22</td><td>Bridge</td><td>New <code>open-url</code> message, https only, handled with <code>uxp.shell.openExternal</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Behaviour Rules</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>The detach model</h4>
+          <p style="font-size:13px;">
+            Presets are starting points, not modes. Clicking one applies it and moves every lighting slider to its
+            values. Moving <strong>any</strong> of Orbit, Height, Terminator, Haze, Light colour or Ground colour
+            clears all seven buttons - the state is custom, but no Custom button exists to represent it.
+            The label then reads <code>Near Sunset &middot; edited &#8634;</code> and the thumb stays parked.
+            <code>&#8634;</code> or any preset button re-applies the calibrated preset.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Sphere toggles</h4>
+          <p style="font-size:13px;">
+            <strong>Near</strong>, <strong>Mid</strong> and <strong>Far</strong> carry both visibility and
+            selection. Off &rarr; clicking enables and selects. On but unselected &rarr; clicking selects.
+            On and selected &rarr; clicking disables. The last remaining sphere refuses to turn off, and
+            re-enabling restores that sphere's own colour and size rather than resetting it.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Ramp indicator</h4>
+          <p style="font-size:13px;">
+            The ramp reports the sphere it is computed for with a read-only chip and an albedo dot, so two spheres
+            can be compared under identical lighting. The five values remain analytical - evaluated from surface
+            normals - never sampled from screen pixels.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Guide and writes</h4>
+          <p style="font-size:13px;">
+            The guide is a full-panel overlay, not a section: it covers header, canvas and status bar, and returns
+            via <strong>Back</strong>, Esc or the backdrop. It carries the GitHub row. Every external link goes
+            through the host bridge, because <code>window.open</code> is unreliable inside a plugin WebView.
+          </p>
+        </div>
+      </div>
+
+      <h3>Stage 3 Roadmap</h3>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>3.1 Panel spine, collapsible sections &amp; live headers</td><td><span class="status-badge done">Done</span></td><td>New spine, four closed sections, live summaries.</td></tr>
+          <tr><td>3.2 Time-of-day strip</td><td><span class="status-badge done">Done</span></td><td>Icon row, snapped slider, chronological order, detach + <code>&#8634;</code>.</td></tr>
+          <tr><td>3.3 Sphere model</td><td><span class="status-badge done">Done</span></td><td>Near / Mid / Far toggles, merged panel, Link Size.</td></tr>
+          <tr><td>3.4 Ramp header</td><td><span class="status-badge done">Done</span></td><td>Sphere chip and albedo dot.</td></tr>
+          <tr><td>3.5 Light row &amp; streaming</td><td><span class="status-badge done">Done</span></td><td>Labelled Light row, clickable albedo, per-frame writes.</td></tr>
+          <tr><td>3.6 Guide takeover</td><td><span class="status-badge done">Done</span></td><td>Full overlay, GitHub row, <code>open-url</code> bridge.</td></tr>
+          <tr><td>3.7 Verification &amp; polish</td><td><span class="status-badge done">Done</span></td><td>320/420/600 px + Photoshop checks, docs sync, new <code>.ccx</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card">
+        <h4>Source of Truth</h4>
+        <p style="font-size:13px; margin-bottom:0;">
+          Full decisions, onboarding, gotchas and acceptance criteria:
+          <code>Docs/AI_CONTEXT_UI.md</code>. Architecture, lighting and the task-state protocol remain in
+          <code>Docs/AI_CONTEXT.md</code>. The v1.0 baseline is frozen on the
+          <code>release/1.0-uxp-plugin</code> branch.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 8: V1.2 NATIVE PHOTOSHOP SKIN -->
+    <div id="ps-skin" class="tab-content">
+      <h2>V1.2 Skin &amp; V1.3 Workspace Layout</h2>
+      <p>
+        V1.2 makes the panel read as a native Photoshop panel across all four built-in themes. It is a chrome-only
+        reskin: the renderer, camera framing, lighting, atmosphere and swatch mathematics stay untouched. The
+        time-of-day gradient is the one intentional exception and stays exactly as it is.
+        <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">V1.2 Complete</span>
+        <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">V1.3 Complete</span>
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>Objective</h4>
+          <p>
+            Match Photoshop's neutral gray chrome: flat surfaces, 1 px dividers, ~2 px radii, compact 22-24 px
+            controls, Segoe UI, monochrome line icons and a sampled neutral selection tint. Follow Black, Dark
+            Gray, Medium Gray and Light Gray live through a UXP host relay, with a manual Appearance override.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Non-goals</h4>
+          <p>
+            No renderer, framing, lighting, atmosphere, shader or swatch-math changes. No new controls or presets.
+            No custom <code>UIColors.txt</code> themes and no Gray/Blue Highlight detection - those are not exposed
+            to plugins. No change to the time-of-day gradient, thumb or geometry.
+          </p>
+        </div>
+      </div>
+
+      <h3>Frozen four-theme palettes</h3>
+      <p>
+        Task 4.1 confirmed the mapping with a controlled pass: <strong>Black = <code>darkest</code></strong>,
+        <strong>Dark Gray = <code>dark</code></strong>, <strong>Medium Gray = <code>light</code></strong>,
+        <strong>Light Gray = <code>lightest</code></strong>. Every value below comes from Photoshop's own
+        <code>host-theme.css</code>, <code>DesignAppColorThemesV5.xml</code> and <code>UIColors.txt</code>.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Black</th><th>Dark Gray</th><th>Medium Gray</th><th>Light Gray</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Workspace</td><td><code>#1A1A1A</code></td><td><code>#333333</code></td><td><code>#A7A7A7</code></td><td><code>#DCDCDC</code></td></tr>
+          <tr><td>Panel</td><td><code>#323232</code></td><td><code>#535353</code></td><td><code>#B8B8B8</code></td><td><code>#F0F0F0</code></td></tr>
+          <tr><td>Header / status (flat)</td><td><code>#323232</code></td><td><code>#535353</code></td><td><code>#B8B8B8</code></td><td><code>#F0F0F0</code></td></tr>
+          <tr><td>Field</td><td><code>#262626</code></td><td><code>#454545</code></td><td><code>#E2E2E2</code></td><td><code>#FFFFFF</code></td></tr>
+          <tr><td>Hover</td><td><code>#3D3D3D</code></td><td><code>#5B5B5B</code></td><td><code>#9D9D9D</code></td><td><code>#CECECE</code></td></tr>
+          <tr><td>Selected</td><td><code>#474747</code></td><td><code>#6B6B6B</code></td><td><code>#A5A5A5</code></td><td><code>#BFBFBF</code></td></tr>
+          <tr><td>Border / strong</td><td><code>#292929</code> / <code>#494949</code></td><td><code>#454545</code> / <code>#5A5A5A</code></td><td><code>#9C9C9C</code> / <code>#CACACA</code></td><td><code>#D1D1D1</code> / <code>#D3D3D3</code></td></tr>
+          <tr><td>Text / secondary / muted</td><td><code>#FFFFFF</code> / <code>#9B9B9B</code> / <code>#525252</code></td><td><code>#FFFFFF</code> / <code>#E5E5E5</code> / <code>#747474</code></td><td><code>#424242</code> / <code>#424242</code> / <code>#8E8E8E</code></td><td><code>#4B4B4B</code> / <code>#606060</code> / <code>#BDBDBD</code></td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px; color:#f59e0b; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); padding:10px 12px; border-radius:6px;">
+        <strong>Reference correction:</strong> <code>_UI/ps-references/ps-reference.png</code> was sampled as
+        Medium Gray in the first plan. Task 4.1 proved it is <strong>Dark Gray</strong> - workspace
+        <code>#333333</code>, panel <code>#535353</code>, field <code>#454545</code> are exact Dark Gray values.
+        Its header <code>#424242</code> and status <code>#696969</code> turned out to be application chrome, not
+        panel tokens, so the skin uses flat panel surfaces with dividers instead.
+      </p>
+
+      <h3>Theme flow</h3>
+      <div class="card">
+        <pre style="background:#191919; padding:16px; border-radius:6px; color:#38bdf8; font-size:12px; overflow-x:auto;">
+Photoshop Interface ▸ Color Theme
+        │ document.theme.getCurrent() / onUpdated
+        ▼
+UXP host (plugin/main.js)
+        │ postMessage({ type: "theme", theme })
+        ▼
+WebView bridge ──► data-ps-theme
+        │
+        ▼
+black / darkGray / mediumGray / lightGray token sets
+        </pre>
+        <p style="font-size:13px; color:#cbd5e1;">
+          The WebView is isolated from the UXP host: <code>prefers-color-scheme</code> there follows Windows, not
+          Photoshop. The host also passes the current theme in the WebView URL so the first paint is correct.
+          If <code>document.theme</code> is unavailable, the panel defaults to Dark Gray and the manual
+          Appearance row takes over.
+        </p>
+      </div>
+
+      <h3>4.1 Theme probe <span class="badge-tag" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.5);">Done</span></h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>What it measured</h4>
+          <p style="font-size:13px;">
+            A throwaway UXP panel, not part of the product and sharing no code with <code>plugin/</code>. It reported
+            <code>document.theme.getCurrent()</code>, live <code>onUpdated</code> values, every computed
+            <code>--uxp-host-*</code> variable, <code>app.appSkinInfo</code>, the environment and a timestamped
+            change log, writing one JSON per theme.
+          </p>
+          <p style="font-size:13px; margin-bottom:0;">
+            Source: <code>tools/theme-probe/</code> · Package: <code>npm run probe:package</code> ·
+            Output: <code>Lumiform-ThemeProbe-1.0.0.ccx</code>
+          </p>
+        </div>
+        <div class="card">
+          <h4>What it found</h4>
+          <ul style="font-size:13px; margin:0; padding-left:18px; color:#cbd5e1;">
+            <li><code>document.theme</code> works and fires live events.</li>
+            <li>No <code>--uxp-host-*</code> variables resolve in a third-party panel, and <code>app.appSkinInfo</code> is unavailable in UXP 8.3.</li>
+            <li>The four palettes came from Photoshop's own <code>host-theme.css</code>, <code>DesignAppColorThemesV5.xml</code> and <code>UIColors.txt</code> instead.</li>
+            <li>The reference screenshot is Dark Gray, not Medium Gray; its header and status greys are application chrome, not theme tokens.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Locked decisions P1-P24</h3>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Area</th><th>Decision</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>P1</td><td>Scope</td><td>Restyle the entire chrome: panel, header, sections, guide and UXP loading/error shell. Canvas and swatch colours are content.</td></tr>
+          <tr><td>P2</td><td>Fidelity</td><td>Match the sampled Photoshop themes exactly; allow only accessibility-driven deviations.</td></tr>
+          <tr><td>P3</td><td>Themes</td><td>Support all four: Black, Dark Gray, Medium Gray, Light Gray.</td></tr>
+          <tr><td>P4</td><td>Theme link</td><td>The UXP host reads <code>document.theme</code> and relays the name to the WebView; token sets switch live.</td></tr>
+          <tr><td>P5</td><td>Fallback</td><td>Default Dark Gray (the reference theme) plus a manual Appearance override if the host API is unavailable.</td></tr>
+          <tr><td>P6</td><td>Structure</td><td>Flat Photoshop grammar: continuous surfaces, 1 px dividers, no per-section cards or decorative shadows.</td></tr>
+          <tr><td>P7</td><td>Header</td><td>Compact Photoshop-like title row; keep the <code>i</code> affordance; move the version out of the chrome.</td></tr>
+          <tr><td>P8</td><td>Selection</td><td>Use the sampled Photoshop selection tint only for selected/active states. In the reference it is neutral <code>#6B6B6B</code>.</td></tr>
+          <tr><td>P9</td><td>Accent</td><td>No Lumiform brand blue in the chrome. The only saturated element is the unchanged time gradient.</td></tr>
+          <tr><td>P10</td><td>Density</td><td>22-24 px rows and controls; 22 px minimum hit target.</td></tr>
+          <tr><td>P11</td><td>Typography</td><td>Segoe UI / Windows system stack at 11 px; no Adobe Clean pack (licence is not an Adobe EULA).</td></tr>
+          <tr><td>P12</td><td>Section titles</td><td>Sentence case, 11 px/600, no uppercase tracking.</td></tr>
+          <tr><td>P13</td><td>Numerals</td><td>Hex and numeric fields use the UI font with tabular numerals; hex stays uppercase.</td></tr>
+          <tr><td>P14</td><td>Icons</td><td>16 px line icons, 1.5 px stroke, <code>currentColor</code>; replace all 14 emoji and the info/reset/close/external-link glyphs.</td></tr>
+          <tr><td>P15</td><td>Time gradient</td><td>Keep the entire current time-of-day control exactly as-is: gradient, thumb and geometry.</td></tr>
+          <tr><td>P16</td><td>Guide</td><td>Native Photoshop dialog: flat, 1 px border, ~2 px radius, compact title bar, no large shadow or blur.</td></tr>
+          <tr><td>P17</td><td>Contrast</td><td>Minimum readable contrast first; adjust Photoshop grays slightly where necessary.</td></tr>
+          <tr><td>P18</td><td>Host shell</td><td>The UXP loading/error shell uses native <code>--uxp-host-*</code> variables and <code>prefers-color-scheme</code>.</td></tr>
+          <tr><td>P19</td><td>Reference</td><td>Sample from <code>_UI/ps-references/ps-reference.png</code>; the palette table is the starting point.</td></tr>
+          <tr><td>P20</td><td>Probe</td><td>4.1 is a dedicated probe build: capture all four themes before the full reskin.</td></tr>
+          <tr><td>P21</td><td>Versioning</td><td>V1.2, Stage 4, version 1.2.0, new <code>.ccx</code>.</td></tr>
+          <tr><td>P22</td><td>Bootstrap</td><td>Pass the theme in the WebView URL and send live <code>theme</code> messages; manual override wins; no first-paint flash.</td></tr>
+          <tr><td>P23</td><td>Unsupported</td><td>Custom <code>UIColors.txt</code> themes and Gray/Blue Highlight detection are out of scope; neutral selection is the default.</td></tr>
+          <tr><td>P24</td><td>Dev preview</td><td>Browser dev defaults to Dark Gray; the Appearance row previews all four themes without Photoshop.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Stage 4 Roadmap</h3>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>4.1 Theme probe, reference freeze and token foundation</td><td><span class="status-badge done">Done</span></td><td>Theme API confirmed live; four palettes and token sheet frozen from Adobe's files.</td></tr>
+          <tr><td>4.2 Flat shell, compact header and status bar</td><td><span class="status-badge done">Done</span></td><td>Flat surfaces, 28 px header, 24 px status bar, four palettes.</td></tr>
+          <tr><td>4.3 Control reskin</td><td><span class="status-badge done">Done</span></td><td>24 px native controls; time gradient untouched.</td></tr>
+          <tr><td>4.4 Typography and icon set</td><td><span class="status-badge done">Done</span></td><td>Segoe UI, sentence case, 19 line icons.</td></tr>
+          <tr><td>4.5 Live theme linking and Appearance override</td><td><span class="status-badge done">Done</span></td><td>Four themes follow Photoshop live; manual fallback.</td></tr>
+          <tr><td>4.6 Guide and UXP host shell</td><td><span class="status-badge done">Done</span></td><td>Native dialog, Appearance row, native loading/error.</td></tr>
+          <tr><td>4.7 Verification, documentation and release</td><td><span class="status-badge done">Done</span></td><td>Resets, GitHub link, keyboard forwarding, docs sync, 1.2.0 <code>.ccx</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Risks and fallbacks</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Documented-API risk</h4>
+          <p style="font-size:13px;">
+            <code>document.theme</code> is not officially documented, but 4.1 verified <code>getCurrent()</code>
+            and <code>onUpdated</code> on Photoshop 26.8. The manual Appearance row remains the fallback.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Four palettes</h4>
+          <p style="font-size:13px;">
+            Frozen in 4.1 from Adobe's <code>host-theme.css</code>, <code>DesignAppColorThemesV5.xml</code> and
+            <code>UIColors.txt</code>, not guessed from a single screenshot.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Light-theme contrast</h4>
+          <p style="font-size:13px;">
+            Light Gray will need small gray adjustments for readable text. That is the one approved deviation
+            from an exact match.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Time gradient</h4>
+          <p style="font-size:13px;">
+            It stays exactly as-is, including thumb and geometry. It is the one intentionally non-Photoshop
+            element; the surrounding row is themed.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Host variables</h4>
+          <p style="font-size:13px;">
+            Use <code>--uxp-host-*</code> for the host shell and probe calibration, not as the WebView's runtime
+            colour source.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Scope (V1.2)</h4>
+          <p style="font-size:13px;">
+            V1.2 made no renderer, framing, lighting, atmosphere or swatch-math changes. V1.3 is the first phase to
+            touch framing: camera and slot positions are re-solved per aspect; everything else stays frozen.
+          </p>
+        </div>
+      </div>
+
+      <h3>V1.3 - Workspace Layout</h3>
+      <p>
+        The 3D canvas is a reference sheet, but its fixed 412:227 shape is only 130-145 px tall in a docked column.
+        V1.3 gives the preview any shape from the reference up to 1:1, keeps only the preview and splitter fixed, and
+        puts Time of Day, the Ramp and the four sections in one scrolling list that can be hidden to zero.
+      </p>
+
+      <h4>Locked decisions (W1-W14)</h4>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Decision</th><th>Locked value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>W1</td><td>Phase</td><td>V1.3, Stage 5, after 1.2.0 closes out.</td></tr>
+          <tr><td>W2</td><td>Aspect range</td><td>Bounded, never portrait: <code>height &lt;= width</code>; snaps at 412:227 and 1:1.</td></tr>
+          <tr><td>W3</td><td>Framing</td><td>Fill: spheres keep the reference fractions of height and width; camera and slots are re-solved per aspect; nothing clips.</td></tr>
+          <tr><td>W4</td><td>Resize</td><td>Photoshop resizes the panel; a 6 px splitter under the preview sets its height.</td></tr>
+          <tr><td>W5</td><td>Width change</td><td>Keep the chosen height, clamp to the new width; double-click toggles reference &lt;-&gt; 1:1.</td></tr>
+          <tr><td>W6</td><td>Splitter</td><td>Hover highlight, <code>row-resize</code>, separator role; Arrow 8 px, Shift+Arrow 32 px, Home/End snaps.</td></tr>
+          <tr><td>W7</td><td>Dock order</td><td>Header, preview, splitter, one scrolling list (Time of Day, Ramp, Spheres, Sun, Ground, Finish), status bar.</td></tr>
+          <tr><td>W8</td><td>List minimum</td><td>None; it can be hidden to 0. The splitter stays reachable; Reset layout restores.</td></tr>
+          <tr><td>W9</td><td>Wheel</td><td>Hovering the preview or the splitter never scrolls anything.</td></tr>
+          <tr><td>W10</td><td>Time of Day</td><td>Row with state, reset and chevron; collapsed, a bare slider floats on the preview at 35 / 100 / 35 % opacity.</td></tr>
+          <tr><td>W11</td><td>Ramp</td><td>No in-body header; row with sphere name and five mini chips; body is five squares with tooltip/aria.</td></tr>
+          <tr><td>W12</td><td>Persistence</td><td>Preview height, collapsed essentials and section states in <code>localStorage</code>; Reset layout in the guide.</td></tr>
+          <tr><td>W13</td><td>Resets</td><td>The four per-panel resets and the Time of Day reset are unchanged.</td></tr>
+          <tr><td>W14</td><td>Scope</td><td>Framing plus panel DOM/CSS only; no lighting, material, atmosphere, shader or swatch change.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Stage 5 Roadmap</h4>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>State</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>5.1 Aspect-aware framing</td><td><span class="status-badge done">Done</span></td><td><code>buildFraming(aspect)</code>; identical at 412:227, no clip at 1:1.</td></tr>
+          <tr><td>5.2 Fixed dock, splitter and scroll region</td><td><span class="status-badge done">Done</span></td><td>One scrollbar below the preview; splitter snaps and 0-height list.</td></tr>
+          <tr><td>5.3 Collapsible Time of Day and floating slider</td><td><span class="status-badge done">Done</span></td><td>Icons + slider expanded; bare 35/100/35 % band collapsed.</td></tr>
+          <tr><td>5.4 Compact 5-Value Ramp</td><td><span class="status-badge done">Done</span></td><td>Expanded labels; minimized floating swatches.</td></tr>
+          <tr><td>5.5 Layout persistence and Reset layout</td><td><span class="status-badge done">Done</span></td><td>Layout survives reloads; Reset layout in the guide.</td></tr>
+          <tr><td>5.6 Verification, documentation and release</td><td><span class="status-badge done">Done</span></td><td>Matrix at 320/420/600 and in Photoshop; 1.3.0 <code>.ccx</code> built, installed and accepted.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card">
+        <h4>Source of Truth</h4>
+        <p style="font-size:13px; margin-bottom:0;">
+          V1.2 plan, full task criteria and verification matrix: <code>Docs/AI_CONTEXT_UI.md</code> section 10.
+          V1.3 plan: section 11. Parent roadmap: <code>Docs/AI_CONTEXT.md</code> Stages 4-5.
+          Local reference: <a href="../_UI/ps-references/ps-reference.png" target="_blank" style="color:#93c5fd;">ps-reference.png</a>.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      
+      const target = document.getElementById(tabId);
+      if (target) target.classList.add('active');
+
+      const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
+    }
+
+    function filterRoadmap(status) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.querySelectorAll('.task-item').forEach(item => {
+        if (status === 'all' || item.getAttribute('data-status') === status) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lumiform Colorpicker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main id="panel" tabindex="-1">
+      <!-- main.js sets src with the ?theme= bootstrap before the first load. -->
+      <webview
+        id="lumiformView"
+        width="100%"
+        height="100%"
+        uxpAllowInspector="true"
+      ></webview>
+
+      <div id="loadingOverlay" class="overlay">
+        <div class="overlay-card">
+          <span class="spinner"></span>
+          <strong>Starting Lumiform…</strong>
+          <span class="muted">Preparing the 3D lighting viewport</span>
+        </div>
+      </div>
+
+      <div id="errorOverlay" class="overlay hidden">
+        <div class="overlay-card">
+          <strong id="errorTitle">Lumiform could not start</strong>
+          <p id="errorMessage" class="muted"></p>
+          <button id="reloadButton" type="button">Reload panel</button>
+          <p class="muted small">
+            If this keeps happening, check that Photoshop has hardware
+            acceleration enabled and that the plugin folder is complete.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <script src="command-queue.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

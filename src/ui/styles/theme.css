@@ -1,21 +1,100 @@
+/* ==========================================================================
+   V1.2 Photoshop theme tokens (Task 4.1)
+
+   Values frozen from Photoshop's own theme files:
+     Required/UXP/host-theme.css              - plugin host palette
+     xml/DesignAppColorThemesV5.xml           - workspace, field, disabled text
+     Required/UIColors.txt                    - PaletteFill cross-check
+
+   Photoshop label -> document.theme token (verified in task 4.1):
+     Black -> darkest, Dark Gray -> dark, Medium Gray -> light, Light Gray -> lightest
+   ========================================================================== */
+
+:root,
+:root[data-ps-theme='darkGray'] {
+  --ps-workspace: #333333;
+  --ps-surface: #535353;
+  --ps-field: #454545;
+  --ps-hover: #5b5b5b;
+  --ps-selected: #6b6b6b;
+  --ps-line: #454545;
+  --ps-line-strong: #5a5a5a;
+  --ps-ink: #ffffff;
+  --ps-ink-secondary: #e5e5e5;
+  --ps-ink-muted: #747474;
+  --ps-status-bg: #535353;
+  --ps-status-text: #e5e5e5;
+  --ps-focus: #ffffff;
+}
+
+:root[data-ps-theme='black'] {
+  --ps-workspace: #1a1a1a;
+  --ps-surface: #323232;
+  --ps-field: #262626;
+  --ps-hover: #3d3d3d;
+  --ps-selected: #474747;
+  --ps-line: #292929;
+  --ps-line-strong: #494949;
+  --ps-ink: #ffffff;
+  --ps-ink-secondary: #9b9b9b;
+  --ps-ink-muted: #525252;
+  --ps-status-bg: #323232;
+  --ps-status-text: #9b9b9b;
+  --ps-focus: #ffffff;
+}
+
+:root[data-ps-theme='mediumGray'] {
+  --ps-workspace: #a7a7a7;
+  --ps-surface: #b8b8b8;
+  --ps-field: #e2e2e2;
+  --ps-hover: #9d9d9d;
+  --ps-selected: #a5a5a5;
+  --ps-line: #9c9c9c;
+  --ps-line-strong: #cacaca;
+  --ps-ink: #424242;
+  --ps-ink-secondary: #424242;
+  --ps-ink-muted: #8e8e8e;
+  --ps-status-bg: #b8b8b8;
+  --ps-status-text: #424242;
+  --ps-focus: #424242;
+}
+
+:root[data-ps-theme='lightGray'] {
+  --ps-workspace: #dcdcdc;
+  --ps-surface: #f0f0f0;
+  --ps-field: #ffffff;
+  --ps-hover: #cecece;
+  --ps-selected: #bfbfbf;
+  --ps-line: #d1d1d1;
+  --ps-line-strong: #d3d3d3;
+  --ps-ink: #4b4b4b;
+  --ps-ink-secondary: #606060;
+  --ps-ink-muted: #bdbdbd;
+  --ps-status-bg: #f0f0f0;
+  --ps-status-text: #606060;
+  --ps-focus: #4b4b4b;
+}
+
+/* Legacy token aliases. Existing V1.1 rules keep working and inherit the
+   active Photoshop theme from the semantic tokens above. */
 :root {
-  --ps-bg-darkest: #181818;
-  --ps-bg-panel: #1e1e1e;
-  --ps-bg-elevated: #262626;
-  --ps-bg-hover: #323232;
-  --ps-bg-input: #141414;
-  --ps-border: #383838;
-  --ps-border-subtle: #2b2b2b;
-  --ps-text-primary: #ececec;
-  --ps-text-secondary: #9e9e9e;
-  --ps-text-disabled: #5e5e5e;
-  --ps-accent-blue: #3b82f6;
-  --ps-accent-hover: #2563eb;
-  --ps-status-connected: #22c55e;
-  --ps-status-disconnected: #ef4444;
-  --ps-radius-sm: 4px;
-  --ps-radius-md: 6px;
-  --ps-radius-lg: 8px;
+  --ps-bg-darkest: var(--ps-workspace);
+  --ps-bg-panel: var(--ps-surface);
+  --ps-bg-elevated: var(--ps-surface);
+  --ps-bg-hover: var(--ps-hover);
+  --ps-bg-input: var(--ps-field);
+  --ps-border: var(--ps-line);
+  --ps-border-subtle: var(--ps-line);
+  --ps-text-primary: var(--ps-ink);
+  --ps-text-secondary: var(--ps-ink-secondary);
+  --ps-text-disabled: var(--ps-ink-muted);
+  --ps-accent-blue: var(--ps-selected);
+  --ps-accent-hover: var(--ps-line-strong);
+  --ps-status-connected: var(--ps-ink-secondary);
+  --ps-status-disconnected: #d06a55;
+  --ps-radius-sm: 2px;
+  --ps-radius-md: 2px;
+  --ps-radius-lg: 2px;
 }
 
 * {
@@ -38,6 +117,7 @@ html, body {
 }
 
 #app {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -79,6 +159,38 @@ html, body {
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
+/* Header info affordance: opens the Controls Guide takeover (Task 3.6). */
+.panel-info-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ps-border);
+  color: var(--ps-text-secondary);
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.panel-info-btn:hover {
+  color: var(--ps-text-primary);
+  background-color: var(--ps-bg-hover);
+  border-color: var(--ps-text-disabled);
+}
+
+.panel-info-btn:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
 /* Main Content Area */
 .panel-content {
   flex: 1;
@@ -87,7 +199,13 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px;
-  gap: 10px;
+  gap: 9px;
+}
+
+/* Sections keep their natural height; the panel scrolls instead of squeezing
+   open <details> bodies and clipping their controls. */
+.panel-content > * {
+  flex-shrink: 0;
 }
 
 /* Viewport Toolbar & Mesh Toggle */
@@ -110,73 +228,179 @@ html, body {
   font-weight: 500;
 }
 
-.mesh-toggle-group {
-  display: flex;
-  gap: 4px;
-}
-
-.mesh-toggle-btn {
-  background-color: var(--ps-bg-elevated);
-  border: 1px solid var(--ps-border);
-  color: var(--ps-text-secondary);
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: var(--ps-radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.mesh-toggle-btn:hover {
-  color: var(--ps-text-primary);
-  background-color: var(--ps-bg-hover);
-}
-
-.mesh-toggle-btn.active {
-  background-color: var(--ps-accent-blue);
-  color: #fff;
-  border-color: var(--ps-accent-hover);
-  font-weight: 600;
-}
-
-.ps-btn-reset-rotation {
-  background: var(--ps-bg-elevated);
-  border: 1px solid var(--ps-border);
-  color: var(--ps-text-secondary);
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: var(--ps-radius-sm);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.15s ease;
-}
-
-.ps-btn-reset-rotation:hover {
-  color: var(--ps-text-primary);
-  background: var(--ps-bg-hover);
-  border-color: #555;
-}
-
-.ps-btn-reset-rotation:active {
-  transform: translateY(1px);
-}
-
 /* Viewport Area */
 .viewport-card {
   background-color: var(--ps-bg-darkest);
   border: 1px solid var(--ps-border);
   border-radius: var(--ps-radius-md);
   position: relative;
-  aspect-ratio: 1 / 1;
   width: 100%;
-  max-width: 300px;
+  /* Reference framing: every time-of-day panel is a wide landscape
+     (412 x 227). The camera, horizon and sphere spacing in
+     src/core/framing.ts are derived from that aspect, so this must stay
+     in sync with REFERENCE_ASPECT.
+
+     The canvas fills the panel width (up to a cap) so the render is large
+     enough to inspect; only the pixel count changes, never the framing,
+     because the aspect ratio and the vertical FOV both derive from it.
+
+     V1.1 also caps the width by the available panel height: the first
+     screen must show the time strip, the ramp and all four collapsed
+     headers, so on a short wide panel the preview gives up width instead
+     of pushing the state below the fold. 496px covers the fixed height of the
+     header, status bar, compact time strip, ramp, four summaries, gaps and
+     padding plus a small safety margin for different WebView font metrics; the
+     rest goes to the canvas at 412:227. */
+  max-width: min(900px, max(220px, calc((100vh - 496px) * 412 / 227)));
+  aspect-ratio: 412 / 227;
+  height: auto;
+  flex: 0 0 auto;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Mesh uniform-scale row (bottom stays grounded) */
+.mesh-scale-row {
+  padding: 0 4px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+/* Sphere visibility + selection toggles (Task 3.3) */
+.sphere-toggle-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.sphere-toggle {
+  height: 30px;
+  min-width: 0;
+  padding: 0 6px;
+  border-radius: var(--ps-radius-sm);
+  border: 1px solid var(--ps-border);
+  background-color: transparent;
+  color: var(--ps-text-disabled);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.sphere-toggle[data-state='off'] {
+  border-style: dashed;
+  background-color: transparent;
+  color: var(--ps-text-disabled);
+}
+
+.sphere-toggle[data-state='on'] {
+  border-color: var(--ps-border-subtle);
+  background-color: var(--ps-bg-input);
+  color: var(--ps-text-secondary);
+}
+
+.sphere-toggle[data-state='selected'] {
+  border-color: var(--ps-accent-hover);
+  background-color: var(--ps-accent-blue);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.sphere-toggle:hover:not([data-state='selected']) {
+  border-color: var(--ps-border);
+  background-color: var(--ps-bg-hover);
+  color: var(--ps-text-primary);
+}
+
+.sphere-toggle:active {
+  transform: scale(0.97);
+}
+
+.sphere-toggle:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
+.sphere-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin-top: 10px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  font-size: 11px;
+  color: var(--ps-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.check-row input[type='checkbox'] {
+  accent-color: var(--ps-accent-blue);
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+
+/* Nested HSB disclosure inside the Spheres panel. */
+.hsb-disclosure {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ps-border-subtle);
+}
+
+.hsb-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 22px;
+  padding: 2px 0;
+  border-radius: var(--ps-radius-sm);
+  cursor: pointer;
+}
+
+.hsb-summary::-webkit-details-marker {
+  display: none;
+}
+
+.hsb-summary:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
+.hsb-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--ps-text-secondary);
+}
+
+.hsb-disclosure[open] > .hsb-summary .section-chevron {
+  transform: rotate(45deg);
+}
+
+.hsb-disclosure .slider-group {
+  margin-top: 8px;
+}
+
+.section-note {
+  font-size: 10px;
+  color: var(--ps-text-secondary);
+  opacity: 0.8;
+  margin-top: 8px;
+  line-height: 1.4;
 }
 
 /* Persistent Draggable Color Picker Puck (Decoupled Color Target) */
@@ -286,24 +510,132 @@ html, body {
   color: var(--ps-text-secondary);
 }
 
+/* --- V1.1 collapsible sections (Task 3.1) -------------------------------- */
+
+.section-state {
+  min-width: 0;
+  font-size: 10px;
+  color: var(--ps-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A <details> card is a bare container; the summary owns the header padding. */
+details.section-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.section-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 7px 12px;
+  cursor: pointer;
+  border-radius: var(--ps-radius-md);
+  transition: background-color 0.15s ease;
+}
+
+.section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-summary:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.section-summary:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: -1px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ps-text-secondary);
+  white-space: nowrap;
+}
+
+.section-summary .section-state {
+  margin-left: auto;
+  text-align: right;
+}
+
+.section-chevron {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-left: 2px;
+  border-right: 1.5px solid var(--ps-text-disabled);
+  border-bottom: 1.5px solid var(--ps-text-disabled);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+details[open] > .section-summary .section-chevron {
+  transform: rotate(45deg);
+}
+
+.section-body {
+  padding: 0 12px 12px;
+}
+
+.section-divider {
+  height: 1px;
+  background-color: var(--ps-border-subtle);
+  margin: 12px 0 10px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 2px 0 8px;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ps-text-secondary);
+}
+
+.sphere-color-block {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ps-border-subtle);
+}
+
+.finish-sliders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 /* Presets & Finish Segment Control */
 .preset-segmented-control {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
   gap: 4px;
   background-color: var(--ps-bg-input);
-  padding: 3px;
+  padding: 2px;
   border-radius: var(--ps-radius-sm);
   border: 1px solid var(--ps-border-subtle);
 }
 
-.preset-btn, .finish-btn {
+.finish-btn, .ground-preset-btn {
   background: none;
   border: none;
   color: var(--ps-text-secondary);
   font-size: 11px;
   font-weight: 500;
-  padding: 6px 4px;
+  padding: 4px 4px;
   border-radius: 3px;
   cursor: pointer;
   display: flex;
@@ -313,16 +645,142 @@ html, body {
   transition: all 0.15s ease;
 }
 
-.preset-btn:hover, .finish-btn:hover {
+.finish-btn:hover, .ground-preset-btn:hover {
   color: var(--ps-text-primary);
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-.preset-btn.active, .finish-btn.active {
+.finish-btn.active, .ground-preset-btn.active {
   background-color: var(--ps-accent-blue);
   color: #ffffff;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Time-of-day strip (Task 3.2) ---------------------------------------- */
+
+.time-of-day-header {
+  gap: 8px;
+}
+
+.time-of-day-state {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 10px;
+  color: var(--ps-text-secondary);
+  white-space: nowrap;
+}
+
+.time-of-day-state [hidden] {
+  display: none;
+}
+
+.time-state-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.time-state-edited {
+  flex: 0 0 auto;
+  color: #fbbf24;
+}
+
+.time-reset-btn {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0;
+  border-radius: 50%;
+  background-color: rgba(59, 130, 246, 0.16);
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  color: #93c5fd;
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.time-reset-btn:hover {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: #ffffff;
+}
+
+.time-reset-btn:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
+.time-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.time-strip-icons {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.time-icon-btn {
+  height: 30px;
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--ps-bg-input);
+  border: 1px solid var(--ps-border-subtle);
+  border-radius: var(--ps-radius-sm);
+  color: var(--ps-text-secondary);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.time-icon-btn:hover {
+  background-color: var(--ps-bg-hover);
+  border-color: var(--ps-border);
+}
+
+.time-icon-btn:active {
+  transform: scale(0.96);
+}
+
+.time-icon-btn.active,
+.time-icon-btn[aria-pressed='true'] {
+  background-color: var(--ps-accent-blue);
+  border-color: var(--ps-accent-hover);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.time-icon-btn:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
+.time-range {
+  /* Thumb centres line up with the seven icon columns: (14px thumb, 11px inset). */
+  width: calc(100% - 22px);
+  margin: 0 11px;
+  background: linear-gradient(
+    to right,
+    #334155 0%,
+    #93c5fd 16%,
+    #38bdf8 33%,
+    #fbbf24 50%,
+    #f97316 68%,
+    #b91c1c 83%,
+    #1e1b4b 100%
+  );
 }
 
 /* Lighting Angle Readout */
@@ -409,8 +867,21 @@ html, body {
   background: linear-gradient(to right, #475569, #cbd5e1);
 }
 
+/* Terminator control: dark = hard edge, light = broad soft shadow. */
+.terminator-slider {
+  background: linear-gradient(to right, #0f172a, #cbd5e1);
+}
+
 .sun-slider-yellow {
   background: linear-gradient(to right, #a16207, #facc15);
+}
+
+.finish-slider-roughness {
+  background: linear-gradient(to right, #334155, #94a3b8);
+}
+
+.finish-slider-specular {
+  background: linear-gradient(to right, #1e293b, #38bdf8);
 }
 
 /* Color Controls & HSB Sliders (Task 1.5) */
@@ -427,6 +898,27 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.2);
   background-color: #EB5757;
   transition: background-color 0.1s ease;
+}
+
+/* Sphere albedo chip: a 22px button that sends the exact hex (D21). */
+.albedo-send-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background-color 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.albedo-send-btn:hover {
+  border-color: var(--ps-accent-blue);
+  box-shadow: 0 0 0 1px var(--ps-accent-blue);
+}
+
+.albedo-send-btn:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
 }
 
 .ps-input-hex {
@@ -561,6 +1053,144 @@ html, body {
   color: var(--ps-text-disabled);
 }
 
+/* Ramp header: read-only sphere chip + albedo dot (Task 3.4) */
+.ramp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ramp-sphere-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 50%;
+  padding: 2px 7px;
+  border: 1px solid var(--ps-border-subtle);
+  border-radius: 999px;
+  background-color: var(--ps-bg-input);
+  color: var(--ps-text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.ramp-albedo-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background-color: #e3e3e3;
+  transition: background-color 0.1s ease;
+}
+
+.ramp-sphere-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ramp-click-hint {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ps-text-disabled);
+  white-space: nowrap;
+}
+
+/* Analytical 5-Value Swatch Ramp (Task 1.7) */
+.swatch-ramp-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.swatch-block {
+  position: relative;
+  background-color: var(--ps-bg-input);
+  border: 1px solid var(--ps-border);
+  border-radius: var(--ps-radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.swatch-block:hover {
+  border-color: var(--ps-accent-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+.swatch-block:active {
+  transform: scale(0.96);
+}
+
+/* Transient click flash highlight overlay (appears and fades away, no persistent selection) */
+.swatch-block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.swatch-block.clicked::after {
+  animation: swatchClickFlash 0.38s ease-out forwards;
+}
+
+@keyframes swatchClickFlash {
+  0% {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.35);
+    box-shadow: inset 0 0 0 2px #ffffff, 0 0 12px rgba(255, 255, 255, 0.8);
+  }
+  50% {
+    opacity: 0.7;
+    background-color: rgba(127, 127, 127, 0.18);
+    box-shadow: inset 0 0 0 2px var(--ps-accent-blue), 0 0 8px rgba(127, 127, 127, 0.45);
+  }
+  100% {
+    opacity: 0;
+    background-color: transparent;
+    box-shadow: inset 0 0 0 0 transparent, 0 0 0 transparent;
+  }
+}
+
+.swatch-fill {
+  width: 100%;
+  height: 32px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  transition: background-color 0.1s ease;
+}
+
+.swatch-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 2px;
+  gap: 2px;
+}
+
+.swatch-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--ps-text-primary);
+}
+
+.swatch-hex {
+  font-family: Consolas, monospace;
+  font-size: 9px;
+  color: var(--ps-text-secondary);
+}
+
 /* Status Bar */
 .status-bar {
   height: 28px;
@@ -620,4 +1250,1117 @@ html, body {
   font-weight: 600;
   color: var(--ps-text-primary);
   font-size: 11px;
+}
+
+/* --- Controls Guide takeover (Task 3.6) --------------------------------- */
+
+/* Absolute rather than fixed: #app is the panel's WebView viewport, so the
+   takeover covers the whole panel and nothing outside it. */
+.guide-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.guide-overlay[hidden] {
+  display: none;
+}
+
+.guide-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.68);
+}
+
+.guide-window {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 20px);
+  max-width: 560px;
+  min-height: 0;
+  margin: 10px;
+  background-color: var(--ps-bg-panel);
+  border: 1px solid var(--ps-border);
+  border-radius: var(--ps-radius-lg);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.guide-window:focus {
+  outline: none;
+}
+
+.guide-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background-color: var(--ps-bg-darkest);
+  border-bottom: 1px solid var(--ps-border);
+}
+
+.guide-title-group {
+  min-width: 0;
+}
+
+.guide-kicker {
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--ps-text-disabled);
+}
+
+.guide-header h2 {
+  margin-top: 2px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--ps-text-primary);
+}
+
+.guide-back {
+  flex: 0 0 auto;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: var(--ps-radius-sm);
+  border: 1px solid var(--ps-border);
+  background-color: var(--ps-bg-elevated);
+  color: var(--ps-text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.guide-back:hover {
+  background-color: var(--ps-bg-hover);
+  border-color: var(--ps-text-disabled);
+}
+
+.guide-back:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
+.guide-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guide-section h3 {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ps-text-secondary);
+}
+
+.guide-section p {
+  font-size: 11px;
+  line-height: 1.55;
+  color: #cfcfcf;
+}
+
+.guide-section p + p {
+  margin-top: 6px;
+}
+
+.guide-section strong {
+  color: var(--ps-text-primary);
+}
+
+.guide-github-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--ps-radius-md);
+  border: 1px solid var(--ps-border);
+  background-color: var(--ps-bg-input);
+  color: var(--ps-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.guide-github-row:hover {
+  background-color: var(--ps-bg-hover);
+  border-color: var(--ps-accent-blue);
+}
+
+.guide-github-row:focus-visible {
+  outline: 1px solid var(--ps-accent-blue);
+  outline-offset: 1px;
+}
+
+.guide-github-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-github-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.guide-github-url {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  color: var(--ps-text-secondary);
+}
+
+.guide-github-arrow {
+  flex: 0 0 auto;
+  font-size: 14px;
+  color: #93c5fd;
+}
+
+/* ==========================================================================
+   V1.2 flat shell (Task 4.2)
+
+   Photoshop grammar: continuous panel surfaces, 1 px dividers, 2 px radii,
+   no cards, no decorative shadows, compact header and a 24 px status bar.
+   Controls are reskinned in 4.3; this layer sets the structure.
+   ========================================================================== */
+
+html,
+body {
+  background-color: var(--ps-surface);
+  color: var(--ps-ink);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+}
+
+/* --- compact header ------------------------------------------------------ */
+
+.panel-header {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  background-color: var(--ps-surface);
+  border-bottom: 1px solid var(--ps-line);
+}
+
+.panel-header h1 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--ps-ink);
+}
+
+/* P7: the version leaves the chrome; the guide owns it. */
+.panel-header .badge {
+  display: none;
+}
+
+.panel-info-btn {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+  font-family: inherit;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.panel-info-btn:hover {
+  color: var(--ps-ink);
+  background-color: var(--ps-hover);
+  border-color: transparent;
+}
+
+/* --- continuous workspace / panel surfaces ------------------------------ */
+
+.panel-content {
+  padding: 0;
+  gap: 0;
+  background-color: var(--ps-surface);
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* V1.3 dock: preview, splitter, Time of Day and Ramp never scroll. */
+.panel-dock {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* V1.3 scrolling region: everything below the preview moves. The splitter
+   above it draws the only divider. */
+.panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--ps-surface);
+  border-top: 0;
+}
+
+.panel-scroll > .section-card:first-child {
+  border-top: 0;
+}
+
+/* Full-bleed canvas: no workspace matte, no border. The render meets the panel
+   edges directly; the splitter below it is the only chrome. */
+.viewport-frame {
+  position: relative;
+  padding: 0;
+  background-color: var(--ps-surface);
+  border-bottom: 0;
+}
+
+/* While Time of Day is collapsed, the frame grows by a matte-free band below
+   the canvas so the bare slider has breathing room. */
+.viewport-frame.is-slider-floating {
+  padding-bottom: 36px;
+}
+
+/* Floating Time of Day slider (5.3): one input, moved here while the section
+   is collapsed. The wrapper is inert so the eyedropper keeps the canvas; only
+   the track itself takes the pointer. */
+.preview-time-slider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: row-resize;
+  z-index: 2;
+}
+
+.preview-time-slider[hidden] {
+  display: none;
+}
+
+.preview-time-slider .ps-slider.time-range {
+  width: calc(100% - 20px);
+  margin: 0 10px;
+  opacity: 0.35;
+  transition: opacity 120ms ease;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.viewport-frame.is-slider-revealed .preview-time-slider .ps-slider.time-range {
+  opacity: 1;
+}
+
+.viewport-card {
+  width: 100%;
+  margin: 0 auto;
+  max-width: none;
+  aspect-ratio: 412 / 227;
+  background-color: var(--ps-surface);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Splitter: 6 px grab strip inside the 8 px matte, a 1 px rule at its foot.
+   Transparent until hover; the rule is the only permanent chrome. */
+.panel-splitter {
+  position: relative;
+  flex: 0 0 6px;
+  height: 6px;
+  background-color: var(--ps-surface);
+  cursor: row-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.panel-splitter::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background-color: var(--ps-line);
+}
+
+.panel-splitter:hover::after,
+.panel-splitter[data-dragging="true"]::after,
+.panel-splitter:focus-visible::after {
+  background-color: var(--ps-line-strong);
+}
+
+.panel-splitter:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: -3px;
+}
+
+/* The splitter owns the divider under the preview. */
+.panel-splitter + .section-card {
+  border-top: 0;
+}
+
+/* The frame already draws the divider above the first section. */
+.viewport-frame + .section-card {
+  border-top: 0;
+}
+
+.section-card {
+  padding: 6px 10px 8px;
+  background-color: var(--ps-surface);
+  border: 0;
+  border-top: 1px solid var(--ps-line);
+  border-radius: 0;
+}
+
+details.section-card {
+  padding: 0;
+  overflow: visible;
+}
+
+.section-header {
+  margin-bottom: 6px;
+}
+
+.section-card h2,
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ps-ink-secondary);
+}
+
+.section-summary {
+  min-height: 24px;
+  padding: 3px 10px;
+  gap: 8px;
+  border-radius: 0;
+}
+
+.section-summary:hover {
+  background-color: var(--ps-hover);
+}
+
+.section-summary:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: -1px;
+}
+
+.section-state {
+  font-size: 10px;
+  color: var(--ps-ink-secondary);
+}
+
+.section-body {
+  padding: 2px 10px 10px;
+}
+
+.section-divider {
+  height: 1px;
+  margin: 8px 0;
+  background-color: var(--ps-line);
+}
+
+.field-label,
+.toolbar-label {
+  font-size: 11px;
+  color: var(--ps-ink-secondary);
+}
+
+/* --- 24 px status bar ---------------------------------------------------- */
+
+.status-bar {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 10px;
+  background-color: var(--ps-status-bg);
+  border-top: 1px solid var(--ps-line);
+  font-size: 10px;
+  color: var(--ps-status-text);
+}
+
+.status-text {
+  font-size: 10px;
+  color: var(--ps-status-text);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+}
+
+.active-brush-label {
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ps-ink-muted);
+}
+
+.active-brush-hex {
+  font-size: 10px;
+  color: var(--ps-ink-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- neutral states, no blue chrome, no hover lift ----------------------- */
+
+.sphere-toggle[data-state='selected'],
+.time-icon-btn.active,
+.time-icon-btn[aria-pressed='true'],
+.finish-btn.active,
+.ground-preset-btn.active {
+  background-color: var(--ps-selected);
+  border-color: var(--ps-line-strong);
+  color: var(--ps-ink);
+  box-shadow: none;
+}
+
+.sphere-toggle:active,
+.swatch-block:active {
+  transform: none;
+}
+
+.swatch-block:hover {
+  border-color: var(--ps-line-strong);
+  transform: none;
+  box-shadow: none;
+}
+
+.albedo-send-btn:hover {
+  border-color: var(--ps-line-strong);
+  box-shadow: none;
+}
+
+/* Neutral focus: a 1 px ink outline, never the old blue ring or glow. */
+.panel-info-btn:focus-visible,
+.sphere-toggle:focus-visible,
+.hsb-summary:focus-visible,
+.time-reset-btn:focus-visible,
+.time-icon-btn:focus-visible,
+.albedo-send-btn:focus-visible,
+.guide-back:focus-visible,
+.guide-github-row:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+.ps-input-hex:focus,
+.ps-input-num:focus {
+  border-color: var(--ps-line-strong);
+  box-shadow: inset 0 0 0 1px var(--ps-line-strong);
+}
+
+/* 4.2 follow-ups: neutral reset affordance and guide link arrow. */
+.time-reset-btn {
+  border-radius: 2px;
+  background-color: transparent;
+  border: 1px solid var(--ps-line-strong);
+  color: var(--ps-ink-secondary);
+}
+
+.time-reset-btn:hover {
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+.guide-github-arrow {
+  color: var(--ps-ink-secondary);
+}
+
+/* ==========================================================================
+   V1.2 control reskin (Task 4.3)
+
+   22-24 px density, ~2 px radii, neutral hover/selected states, 1 px focus.
+   The time-of-day slider keeps its exact geometry, gradient and thumb (P15);
+   only the surrounding icon buttons inherit the neutral selected token.
+   ========================================================================== */
+
+/* --- toggles and links --------------------------------------------------- */
+
+.sphere-toggle {
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sphere-toggle[data-state='off'] {
+  border-style: solid;
+  border-color: var(--ps-line);
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+}
+
+.sphere-toggle[data-state='on'] {
+  border-color: var(--ps-line-strong);
+  background-color: var(--ps-field);
+  color: var(--ps-ink);
+}
+
+.sphere-toggle:hover:not([data-state='selected']) {
+  border-color: var(--ps-line-strong);
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+.sphere-link-row {
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+
+.check-row {
+  min-height: 24px;
+  font-size: 11px;
+  color: var(--ps-ink-secondary);
+}
+
+/* Native-looking checkbox: 14 px square, neutral fill, ink check. */
+.check-row input[type='checkbox'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 2px;
+  background-color: var(--ps-field);
+  position: relative;
+  cursor: pointer;
+}
+
+.check-row input[type='checkbox']:checked {
+  background-color: var(--ps-selected);
+  border-color: var(--ps-line-strong);
+}
+
+.check-row input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 5px;
+  height: 8px;
+  border-right: 1.5px solid var(--ps-ink);
+  border-bottom: 1.5px solid var(--ps-ink);
+  transform: rotate(45deg);
+}
+
+.check-row input[type='checkbox']:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+/* --- disclosures and notes ---------------------------------------------- */
+
+.hsb-summary {
+  min-height: 24px;
+  padding: 2px 0;
+}
+
+.hsb-title {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.section-note,
+.ramp-click-hint {
+  color: var(--ps-ink-secondary);
+  opacity: 1;
+}
+
+/* --- segmented presets --------------------------------------------------- */
+
+.preset-segmented-control {
+  gap: 2px;
+  padding: 1px;
+}
+
+.finish-btn,
+.ground-preset-btn {
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.finish-btn:hover,
+.ground-preset-btn:hover {
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+/* --- fields -------------------------------------------------------------- */
+
+.ps-input-hex,
+.ps-input-num {
+  height: 24px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-input-hex {
+  width: 76px;
+}
+
+.ps-input-num {
+  width: 46px;
+}
+
+.albedo-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  border-color: var(--ps-line-strong);
+}
+
+.albedo-send-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+}
+
+/* --- swatch ramp --------------------------------------------------------- */
+
+/* The expanded body is the full labelled ramp (V1.2) inside the section body;
+   the minimized state uses the floating palette below. */
+.ramp-body .swatch-ramp-grid {
+  margin-top: 0;
+  gap: 4px;
+}
+
+.ramp-body .swatch-block {
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  color: inherit;
+}
+
+.ramp-body .swatch-block:focus-visible,
+.ramp-float-swatch:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: -1px;
+}
+
+/* Row state: albedo dot + sphere name. */
+.ramp-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Minimized palette: five tiny swatches centred on the render. */
+.ramp-float {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 3;
+}
+
+.ramp-float[hidden] {
+  display: none;
+}
+
+.ramp-float-swatch {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 1px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.ramp-float-swatch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ramp-float-swatch.clicked::after {
+  animation: swatchClickFlash 0.38s ease-out forwards;
+}
+
+.swatch-block {
+  border-radius: 2px;
+}
+
+.swatch-tag {
+  letter-spacing: 0;
+}
+
+.swatch-hex {
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- sliders: scoped so the time-of-day control is untouched (P15) ------- */
+
+.ps-slider:not(.time-range) {
+  border-color: var(--ps-line);
+}
+
+.ps-slider:not(.time-range)::-webkit-slider-thumb {
+  box-shadow: none;
+  transition: none;
+}
+
+.ps-slider:not(.time-range)::-webkit-slider-thumb:hover {
+  transform: none;
+}
+
+.ps-slider:not(.time-range)::-moz-range-thumb {
+  box-shadow: none;
+}
+
+.slider-unit {
+  color: var(--ps-ink-secondary);
+}
+
+/* The edited marker used to be amber; the time gradient is the only colour
+   accent allowed in the V1.2 chrome. */
+.time-state-edited {
+  color: var(--ps-ink-secondary);
+  font-style: italic;
+}
+
+/* Readable hints on the two light themes: the frozen muted token is Adobe's
+   disabled colour, so hint text uses the secondary ink instead (P17). */
+.active-brush-label {
+  color: var(--ps-ink-secondary);
+}
+
+/* ==========================================================================
+   V1.2 line icons (Task 4.4)
+   ========================================================================== */
+
+.ui-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.preset-icon,
+.icon-slot {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.guide-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.guide-inline-icon {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin: 0 1px;
+}
+
+.guide-inline-icon .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.guide-github-arrow .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Narrow panels: keep segmented labels on one line. Four ground presets fall
+   to a 2x2 grid at 320 px; three finish presets still fit one row. */
+.preset-segmented-control {
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+}
+
+@media (max-width: 379px) {
+  /* Four ground presets: 2x2 below 380 px so labels stay on one line. */
+  #section-ground .preset-segmented-control {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ==========================================================================
+   V1.2 Appearance row (Task 4.5)
+   ========================================================================== */
+
+.guide-note {
+  margin: 0 0 6px;
+  font-size: 10px;
+  color: var(--ps-ink-secondary);
+}
+
+.appearance-row {
+  display: grid;
+  /* 3 columns at 320 px, 5 at wider guides; labels never ellipsize. */
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.appearance-btn {
+  min-width: 0;
+  min-height: 24px;
+  padding: 0 4px;
+  overflow: hidden;
+  border: 1px solid var(--ps-line);
+  border-radius: 2px;
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+  font-family: inherit;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.appearance-btn:hover {
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+.appearance-btn.active {
+  background-color: var(--ps-selected);
+  border-color: var(--ps-line-strong);
+  color: var(--ps-ink);
+}
+
+.appearance-btn:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+/* Controls Guide -> Layout (task 5.5). */
+.guide-reset-layout {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ps-line);
+  border-radius: 2px;
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.guide-reset-layout:hover {
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+.guide-reset-layout:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+.appearance-state {
+  margin: 6px 0 0;
+  font-size: 10px;
+  color: var(--ps-ink-secondary);
+}
+
+/* ==========================================================================
+   V1.2 native guide dialog (Task 4.6)
+   Flat Photoshop surface: 1 px border, 2 px radius, compact 28 px title bar,
+   no large shadow or blur.
+   ========================================================================== */
+
+.guide-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.guide-window {
+  width: calc(100% - 16px);
+  margin: 8px;
+  background-color: var(--ps-surface);
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.guide-header {
+  min-height: 28px;
+  padding: 0 8px;
+  background-color: var(--ps-surface);
+  border-bottom: 1px solid var(--ps-line);
+}
+
+.guide-kicker {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ps-ink-secondary);
+}
+
+.guide-header h2 {
+  margin-top: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--ps-ink);
+}
+
+.guide-back {
+  min-height: 22px;
+  padding: 2px 6px;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 2px;
+  background-color: var(--ps-field);
+  color: var(--ps-ink);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.guide-back:hover {
+  background-color: var(--ps-hover);
+  border-color: var(--ps-line-strong);
+  color: var(--ps-ink);
+}
+
+.guide-back:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+.guide-body {
+  padding: 10px;
+  gap: 10px;
+}
+
+.guide-section + .guide-section {
+  padding-top: 8px;
+  border-top: 1px solid var(--ps-line);
+}
+
+.guide-section h3 {
+  margin-bottom: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ps-ink-secondary);
+}
+
+.guide-section p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ps-ink-secondary);
+}
+
+.guide-section strong {
+  color: var(--ps-ink);
+}
+
+.guide-github-row {
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--ps-line);
+  border-radius: 2px;
+  background-color: var(--ps-field);
+  color: var(--ps-ink);
+}
+
+.guide-github-row:hover {
+  background-color: var(--ps-hover);
+  border-color: var(--ps-line-strong);
+}
+
+.guide-github-label {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.guide-github-url {
+  font-size: 9px;
+  color: var(--ps-ink-secondary);
+}
+
+/* ==========================================================================
+   V1.2 verification polish (Task 4.7)
+   ========================================================================== */
+
+/* Per-panel reset in a collapsed header. The button stops its own click so the
+   <details> does not toggle; it renders as a quiet 18 px ghost icon. */
+.section-reset-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  margin-left: 2px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.section-reset-btn:hover {
+  background-color: var(--ps-hover);
+  border-color: var(--ps-line);
+  color: var(--ps-ink);
+}
+
+.section-reset-btn:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
+.section-reset-btn .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* The base .ps-slider width:100% was overriding .time-range, leaving the track
+   11 px right of centre and past the section's right edge. Higher specificity
+   restores the intended inset so the midpoint lines up with the Midday icon. */
+.ps-slider.time-range {
+  display: block;
+  width: calc(100% - 22px);
+  margin: 0 auto;
 }

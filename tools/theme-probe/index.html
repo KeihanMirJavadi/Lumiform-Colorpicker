@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lumiform Theme Probe</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="bar-title">
+        <span class="dot" aria-hidden="true"></span>
+        <strong>Lumiform theme probe</strong>
+        <span class="tag" id="probeVersion">1.0.0</span>
+      </div>
+      <div class="bar-actions">
+        <button id="refreshButton" type="button">Refresh</button>
+        <button id="copyButton" type="button">Copy</button>
+      </div>
+    </header>
+
+    <main id="probe">
+      <section class="hero">
+        <div class="hero-label">document.theme.getCurrent()</div>
+        <div class="hero-value" id="themeValue">checking…</div>
+        <div class="hero-meta">
+          <span id="themeSource">source: unknown</span>
+          <span class="sep">·</span>
+          <span id="listenerState">listener: none</span>
+          <span class="sep">·</span>
+          <span id="updateCount">0 updates</span>
+        </div>
+        <div class="hero-save" id="saveState">Report: waiting for a theme</div>
+        <div class="hero-error hidden" id="listenerError"></div>
+      </section>
+
+      <section class="block">
+        <div class="block-head">
+          <h2>Host colours</h2>
+          <span class="count" id="hostVarCount">0 vars</span>
+        </div>
+        <p class="hint">
+          Every <code>--uxp-host-*</code> custom property found in the host
+          document, with its computed value.
+        </p>
+        <div class="list" id="hostVarList"></div>
+        <p class="empty hidden" id="hostVarEmpty">
+          No <code>--uxp-host-*</code> variables were found. The host did not
+          expose its palette to this panel.
+        </p>
+      </section>
+
+      <section class="block">
+        <div class="block-head">
+          <h2>Photoshop skin</h2>
+          <span class="count" id="skinState">unavailable</span>
+        </div>
+        <p class="hint">
+          <code>app.appSkinInfo</code> colour roles, as reported by the
+          Photoshop DOM.
+        </p>
+        <div class="list" id="skinList"></div>
+        <p class="empty hidden" id="skinEmpty">
+          <code>app.appSkinInfo</code> is not available in this build.
+        </p>
+      </section>
+
+      <section class="block">
+        <div class="block-head">
+          <h2>Environment</h2>
+        </div>
+        <div class="list" id="envList"></div>
+      </section>
+
+      <section class="block">
+        <div class="block-head">
+          <h2>Theme change log</h2>
+          <span class="count" id="eventCount">0 events</span>
+        </div>
+        <p class="hint">
+          Live values pushed by <code>onUpdated</code> and by the 1.2 s safety
+          poll. Newest first.
+        </p>
+        <div class="list log" id="eventList"></div>
+        <p class="empty hidden" id="eventEmpty">
+          No theme changes seen yet. Switch
+          <em>Photoshop ▸ Settings ▸ Interface ▸ Color Theme</em> while this
+          panel is open.
+        </p>
+      </section>
+
+      <p class="footnote" id="copyState">
+        Capture one screenshot per Photoshop theme. Make the panel tall enough
+        that the host colours list is fully visible.
+      </p>
+    </main>
+
+    <script src="main.js"></script>
+  </body>
+</html>

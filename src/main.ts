@@ -1,6 +1,57 @@
 import './ui/styles/theme.css';
 import { getPhotoshopBridge } from './bridge';
 import { AppShell } from './ui/shell';
+import { applyTheme, initialTheme } from './ui/theme';
+
+// First paint: a saved manual choice wins, otherwise the host's `?theme=`
+// bootstrap, otherwise Dark Gray. The shell then follows live host changes.
+applyTheme(initialTheme());
+
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      })[character] ?? character
+  );
+}
+
+function renderStartupError(root: HTMLElement, error: unknown): void {
+  const message = escapeHtml(error instanceof Error ? error.message : String(error));
+  console.error('[Lumiform] Failed to start:', error);
+
+  root.innerHTML = `
+    <div style="
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: #1e1e1e;
+      color: #ececec;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+    ">
+      <strong style="font-size: 14px;">Lumiform could not start</strong>
+      <span style="max-width: 330px; color: #9e9e9e;">
+        ${message}
+      </span>
+      <span style="max-width: 330px; color: #6f6f6f;">
+        The panel needs WebGL. If this appears inside Photoshop, make sure you are
+        running Photoshop 2025 (26.x) or newer with hardware acceleration enabled.
+      </span>
+    </div>
+  `;
+}
 
 function initApp(): void {
   const root = document.getElementById('app');
@@ -9,10 +60,13 @@ function initApp(): void {
     return;
   }
 
-  const bridge = getPhotoshopBridge();
-  new AppShell(root, bridge);
-
-  console.log('[Lumiform] Initialized successfully with', bridge.name);
+  try {
+    const bridge = getPhotoshopBridge();
+    new AppShell(root, bridge);
+    console.log('[Lumiform] Initialized successfully with', bridge.name);
+  } catch (error) {
+    renderStartupError(root, error);
+  }
 }
 
 if (document.readyState === 'loading') {

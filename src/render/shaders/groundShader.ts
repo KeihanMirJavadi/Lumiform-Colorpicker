@@ -1,0 +1,183 @@
+import * as THREE from 'three';
+import { DEFAULT_ALBEDO_HEX, DEFAULT_GROUND_HEX } from '../../core/defaults';
+
+export interface GroundShaderUniforms {
+  [key: string]: THREE.IUniform;
+  uLightDir: { value: THREE.Vector3 };
+  uKeyColor: { value: THREE.Color };
+  uKeyIntensity: { value: number };
+  uZenithColor: { value: THREE.Color };
+  uEquatorColor: { value: THREE.Color };
+  uHorizonColor: { value: THREE.Color };
+  uGroundColor: { value: THREE.Color };
+  uGroundAlbedo: { value: THREE.Color };
+  uSkyLightColor: { value: THREE.Color };
+  uSkyLightIntensity: { value: number };
+  uGroundLightColor: { value: THREE.Color };
+  uGroundLightIntensity: { value: number };
+  uSphereCenters: { value: THREE.Vector3[] };
+  uSphereRadii: { value: number[] };
+  uSphereAlbedos: { value: THREE.Color[] };
+  uGroundEffectiveHaze: { value: number };
+  uGroundHaze: { value: THREE.Color };
+}
+
+const vertexShader = /* glsl */ `
+  varying vec3 vWorldPosition;
+
+  void main() {
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vWorldPosition = worldPos.xyz;
+    gl_Position = projectionMatrix * viewMatrix * worldPos;
+  }
+`;
+
+const fragmentShader = /* glsl */ `
+  const float PI = 3.14159265359;
+  // Mirrors core/atmosphere.ts.
+  const float HAZE_DENSITY = 0.030;
+  const float GROUND_HAZE_START = 10.0;
+
+  uniform vec3 uLightDir;
+  uniform vec3 uKeyColor;
+  uniform float uKeyIntensity;
+
+  uniform vec3 uZenithColor;
+  uniform vec3 uEquatorColor;
+  uniform vec3 uHorizonColor;
+  uniform vec3 uGroundColor;
+
+  uniform vec3 uGroundAlbedo;
+  uniform vec3 uSkyLightColor;
+  uniform float uSkyLightIntensity;
+  uniform vec3 uGroundLightColor;
+  uniform float uGroundLightIntensity;
+
+  uniform vec3 uSphereCenters[3];
+  uniform float uSphereRadii[3];
+  uniform vec3 uSphereAlbedos[3];
+  uniform float uGroundEffectiveHaze;
+  uniform vec3 uGroundHaze;
+
+  varying vec3 vWorldPosition;
+
+  // 1/255 triangular-ish dither: removes banding in the smooth gradients.
+  float ditherNoise(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+
+  vec3 linearToSRGB(vec3 c) {
+    vec3 low = c * 12.92;
+    vec3 high = 1.055 * pow(max(c, vec3(0.0)), vec3(0.41666667)) - 0.055;
+    return mix(low, high, step(vec3(0.0031308), c));
+  }
+
+  vec3 toneMap(vec3 c) {
+    vec3 x = max(c, vec3(0.0));
+    vec3 over = max(x - vec3(0.8), vec3(0.0));
+    return min(x, vec3(0.8)) + 0.2 * (1.0 - exp(-over / 0.2));
+  }
+
+  void main() {
+    vec3 P = vWorldPosition;
+    vec3 L = normalize(uLightDir);
+
+    float shadowFactor = 1.0;
+    float contactAO = 1.0;
+    vec3 colorBleed = vec3(0.0);
+
+    // The cast shadow is the exact cylinder projection along the light
+    // direction, so its length is whatever the sun elevation physically gives.
+    for (int i = 0; i < 3; i++) {
+      float r = uSphereRadii[i];
+      if (r < 0.001) continue;
+
+      vec3 center = uSphereCenters[i];
+
+      if (L.y > 0.005) {
+        vec3 W = center - P;
+        float tProj = dot(W, L);
+        if (tProj > 0.0) {
+          float dSq = dot(W, W) - tProj * tProj;
+          float d = sqrt(max(0.0, dSq));
+          float penumbra = 0.10 + 0.06 * clamp(tProj / r - 1.0, 0.0, 4.0);
+          float occlusion = 1.0 - smoothstep(r - penumbra, r + penumbra, d);
+          shadowFactor = min(shadowFactor, 1.0 - occlusion);
+        }
+      }
+
+      float rTouch = length(P.xz - center.xz);
+      contactAO = min(contactAO, clamp(rTouch / (0.60 * r), 0.35, 1.0));
+
+      float distSurf = max(0.0, length(P - center) - r);
+      float localScale = max(r / 1.25, 0.2);
+      float bounceSpread = max(0.0, 1.0 - distSurf / (1.4 * localScale));
+      colorBleed += uSphereAlbedos[i] * (0.06 * bounceSpread * uKeyIntensity * max(0.0, L.y));
+    }
+
+    // Physical ground illumination. A horizontal surface receives the whole sky
+    // hemisphere plus the sun; inside a cast shadow the sun term disappears and
+    // what is left is genuine sky light, not a painted-in darkening.
+    vec3 ambientE = uSkyLightColor * uSkyLightIntensity * contactAO;
+    float sunLambert = max(0.0, L.y);
+    vec3 lightE = ambientE + uKeyColor * uKeyIntensity * sunLambert * shadowFactor + colorBleed;
+
+    vec3 groundCol = uGroundAlbedo * lightE / PI;
+
+    // Aerial perspective. The floor's aerial colour is its own: distant ground
+    // keeps some of the ground hue instead of turning into pure sky. The same
+    // single-scattering form as the spheres -- attenuated surface plus
+    // in-scattered background -- so the horizon band and the spheres agree.
+    float viewDistance = length(P - cameraPosition);
+    float opticalDepth = uGroundEffectiveHaze * HAZE_DENSITY
+      * max(0.0, viewDistance - GROUND_HAZE_START);
+    float transmittance = exp(-opticalDepth);
+    groundCol = groundCol * transmittance + uGroundHaze * (1.0 - transmittance);
+
+    // Distant boundary fade: the plane's far edge reaches the eye line and the
+    // fade completes before the far clip plane, so the ground meets the horizon
+    // at the correct height instead of ending a few pixels below it.
+    float distFromCenter = length(P.xz);
+    float alpha = 1.0 - smoothstep(380.0, 560.0, distFromCenter);
+
+    vec3 outColor = linearToSRGB(toneMap(groundCol));
+    outColor += (ditherNoise(gl_FragCoord.xy) - 0.5) / 255.0;
+    gl_FragColor = vec4(outColor, alpha);
+  }
+`;
+
+export function createGroundMaterial(): THREE.ShaderMaterial {
+  const uniforms: GroundShaderUniforms = {
+    uLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
+    uKeyColor: { value: new THREE.Color('#FFEFE8') },
+    uKeyIntensity: { value: 3.506 },
+    uZenithColor: { value: new THREE.Color('#0055B0') },
+    uEquatorColor: { value: new THREE.Color('#2F8CD1') },
+    uHorizonColor: { value: new THREE.Color('#90BAC6') },
+    uGroundColor: { value: new THREE.Color('#478503') },
+    uGroundAlbedo: { value: new THREE.Color(DEFAULT_GROUND_HEX) },
+    uSkyLightColor: { value: new THREE.Color('#00DCFF') },
+    uSkyLightIntensity: { value: 0.422 },
+    uGroundLightColor: { value: new THREE.Color('#85FF00') },
+    uGroundLightIntensity: { value: 0.178 },
+    uSphereCenters: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
+    uSphereRadii: { value: [0, 0, 0] },
+    uSphereAlbedos: {
+      value: [
+        new THREE.Color(DEFAULT_ALBEDO_HEX),
+        new THREE.Color(DEFAULT_ALBEDO_HEX),
+        new THREE.Color(DEFAULT_ALBEDO_HEX),
+      ],
+    },
+    uGroundEffectiveHaze: { value: 0.25 },
+    uGroundHaze: { value: new THREE.Color('#6F9A50') },
+  };
+
+  return new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader,
+    fragmentShader,
+    transparent: true,
+    depthWrite: true,
+  });
+}
