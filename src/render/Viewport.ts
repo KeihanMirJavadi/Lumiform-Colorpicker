@@ -8,7 +8,7 @@ import { LightingPreset, SurfaceFinish, RGBColor } from '../core/types';
 import { effectiveHaze } from '../core/atmosphere';
 import { SURFACE_FINISHES } from '../core/material';
 import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
-import { FRAMING, REFERENCE_ASPECT, verticalFovRad } from '../core/framing';
+import { buildFraming, Framing, REFERENCE_ASPECT } from '../core/framing';
 import {
   BASE_SPHERE_RADIUS,
   GROUND_Y,
@@ -36,6 +36,8 @@ export class Viewport {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
+  /** Composition for the current frame aspect (V1.3). */
+  private framing: Framing = buildFraming(REFERENCE_ASPECT);
   private lightingEngine: LightingEngine;
   private colorPickerTarget: ColorPickerTarget;
 
@@ -84,23 +86,25 @@ export class Viewport {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x181818);
 
-    // 2. Camera — fixed reference framing (see core/framing.ts). The camera
-    //    never moves; time-of-day and material changes only touch the shaders.
+    // 2. Camera — fixed lens and depth (see core/framing.ts). The aspect only
+    //    moves the sphere slots horizontally; the camera never moves, so the
+    //    sphere sizes, the horizon and every world-space haze constant hold.
     const aspect =
       this.container.clientWidth > 0 && this.container.clientHeight > 0
         ? this.container.clientWidth / this.container.clientHeight
         : REFERENCE_ASPECT;
+    this.framing = buildFraming(aspect);
     this.camera = new THREE.PerspectiveCamera(
-      THREE.MathUtils.radToDeg(verticalFovRad(aspect)),
+      THREE.MathUtils.radToDeg(this.framing.verticalFovRad),
       aspect,
       0.1,
       600
     );
-    this.camera.position.set(0, FRAMING.cameraY, FRAMING.cameraZ);
+    this.camera.position.set(0, this.framing.cameraY, this.framing.cameraZ);
     this.camera.lookAt(0, 0, 0);
     // The eye line is the horizon. Tilt up so it lands on the reference's
     // 55.1% instead of dead centre. The camera never moves after this.
-    this.camera.rotateX(FRAMING.pitchRad);
+    this.camera.rotateX(this.framing.pitchRad);
 
     // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -145,7 +149,8 @@ export class Viewport {
     for (const config of SPHERE_SLOTS) {
       const material = createLumiformMaterial(initialHex);
       const mesh = new THREE.Mesh(this.sphereGeometry, material);
-      mesh.position.set(config.position.x, GROUND_Y + BASE_SPHERE_RADIUS, config.position.z);
+      const slot = this.framing.slots[config.framingKey];
+      mesh.position.set(slot.x, GROUND_Y + BASE_SPHERE_RADIUS, slot.z);
       mesh.scale.setScalar(1);
       mesh.userData.slotId = config.id;
       this.scene.add(mesh);
@@ -233,7 +238,10 @@ export class Viewport {
   }
 
   public getSelectedSphereDistance(): number {
-    return this.camera.position.distanceTo(this.getSphere(this.selectedId).mesh.position);
+    // Depth along the view axis, not the Euclidean distance: the slot X moves
+    // with the frame width in V1.3, and the swatch ramp's haze calibration is
+    // authored against these reference depths (near 13.7, mid 18.4, far 52.6).
+    return this.framing.distances[this.getSphere(this.selectedId).config.framingKey];
   }
 
   public isSphereActive(id: SphereSlotId): boolean {
@@ -511,11 +519,8 @@ export class Viewport {
       const radius = BASE_SPHERE_RADIUS * sphere.size;
       sphere.mesh.visible = sphere.active;
       sphere.mesh.scale.setScalar(sphere.size);
-      sphere.mesh.position.set(
-        sphere.config.position.x,
-        GROUND_Y + radius,
-        sphere.config.position.z
-      );
+      const slot = this.framing.slots[sphere.config.framingKey];
+      sphere.mesh.position.set(slot.x, GROUND_Y + radius, slot.z);
 
       const uniforms = sphere.material.uniforms as LumiformShaderUniforms;
       uniforms.uAlbedo.value.set(sphere.albedoHex);
@@ -650,12 +655,17 @@ export class Viewport {
     const height = this.container.clientHeight;
     if (width === 0 || height === 0) return;
 
-    this.camera.aspect = width / height;
-    // Keep the horizontal FOV fixed (the reference lens) instead of the vertical.
-    this.camera.fov = THREE.MathUtils.radToDeg(verticalFovRad(this.camera.aspect));
+    const aspect = width / height;
+    this.framing = buildFraming(aspect);
+    this.camera.aspect = aspect;
+    // The lens is fixed; only the horizontal slot positions follow the width.
+    this.camera.fov = THREE.MathUtils.radToDeg(this.framing.verticalFovRad);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    this.syncSphereUniforms();
+    this.updateSelectionFlashTransform();
 
     this.colorPickerTarget.updatePositionDOM();
     this.colorPickerTarget.scheduleResample();

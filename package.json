@@ -11,7 +11,8 @@
     "plugin:package": "node scripts/package-plugin.mjs",
     "plugin": "npm run plugin:build && npm run plugin:package",
     "probe:package": "node scripts/package-theme-probe.mjs",
-    "test:queue": "node --test scripts/test-command-queue.mjs"
+    "test:queue": "node --test scripts/test-command-queue.mjs",
+    "test:framing": "node --test scripts/test-framing.mjs"
   },
   "repository": {
     "type": "git",

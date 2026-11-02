@@ -23,6 +23,15 @@ import * as THREE from 'three';
  * Everything else (slot positions) is derived from those numbers, so the
  * composition cannot drift when a preset changes. Time-of-day and material
  * changes must not touch this file. The camera is fixed; there is no zoom.
+ *
+ * V1.3 extends the contract to a bounded aspect range (reference 1.815 down to
+ * 1:1). The lens, the camera and the three depth distances stay fixed: the
+ * sphere diameters are fractions of the frame height, and every atmosphere
+ * constant (`atmosphere.ts`, the shaders) is authored in world units, so
+ * moving the camera or the slots in Z would change both the render and the
+ * swatch ramp. Only the horizontal slot positions change with the frame width,
+ * solved so each centre keeps its reference fraction of the width. At
+ * `REFERENCE_ASPECT` this is exactly the original composition.
  */
 
 /** Physical radius of every sphere before the per-sphere size slider is applied. */
@@ -85,9 +94,12 @@ export interface Framing {
   distances: Record<'near' | 'mid' | 'far', number>;
 }
 
-function buildFraming(radius: number): Framing {
-  const aspect = REFERENCE_ASPECT;
-  const vFov = verticalFovRad(aspect);
+function createFraming(radius: number, aspect: number): Framing {
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : REFERENCE_ASPECT;
+  // The lens is fixed at the reference vertical FOV: it keeps the sphere
+  // diameters as fractions of the frame height and leaves every world-space
+  // atmosphere constant meaningful.
+  const vFov = verticalFovRad(REFERENCE_ASPECT);
 
   const distances = {
     near: distanceForDiameter(radius, COMPOSITION.near.diameter, vFov),
@@ -100,14 +112,16 @@ function buildFraming(radius: number): Framing {
   for (const key of ['near', 'mid', 'far'] as const) {
     const d = distances[key];
     slots[key] = new THREE.Vector3(
-      xForCenterX(COMPOSITION[key].centerX, d, vFov, aspect),
+      // Only X follows the frame width; Z stays on the reference depth so the
+      // haze model and the sphere sizes never change with the aspect.
+      xForCenterX(COMPOSITION[key].centerX, d, vFov, safeAspect),
       0,
       cameraZ - d
     );
   }
 
   return {
-    aspect,
+    aspect: safeAspect,
     verticalFovRad: vFov,
     cameraZ,
     // Sphere centres are at y = 0 and sit on the horizon, so the eye is at y = 0.
@@ -118,4 +132,13 @@ function buildFraming(radius: number): Framing {
   };
 }
 
-export const FRAMING: Framing = buildFraming(BASE_SPHERE_RADIUS);
+/**
+ * Solve the composition for one frame aspect. The camera and the depth
+ * distances are constant; only the horizontal slot positions move so the
+ * three centres keep their reference fractions of the frame width.
+ */
+export function buildFraming(aspect: number): Framing {
+  return createFraming(BASE_SPHERE_RADIUS, aspect);
+}
+
+export const FRAMING: Framing = buildFraming(REFERENCE_ASPECT);
