@@ -11,8 +11,10 @@ export interface SwatchRampOptions {
   /** Row surfaces updated on every recalculation (V1.3, task 5.4). */
   summary?: {
     name: HTMLElement | null;
-    chips: HTMLElement | null;
+    dot: HTMLElement | null;
   };
+  /** Minimized palette that floats on the preview. */
+  floating?: HTMLElement | null;
   initialAlbedoHex?: string;
   initialSphereName?: string;
   initialEnv: LightingEnvironment;
@@ -27,6 +29,7 @@ export interface SwatchRampOptions {
 export class SwatchRamp {
   private container: HTMLElement;
   private summary: SwatchRampOptions['summary'];
+  private floating: HTMLElement | null;
   private albedoHex: string;
   private sphereName: string;
   private env: LightingEnvironment;
@@ -42,6 +45,7 @@ export class SwatchRamp {
   constructor(options: SwatchRampOptions) {
     this.container = options.container;
     this.summary = options.summary;
+    this.floating = options.floating ?? null;
     this.albedoHex = options.initialAlbedoHex ?? DEFAULT_ALBEDO_HEX;
     this.sphereName = options.initialSphereName ?? 'Near';
     this.env = options.initialEnv;
@@ -136,6 +140,10 @@ export class SwatchRamp {
             aria-label="${s.label}, ${s.hex}"
           >
             <span class="swatch-fill" style="background-color: ${s.hex};"></span>
+            <span class="swatch-meta">
+              <span class="swatch-tag">${s.tag}</span>
+              <span class="swatch-hex">${s.hex}</span>
+            </span>
           </button>
         `
           )
@@ -143,28 +151,48 @@ export class SwatchRamp {
       </div>
     `;
 
+    this.renderFloating();
     this.renderSummary();
     this.bindEvents();
   }
 
-  /** Keeps the row's sphere name and five mini chips inline with the body. */
+  /** Five tiny swatches that float on the preview while the ramp is minimized. */
+  private renderFloating(): void {
+    if (!this.floating) return;
+    this.floating.innerHTML = this.currentSwatches
+      .map(
+        (s) => `
+      <button
+        type="button"
+        class="ramp-float-swatch"
+        data-role="${s.role}"
+        style="background-color: ${s.hex};"
+        title="${s.label} (${s.hex})"
+        aria-label="Paint ${s.label}, ${s.hex}"
+      ></button>
+    `
+      )
+      .join('');
+  }
+
+  /** Keeps the row's dot and sphere name inline with the body. */
   private renderSummary(): void {
     if (!this.summary) return;
     if (this.summary.name) {
       this.summary.name.textContent = this.sphereName;
     }
-    if (this.summary.chips) {
-      this.summary.chips.innerHTML = this.currentSwatches
-        .map(
-          (s) =>
-            `<span class="ramp-mini-chip" style="background-color: ${s.hex};" title="${s.label} ${s.hex}"></span>`
-        )
-        .join('');
+    if (this.summary.dot) {
+      this.summary.dot.style.backgroundColor = this.albedoHex;
     }
   }
 
   private bindEvents(): void {
-    const blocks = this.container.querySelectorAll<HTMLElement>('.swatch-block');
+    const blocks: HTMLElement[] = [
+      ...this.container.querySelectorAll<HTMLElement>('.swatch-block'),
+      ...(this.floating
+        ? this.floating.querySelectorAll<HTMLElement>('.ramp-float-swatch')
+        : []),
+    ];
     blocks.forEach((block) => {
       block.addEventListener('click', () => {
         const role = block.getAttribute('data-role');

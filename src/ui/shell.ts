@@ -155,13 +155,15 @@ export class AppShell {
           </div>
         </details>
 
-        <!-- 3. Analytical 5-Value Swatch Ramp: the row carries the sphere and
-             five mini chips; the body is five bare squares. -->
+        <!-- 3. Analytical 5-Value Swatch Ramp. Expanded: the full labelled
+             ramp. Minimized: five tiny swatches float on the preview. -->
         <details class="section-card section-collapsible" id="section-ramp" open>
           <summary class="section-summary">
             <span class="section-title">5-Value Ramp</span>
-            <span class="section-state" id="ramp-summary">Near</span>
-            <span class="ramp-mini-chips" id="ramp-mini-chips" aria-hidden="true"></span>
+            <span class="section-state ramp-state">
+              <span class="ramp-albedo-dot" id="ramp-dot" aria-hidden="true"></span>
+              <span id="ramp-summary">Near</span>
+            </span>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body ramp-body" id="swatch-ramp-container"></div>
@@ -506,6 +508,24 @@ export class AppShell {
       this.viewport.onColorSample((rgb: { r: number; g: number; b: number }) => {
         this.bridge.setForegroundColor(rgb);
       });
+
+      // Minimized-ramp palette: floats inside the render so the five tones stay
+      // one click away without a header. The Viewport clears its container on
+      // construction, so it is appended afterwards.
+      const rampFloat = document.createElement('div');
+      rampFloat.className = 'ramp-float';
+      rampFloat.id = 'ramp-float';
+      rampFloat.hidden = true;
+      viewportContainer.appendChild(rampFloat);
+
+      const rampSection = this.root.querySelector<HTMLDetailsElement>('#section-ramp');
+      if (rampSection) {
+        const syncFloatingRamp = (): void => {
+          rampFloat.hidden = rampSection.open;
+        };
+        rampSection.addEventListener('toggle', syncFloatingRamp);
+        syncFloatingRamp();
+      }
     }
 
     // 2. Mount Analytical 5-Value Swatch Ramp
@@ -515,8 +535,9 @@ export class AppShell {
         container: swatchRampContainer,
         summary: {
           name: this.root.querySelector<HTMLElement>('#ramp-summary'),
-          chips: this.root.querySelector<HTMLElement>('#ramp-mini-chips'),
+          dot: this.root.querySelector<HTMLElement>('#ramp-dot'),
         },
+        floating: this.root.querySelector<HTMLElement>('#ramp-float'),
         initialAlbedoHex: this.viewport.getSelectedSphereColor(),
         initialSphereName:
           SPHERE_SLOTS.find((slot) => slot.id === this.viewport!.getSelectedSphereId())?.label ??
