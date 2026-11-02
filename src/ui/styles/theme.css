@@ -2169,6 +2169,29 @@ details.section-card {
   outline-offset: 1px;
 }
 
+/* Controls Guide -> Layout (task 5.5). */
+.guide-reset-layout {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ps-line);
+  border-radius: 2px;
+  background-color: transparent;
+  color: var(--ps-ink-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.guide-reset-layout:hover {
+  background-color: var(--ps-hover);
+  color: var(--ps-ink);
+}
+
+.guide-reset-layout:focus-visible {
+  outline: 1px solid var(--ps-focus);
+  outline-offset: 1px;
+}
+
 .appearance-state {
   margin: 6px 0 0;
   font-size: 10px;

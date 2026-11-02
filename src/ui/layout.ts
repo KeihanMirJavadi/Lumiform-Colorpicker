@@ -40,6 +40,74 @@ export interface SplitterController {
   destroy: () => void;
 }
 
+/**
+ * Persisted layout (V1.3, task 5.5). Everything here is presentation state:
+ * the preview height, the two essentials' disclosure and the four section
+ * rows. Colours, lighting and selection are intentionally not stored.
+ */
+export interface LayoutState {
+  /** Card height in px; null follows the reference 412:227 snap. */
+  previewHeight: number | null;
+  timeCollapsed: boolean;
+  rampCollapsed: boolean;
+  /** Ids of the four section `<details>` that are open. */
+  openSections: string[];
+}
+
+const STORAGE_KEY = 'lumiform.layout.v1';
+
+export const DEFAULT_LAYOUT: LayoutState = {
+  previewHeight: null,
+  timeCollapsed: false,
+  rampCollapsed: false,
+  openSections: [],
+};
+
+function defaultLayout(): LayoutState {
+  return { ...DEFAULT_LAYOUT, openSections: [] };
+}
+
+export function readLayout(): LayoutState {
+  try {
+    const raw = globalThis.localStorage?.getItem(STORAGE_KEY);
+    if (!raw) return defaultLayout();
+    const parsed = JSON.parse(raw) as Partial<LayoutState>;
+    const height =
+      typeof parsed.previewHeight === 'number' &&
+      Number.isFinite(parsed.previewHeight) &&
+      parsed.previewHeight > 0
+        ? Math.round(parsed.previewHeight)
+        : null;
+
+    return {
+      previewHeight: height,
+      timeCollapsed: parsed.timeCollapsed === true,
+      rampCollapsed: parsed.rampCollapsed === true,
+      openSections: Array.isArray(parsed.openSections)
+        ? parsed.openSections.filter((id): id is string => typeof id === 'string')
+        : [],
+    };
+  } catch {
+    return defaultLayout();
+  }
+}
+
+export function saveLayout(state: LayoutState): void {
+  try {
+    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // A blocked or full storage must never break the panel.
+  }
+}
+
+export function clearLayout(): void {
+  try {
+    globalThis.localStorage?.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignore.
+  }
+}
+
 export function bindSplitter(options: SplitterOptions): SplitterController {
   const { element } = options;
   const step = options.step ?? 8;

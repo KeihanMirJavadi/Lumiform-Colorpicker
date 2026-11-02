@@ -13,7 +13,15 @@ import {
 } from '../core/lighting';
 import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
 import { ICONS } from './icons';
-import { bindSplitter, SplitterController } from './layout';
+import {
+  bindSplitter,
+  clearLayout,
+  DEFAULT_LAYOUT,
+  LayoutState,
+  readLayout,
+  saveLayout,
+  SplitterController,
+} from './layout';
 import {
   applyTheme,
   isPhotoshopTheme,
@@ -26,6 +34,9 @@ import {
 } from './theme';
 
 const LUMIFORM_GITHUB_URL = 'https://github.com/KeihanMirJavadi/Lumiform-Colorpicker';
+
+/** Section `<details>` whose open state is persisted (task 5.5). */
+const SECTION_IDS = ['section-spheres', 'section-sun', 'section-ground', 'section-finish'] as const;
 
 /** Icon-only time-of-day buttons (D7); names live in title/aria-label. */
 const TIME_OF_DAY_ICONS: Record<LightingPreset, string> = {
@@ -60,6 +71,9 @@ export class AppShell {
   private previewHeight: number | null = null;
   private splitter: SplitterController | null = null;
   private layoutObserver: ResizeObserver | null = null;
+  /** Persisted layout state (task 5.5). */
+  private layoutState: LayoutState = readLayout();
+  private applyPreviewHeight: ((height: number | null) => void) | null = null;
 
   constructor(root: HTMLElement, bridge: IPhotoshopBridge) {
     this.root = root;
@@ -480,6 +494,12 @@ export class AppShell {
               <p class="appearance-state" id="appearance-state" aria-live="polite"></p>
             </section>
 
+            <section class="guide-section">
+              <h3>Layout</h3>
+              <p class="guide-note">Preview height, Time of Day, the 5-Value Ramp and the section rows are remembered between sessions. Reset layout returns them to their shipped state.</p>
+              <button type="button" class="guide-reset-layout" id="btn-guide-reset-layout">Reset layout</button>
+            </section>
+
             <button
               type="button"
               class="guide-github-row"
@@ -496,6 +516,9 @@ export class AppShell {
         </section>
       </div>
     `;
+
+    // Restore the persisted disclosure/height state before mounting anything.
+    this.applyStoredLayout();
 
     // 1. Mount Viewport
     const viewportContainer = this.root.querySelector<HTMLElement>('#viewport-container');
@@ -616,6 +639,7 @@ export class AppShell {
     this.bindSectionSummaryListeners();
     this.bindPanelResets();
     this.bindPreviewSplitter();
+    this.bindLayoutPersistence();
     this.bindShortcutForwarding();
 
     this.syncSphereUI();
@@ -790,8 +814,10 @@ export class AppShell {
       getSnaps: snaps,
       getHeight: () => this.previewHeight ?? snaps().reference,
       setHeight: (height) => apply(height),
+      onCommit: () => this.persistLayout(),
     });
 
+    this.applyPreviewHeight = apply;
     apply(this.previewHeight);
 
     // Observe both the panel (width/height changes) and the dock (essential
@@ -799,6 +825,55 @@ export class AppShell {
     this.layoutObserver = new ResizeObserver(() => apply(this.previewHeight));
     this.layoutObserver.observe(content);
     this.layoutObserver.observe(dock);
+  }
+
+  /** Restores the persisted layout before the widgets bind their own state. */
+  private applyStoredLayout(): void {
+    this.previewHeight = this.layoutState.previewHeight;
+    this.setDetailsOpen('section-time', !this.layoutState.timeCollapsed);
+    this.setDetailsOpen('section-ramp', !this.layoutState.rampCollapsed);
+    for (const id of SECTION_IDS) {
+      this.setDetailsOpen(id, this.layoutState.openSections.includes(id));
+    }
+  }
+
+  private setDetailsOpen(id: string, open: boolean): void {
+    const el = this.root.querySelector<HTMLDetailsElement>(`#${id}`);
+    if (el) el.open = open;
+  }
+
+  private persistLayout(): void {
+    const isOpen = (id: string): boolean =>
+      Boolean(this.root.querySelector<HTMLDetailsElement>(`#${id}`)?.open);
+    saveLayout({
+      previewHeight: this.previewHeight,
+      timeCollapsed: !isOpen('section-time'),
+      rampCollapsed: !isOpen('section-ramp'),
+      openSections: SECTION_IDS.filter(isOpen),
+    });
+  }
+
+  /** Persist on every disclosure change; the splitter saves on commit. */
+  private bindLayoutPersistence(): void {
+    const ids = ['section-time', 'section-ramp', ...SECTION_IDS];
+    for (const id of ids) {
+      this.root
+        .querySelector<HTMLDetailsElement>(`#${id}`)
+        ?.addEventListener('toggle', () => this.persistLayout());
+    }
+  }
+
+  /** Controls Guide action: back to the shipped layout, then forget it. */
+  private resetLayout(): void {
+    this.layoutState = { ...DEFAULT_LAYOUT, openSections: [] };
+    this.previewHeight = null;
+    this.applyPreviewHeight?.(null);
+    this.setDetailsOpen('section-time', true);
+    this.setDetailsOpen('section-ramp', true);
+    for (const id of SECTION_IDS) {
+      this.setDetailsOpen(id, false);
+    }
+    clearLayout();
   }
 
   /**
@@ -919,6 +994,7 @@ export class AppShell {
     const backBtn = this.root.querySelector<HTMLButtonElement>('#btn-guide-back');
     const backdrop = this.root.querySelector<HTMLElement>('#guide-backdrop');
     const githubBtn = this.root.querySelector<HTMLButtonElement>('#btn-guide-github');
+    const resetLayoutBtn = this.root.querySelector<HTMLButtonElement>('#btn-guide-reset-layout');
     if (!overlay || !windowEl || !openBtn || !backBtn) return;
 
     const background = [
@@ -987,6 +1063,9 @@ export class AppShell {
     openBtn.addEventListener('click', openGuide);
     backBtn.addEventListener('click', closeGuide);
     backdrop?.addEventListener('click', closeGuide);
+    resetLayoutBtn?.addEventListener('click', () => {
+      this.resetLayout();
+    });
     githubBtn?.addEventListener('click', () => {
       void this.bridge.openUrl(LUMIFORM_GITHUB_URL).catch((error) => {
         console.warn('[Lumiform] Could not open the GitHub link:', error);
