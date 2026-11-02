@@ -13,6 +13,7 @@ import {
 } from '../core/lighting';
 import { SPHERE_SLOTS, SphereSlotId } from '../core/sphereSlots';
 import { ICONS } from './icons';
+import { bindSplitter, SplitterController } from './layout';
 import {
   applyTheme,
   isPhotoshopTheme,
@@ -55,6 +56,10 @@ export class AppShell {
   /** V1.2 appearance: Auto follows the host; a pinned theme wins (4.5). */
   private themePreference: ThemePreference = readThemePreference();
   private hostTheme: string | null = null;
+  /** V1.3 preview height in px; null follows the reference 412:227 snap. */
+  private previewHeight: number | null = null;
+  private splitter: SplitterController | null = null;
+  private layoutObserver: ResizeObserver | null = null;
 
   constructor(root: HTMLElement, bridge: IPhotoshopBridge) {
     this.root = root;
@@ -83,14 +88,26 @@ export class AppShell {
       </header>
 
       <main class="panel-content">
-        <!-- 1. Canvas: fixed 412:227 framing, eyedropper reticle. The frame is
-             the workspace matte; the card itself keeps the V1.1 geometry. -->
-        <div class="viewport-frame">
-          <div class="viewport-card" id="viewport-container"></div>
-        </div>
+        <!-- V1.3 dock: the preview, splitter, Time of Day and Ramp never scroll.
+             Only the four section rows below live in the scrolling region. -->
+        <div class="panel-dock" id="panel-dock">
+          <!-- 1. Canvas: reference 412:227 to 1:1, eyedropper reticle. The frame
+               is the workspace matte; the splitter under it sets the height. -->
+          <div class="viewport-frame">
+            <div class="viewport-card" id="viewport-container"></div>
+          </div>
 
-        <!-- 2. Time of Day (always open): icon strip + snapped slider -->
-        <section class="section-card" aria-labelledby="time-of-day-heading">
+          <div
+            class="panel-splitter"
+            id="panel-splitter"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize the 3D preview"
+            tabindex="0"
+          ></div>
+
+          <!-- 2. Time of Day (always open): icon strip + snapped slider -->
+          <section class="section-card" aria-labelledby="time-of-day-heading">
           <div class="section-header time-of-day-header">
             <h2 id="time-of-day-heading">Time of Day</h2>
             <div class="time-of-day-state" aria-live="polite">
@@ -136,7 +153,10 @@ export class AppShell {
 
         <!-- 3. Analytical 5-Value Swatch Ramp (always open) -->
         <div class="section-card" id="swatch-ramp-container"></div>
+        </div>
 
+        <!-- Scrolling region: only the four collapsible sections move. -->
+        <div class="panel-scroll" id="panel-scroll">
         <!-- 4. Spheres (collapsed by default) -->
         <details class="section-card section-collapsible" id="section-spheres">
           <summary class="section-summary">
@@ -376,6 +396,7 @@ export class AppShell {
             </p>
           </div>
         </details>
+        </div>
       </main>
 
       <footer class="status-bar" id="status-bar-container"></footer>
@@ -556,6 +577,7 @@ export class AppShell {
     this.bindSurfaceFinishControls();
     this.bindSectionSummaryListeners();
     this.bindPanelResets();
+    this.bindPreviewSplitter();
     this.bindShortcutForwarding();
 
     this.syncSphereUI();
@@ -677,6 +699,68 @@ export class AppShell {
         }
       });
     });
+  }
+
+  /**
+   * V1.3 dock (task 5.2). The splitter owns the preview height; the dock and
+   * the section list follow from it. Every measurement is read from the live
+   * DOM so a panel resize or a collapsed essential re-clamps the preview
+   * without a second source of truth.
+   */
+  private bindPreviewSplitter(): void {
+    const content = this.root.querySelector<HTMLElement>('.panel-content');
+    const dock = this.root.querySelector<HTMLElement>('#panel-dock');
+    const frame = this.root.querySelector<HTMLElement>('.viewport-frame');
+    const card = this.root.querySelector<HTMLElement>('#viewport-container');
+    const handle = this.root.querySelector<HTMLElement>('#panel-splitter');
+    if (!content || !dock || !frame || !card || !handle) return;
+
+    const measure = (): { width: number; max: number } => {
+      const width = card.clientWidth;
+      // Everything in the dock except the preview frame: splitter + essentials.
+      const dockChrome = dock.offsetHeight - frame.offsetHeight;
+      // The frame's own padding and border around the card.
+      const frameChrome = frame.offsetHeight - card.offsetHeight;
+      const available = Math.max(0, content.clientHeight - dockChrome - frameChrome);
+      return { width, max: Math.max(64, Math.min(width, available)) };
+    };
+
+    const snaps = (): { reference: number; square: number } => {
+      const { width, max } = measure();
+      return {
+        reference: Math.min((width * 227) / 412, max),
+        square: Math.min(width, max),
+      };
+    };
+
+    const apply = (height: number | null): void => {
+      const { max } = measure();
+      const target = height === null ? snaps().reference : height;
+      const floor = Math.min(96, max);
+      const clamped = Math.max(floor, Math.min(target, max));
+      if (height !== null) this.previewHeight = clamped;
+      card.style.height = `${Math.round(clamped)}px`;
+      this.splitter?.refresh();
+    };
+
+    this.splitter = bindSplitter({
+      element: handle,
+      getBounds: () => {
+        const { max } = measure();
+        return { min: Math.min(96, max), max };
+      },
+      getSnaps: snaps,
+      getHeight: () => this.previewHeight ?? snaps().reference,
+      setHeight: (height) => apply(height),
+    });
+
+    apply(this.previewHeight);
+
+    // Observe both the panel (width/height changes) and the dock (essential
+    // rows being collapsed in 5.3/5.4 change how much room the preview may use).
+    this.layoutObserver = new ResizeObserver(() => apply(this.previewHeight));
+    this.layoutObserver.observe(content);
+    this.layoutObserver.observe(dock);
   }
 
   /**
