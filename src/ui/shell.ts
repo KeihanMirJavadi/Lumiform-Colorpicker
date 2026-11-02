@@ -95,6 +95,7 @@ export class AppShell {
                is the workspace matte; the splitter under it sets the height. -->
           <div class="viewport-frame">
             <div class="viewport-card" id="viewport-container"></div>
+            <div class="preview-time-slider" id="preview-time-slider" hidden></div>
           </div>
 
           <div
@@ -106,24 +107,26 @@ export class AppShell {
             tabindex="0"
           ></div>
 
-          <!-- 2. Time of Day (always open): icon strip + snapped slider -->
-          <section class="section-card" aria-labelledby="time-of-day-heading">
-          <div class="section-header time-of-day-header">
-            <h2 id="time-of-day-heading">Time of Day</h2>
-            <div class="time-of-day-state" aria-live="polite">
+          <!-- 2. Time of Day: row + icon strip + slider. Collapsed, the single
+               slider moves to a bare overlay on the preview. -->
+          <details class="section-card section-collapsible" id="section-time" open>
+          <summary class="section-summary">
+            <span class="section-title" id="time-of-day-heading">Time of Day</span>
+            <span class="section-state time-of-day-state" aria-live="polite">
               <span class="time-state-name" id="time-of-day-label">Midday</span>
               <span class="time-state-edited" id="time-of-day-edited" hidden>Â· edited</span>
               <button
                 type="button"
-                class="time-reset-btn"
+                class="section-reset-btn"
                 id="btn-time-reset"
                 title="Restore Midday"
                 aria-label="Restore Midday"
-                hidden
               >${ICONS.reset}</button>
-            </div>
-          </div>
-          <div class="time-strip">
+            </span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body time-of-day-body">
+          <div class="time-strip" id="time-strip">
             <div class="time-strip-icons" role="group" aria-label="Time of day presets">
               ${LIGHTING_PRESET_ORDER.map(
                 (preset) => `
@@ -149,7 +152,8 @@ export class AppShell {
               aria-label="Time of day"
             />
           </div>
-        </section>
+          </div>
+        </details>
 
         <!-- 3. Analytical 5-Value Swatch Ramp (always open) -->
         <div class="section-card" id="swatch-ramp-container"></div>
@@ -1169,6 +1173,48 @@ export class AppShell {
     const editedEl = this.root.querySelector<HTMLElement>('#time-of-day-edited')!;
     const iconBtns = Array.from(this.root.querySelectorAll<HTMLButtonElement>('.time-icon-btn'));
 
+    // V1.3 (5.3): one slider instance moves between the section and a floating
+    // overlay on the preview, so both states share the same value and events.
+    const section = this.root.querySelector<HTMLDetailsElement>('#section-time');
+    const overlay = this.root.querySelector<HTMLElement>('#preview-time-slider');
+    const frame = this.root.querySelector<HTMLElement>('.viewport-frame');
+    const card = this.root.querySelector<HTMLElement>('#viewport-container');
+    const strip = this.root.querySelector<HTMLElement>('#time-strip');
+
+    const syncPlacement = (): void => {
+      if (!section || !overlay || !strip) return;
+      if (section.open) {
+        overlay.hidden = true;
+        frame?.classList.remove('is-slider-revealed');
+        strip.appendChild(slider);
+      } else {
+        overlay.appendChild(slider);
+        overlay.hidden = false;
+      }
+    };
+
+    if (section) {
+      section.addEventListener('toggle', syncPlacement);
+      syncPlacement();
+    }
+
+    // The bare track is 35 % at rest and reveals while the pointer is in the
+    // bottom 28 px of the preview. The listener is passive: it never blocks
+    // eyedropper sampling on the canvas underneath.
+    if (frame && card && overlay) {
+      frame.addEventListener('pointermove', (event) => {
+        if (overlay.hidden) return;
+        const rect = card.getBoundingClientRect();
+        frame.classList.toggle(
+          'is-slider-revealed',
+          event.clientY >= rect.bottom - 28
+        );
+      });
+      frame.addEventListener('pointerleave', () => {
+        frame.classList.remove('is-slider-revealed');
+      });
+    }
+
     const applyPreset = (preset: LightingPreset) => {
       this.applyLightingPreset(preset);
     };
@@ -1192,8 +1238,16 @@ export class AppShell {
     });
 
     // `â†º` re-applies only the last preset's six lighting values (D10).
-    resetBtn.addEventListener('click', () => {
+    resetBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       applyPreset(this.lastPreset);
+    });
+
+    resetBtn.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.stopPropagation();
+      }
     });
 
     this.viewport.getLightingEngine().onEnvironmentChange(() => {
@@ -1202,7 +1256,7 @@ export class AppShell {
 
       label.textContent = name;
       editedEl.hidden = !edited;
-      resetBtn.hidden = !edited;
+      // W10: the reset stays visible in both the expanded and collapsed row.
       resetBtn.title = `Restore ${name}`;
       resetBtn.setAttribute('aria-label', `Restore ${name}`);
 

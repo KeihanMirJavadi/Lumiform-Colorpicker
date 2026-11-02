@@ -1526,9 +1526,42 @@ body {
 /* The document matte: a workspace band around the canvas. The card keeps the
    V1.1 412:227 geometry until the splitter assigns an explicit height. */
 .viewport-frame {
+  position: relative;
   padding: 8px 10px 2px;
   background-color: var(--ps-workspace);
   border-bottom: 0;
+}
+
+/* Floating Time of Day slider (5.3): one input, moved here while the section
+   is collapsed. The wrapper is inert so the eyedropper keeps the band; only
+   the track itself takes the pointer. */
+.preview-time-slider {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 2px;
+  height: 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.preview-time-slider[hidden] {
+  display: none;
+}
+
+.preview-time-slider .ps-slider.time-range {
+  width: calc(100% - 22px);
+  margin: 0 auto;
+  opacity: 0.35;
+  transition: opacity 120ms ease;
+  pointer-events: auto;
+}
+
+.viewport-frame.is-slider-revealed .preview-time-slider .ps-slider.time-range {
+  opacity: 1;
 }
 
 .viewport-card {
