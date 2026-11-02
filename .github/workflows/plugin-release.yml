@@ -25,18 +25,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and package the add-on
-        run: npm run plugin
+      - name: Verify the tag matches both version files
+        run: node scripts/verify-version.mjs "${{ github.ref_name }}"
 
-      - name: Upload the .ccx artifact
+      - name: Build and package the add-on
+        run: npm run release:assets
+
+      - name: Upload the release assets
         uses: actions/upload-artifact@v4
         with:
-          name: lumiform-colorpicker-ccx
-          path: release/*.ccx
+          name: lumiform-colorpicker-release
+          path: |
+            release/*.ccx
+            release/*.zip
+            release/SHA256SUMS.txt
           if-no-files-found: error
 
-      - name: Attach the .ccx to a GitHub release
+      - name: Attach the assets to a GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*.ccx
+          files: |
+            release/*.ccx
+            release/*.zip
+            release/SHA256SUMS.txt
+          generate_release_notes: true

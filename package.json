@@ -10,6 +10,7 @@
     "plugin:build": "tsc --noEmit && vite build --config vite.plugin.config.ts && node scripts/inline-plugin-build.mjs",
     "plugin:package": "node scripts/package-plugin.mjs",
     "plugin": "npm run plugin:build && npm run plugin:package",
+    "release:assets": "npm run plugin && node scripts/package-release.mjs",
     "probe:package": "node scripts/package-theme-probe.mjs",
     "test:framing": "node --test scripts/test-framing.mjs"
   },
