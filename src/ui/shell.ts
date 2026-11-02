@@ -86,7 +86,7 @@ export class AppShell {
       <header class="panel-header">
         <div class="title-group">
           <h1>Lumiform Colorpicker</h1>
-          <span class="badge">v1.2.0</span>
+          <span class="badge">v1.3.0</span>
         </div>
         <!-- Opens the full-panel Controls Guide takeover. -->
         <button

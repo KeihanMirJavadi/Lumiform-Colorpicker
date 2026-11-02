@@ -14,11 +14,11 @@
 
 | Item | Value |
 |---|---|
-| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, complete) · **V1.3 - Workspace Layout** (Stage 5, 5.1 current) |
+| Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, complete) · **V1.3 - Workspace Layout** (Stage 5, 5.6 current) |
 | Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin`; V1.3: `feature/5.1-workspace-layout` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
-| Current release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built and installed) |
-| Next release | v1.3.0 |
+| Current release | v1.3.0 - `release/Lumiform-Colorpicker-1.3.0.ccx` (built and installed) |
+| Next release | Not planned; V1.3.0 is the current release. |
 | Current task | **5.6 - Verification, documentation and release** |
 | Renderer changes | None in V1.1/V1.2. V1.3 re-solves `src/core/framing.ts` (camera and slot positions per aspect); sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
