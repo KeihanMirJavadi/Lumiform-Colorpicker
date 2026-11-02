@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 
 $scriptPath = $MyInvocation.MyCommand.Path
 $root = Split-Path -Parent $scriptPath
-$source = Join-Path $root 'plugin'
+$source = Join-Path $root 'Lumiform Colorpicker'
 
 function Close-IfNeeded {
   if (-not $NoPause) {
@@ -17,7 +17,7 @@ function Close-IfNeeded {
 }
 
 if (-not (Test-Path (Join-Path $source 'manifest.json'))) {
-  Write-Host "The plugin folder is missing. Extract the whole ZIP and run this script again." -ForegroundColor Red
+  Write-Host "The 'Lumiform Colorpicker' folder is missing. Extract the whole ZIP and run this script again." -ForegroundColor Red
   Close-IfNeeded
   exit 1
 }
@@ -48,7 +48,7 @@ foreach ($rootPath in $roots) {
 
 if ($targets.Count -eq 0) {
   Write-Host "No Photoshop installation was found under Program Files\Adobe." -ForegroundColor Yellow
-  Write-Host "Install Photoshop 2025 or newer, or copy the 'plugin' folder into Photoshop's Plug-ins directory manually."
+  Write-Host "Install Photoshop 2025 or newer, or copy the 'Lumiform Colorpicker' folder into Photoshop's Plug-ins directory manually."
   Close-IfNeeded
   exit 1
 }

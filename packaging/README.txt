@@ -26,7 +26,7 @@ Install on macOS
 
 Manual install
 --------------
-Copy the "plugin" folder into Photoshop's Plug-ins directory:
+Copy the "Lumiform Colorpicker" folder into Photoshop's Plug-ins directory:
 
 Windows:
   C:\Program Files\Adobe\Adobe Photoshop 2025\Plug-ins\Lumiform Colorpicker

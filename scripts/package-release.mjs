@@ -56,7 +56,7 @@ await new Promise((resolve, reject) => {
     name: `${folder}/Install macOS.command`,
     mode: 0o755,
   });
-  archive.directory(pluginDir, `${folder}/plugin`);
+  archive.directory(pluginDir, `${folder}/Lumiform Colorpicker`);
   archive.finalize();
 });
 
