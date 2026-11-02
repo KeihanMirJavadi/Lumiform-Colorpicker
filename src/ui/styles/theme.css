@@ -1523,20 +1523,19 @@ body {
   border-top: 0;
 }
 
-/* The document matte: a workspace band around the canvas. The card keeps the
-   V1.1 412:227 geometry until the splitter assigns an explicit height. */
+/* Full-bleed canvas: no workspace matte, no border. The render meets the panel
+   edges directly; the splitter below it is the only chrome. */
 .viewport-frame {
   position: relative;
-  padding: 8px 10px 2px;
-  background-color: var(--ps-workspace);
+  padding: 0;
+  background-color: var(--ps-surface);
   border-bottom: 0;
 }
 
-/* The floating slider gets its own breathing room below the canvas: the frame
-   grows by 26 px while the Time of Day body is collapsed, and the bare track
-   sits centred in that matte band instead of touching the render. */
+/* While Time of Day is collapsed, the frame grows by a matte-free band below
+   the canvas so the bare slider has breathing room. */
 .viewport-frame.is-slider-floating {
-  padding-bottom: 28px;
+  padding-bottom: 36px;
 }
 
 /* Floating Time of Day slider (5.3): one input, moved here while the section
@@ -1547,7 +1546,7 @@ body {
   left: 10px;
   right: 10px;
   bottom: 0;
-  height: 28px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1560,8 +1559,8 @@ body {
 }
 
 .preview-time-slider .ps-slider.time-range {
-  width: calc(100% - 22px);
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   opacity: 0.35;
   transition: opacity 120ms ease;
   pointer-events: auto;
@@ -1576,9 +1575,9 @@ body {
   margin: 0 auto;
   max-width: none;
   aspect-ratio: 412 / 227;
-  background-color: var(--ps-workspace);
+  background-color: var(--ps-surface);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow: none;
 }
 
@@ -1588,7 +1587,7 @@ body {
   position: relative;
   flex: 0 0 6px;
   height: 6px;
-  background-color: var(--ps-workspace);
+  background-color: var(--ps-surface);
   cursor: row-resize;
   touch-action: none;
   outline: none;

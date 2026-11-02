@@ -1209,7 +1209,7 @@ export class AppShell {
         const rect = frame.getBoundingClientRect();
         frame.classList.toggle(
           'is-slider-revealed',
-          event.clientY >= rect.bottom - 28
+          event.clientY >= rect.bottom - 36
         );
       });
       frame.addEventListener('pointerleave', () => {
