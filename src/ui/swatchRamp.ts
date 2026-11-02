@@ -8,6 +8,11 @@ import { DEFAULT_ALBEDO_HEX, DEFAULT_SURFACE_FINISH } from '../core/defaults';
 
 export interface SwatchRampOptions {
   container: HTMLElement;
+  /** Row surfaces updated on every recalculation (V1.3, task 5.4). */
+  summary?: {
+    name: HTMLElement | null;
+    chips: HTMLElement | null;
+  };
   initialAlbedoHex?: string;
   initialSphereName?: string;
   initialEnv: LightingEnvironment;
@@ -21,6 +26,7 @@ export interface SwatchRampOptions {
 
 export class SwatchRamp {
   private container: HTMLElement;
+  private summary: SwatchRampOptions['summary'];
   private albedoHex: string;
   private sphereName: string;
   private env: LightingEnvironment;
@@ -35,6 +41,7 @@ export class SwatchRamp {
 
   constructor(options: SwatchRampOptions) {
     this.container = options.container;
+    this.summary = options.summary;
     this.albedoHex = options.initialAlbedoHex ?? DEFAULT_ALBEDO_HEX;
     this.sphereName = options.initialSphereName ?? 'Near';
     this.env = options.initialEnv;
@@ -116,40 +123,44 @@ export class SwatchRamp {
   }
 
   private render(): void {
-    const albedo = this.albedoHex.toUpperCase();
     this.container.innerHTML = `
-      <div class="swatch-ramp-card">
-        <div class="ramp-header">
-          <h2>5-VALUE RAMP</h2>
-          <span
-            class="ramp-sphere-chip"
-            title="${this.sphereName} · ${albedo}"
-            aria-label="Ramp computed for ${this.sphereName}, albedo ${albedo}"
+      <div class="swatch-ramp-grid" id="swatch-grid">
+        ${this.currentSwatches
+          .map(
+            (s) => `
+          <button
+            type="button"
+            class="swatch-block"
+            data-role="${s.role}"
+            title="${s.label} (${s.hex}): ${s.description}"
+            aria-label="${s.label}, ${s.hex}"
           >
-            <span class="ramp-albedo-dot" style="background-color: ${this.albedoHex};" aria-hidden="true"></span>
-            <span class="ramp-sphere-name">${this.sphereName}</span>
-          </span>
-          <span class="ramp-click-hint">Click to Paint</span>
-        </div>
-        <div class="swatch-ramp-grid" id="swatch-grid">
-          ${this.currentSwatches
-            .map(
-              (s) => `
-            <div class="swatch-block" data-role="${s.role}" title="${s.label} (${s.hex}): ${s.description}">
-              <div class="swatch-fill" style="background-color: ${s.hex};"></div>
-              <div class="swatch-meta">
-                <span class="swatch-tag">${s.tag}</span>
-                <span class="swatch-hex">${s.hex}</span>
-              </div>
-            </div>
-          `
-            )
-            .join('')}
-        </div>
+            <span class="swatch-fill" style="background-color: ${s.hex};"></span>
+          </button>
+        `
+          )
+          .join('')}
       </div>
     `;
 
+    this.renderSummary();
     this.bindEvents();
+  }
+
+  /** Keeps the row's sphere name and five mini chips inline with the body. */
+  private renderSummary(): void {
+    if (!this.summary) return;
+    if (this.summary.name) {
+      this.summary.name.textContent = this.sphereName;
+    }
+    if (this.summary.chips) {
+      this.summary.chips.innerHTML = this.currentSwatches
+        .map(
+          (s) =>
+            `<span class="ramp-mini-chip" style="background-color: ${s.hex};" title="${s.label} ${s.hex}"></span>`
+        )
+        .join('');
+    }
   }
 
   private bindEvents(): void {

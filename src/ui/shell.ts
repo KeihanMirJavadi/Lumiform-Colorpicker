@@ -155,8 +155,17 @@ export class AppShell {
           </div>
         </details>
 
-        <!-- 3. Analytical 5-Value Swatch Ramp (always open) -->
-        <div class="section-card" id="swatch-ramp-container"></div>
+        <!-- 3. Analytical 5-Value Swatch Ramp: the row carries the sphere and
+             five mini chips; the body is five bare squares. -->
+        <details class="section-card section-collapsible" id="section-ramp" open>
+          <summary class="section-summary">
+            <span class="section-title">5-Value Ramp</span>
+            <span class="section-state" id="ramp-summary">Near</span>
+            <span class="ramp-mini-chips" id="ramp-mini-chips" aria-hidden="true"></span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body ramp-body" id="swatch-ramp-container"></div>
+        </details>
         </div>
 
         <!-- Scrolling region: only the four collapsible sections move. -->
@@ -504,6 +513,10 @@ export class AppShell {
     if (swatchRampContainer && this.viewport) {
       this.swatchRamp = new SwatchRamp({
         container: swatchRampContainer,
+        summary: {
+          name: this.root.querySelector<HTMLElement>('#ramp-summary'),
+          chips: this.root.querySelector<HTMLElement>('#ramp-mini-chips'),
+        },
         initialAlbedoHex: this.viewport.getSelectedSphereColor(),
         initialSphereName:
           SPHERE_SLOTS.find((slot) => slot.id === this.viewport!.getSelectedSphereId())?.label ??
