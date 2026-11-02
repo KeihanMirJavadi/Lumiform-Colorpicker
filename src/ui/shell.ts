@@ -120,6 +120,11 @@ export class AppShell {
             aria-label="Resize the 3D preview"
             tabindex="0"
           ></div>
+        </div>
+
+        <!-- Scrolling region: everything below the preview moves together, so
+             Time of Day, the Ramp and the four sections all share one scrollbar. -->
+        <div class="panel-scroll" id="panel-scroll">
 
           <!-- 2. Time of Day: row + icon strip + slider. Collapsed, the single
                slider moves to a bare overlay on the preview. -->
@@ -182,10 +187,7 @@ export class AppShell {
           </summary>
           <div class="section-body ramp-body" id="swatch-ramp-container"></div>
         </details>
-        </div>
 
-        <!-- Scrolling region: only the four collapsible sections move. -->
-        <div class="panel-scroll" id="panel-scroll">
         <!-- 4. Spheres (collapsed by default) -->
         <details class="section-card section-collapsible" id="section-spheres">
           <summary class="section-summary">

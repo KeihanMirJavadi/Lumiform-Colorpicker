@@ -91,8 +91,8 @@ running `npm run plugin` first, or the WebView will 404 on `web/index.html`.
 
 * **Minimum panel width 320 px**, docked default 420x780, floating 460x820 (`plugin/manifest.json`).
   Every layout decision must survive 320 px; treat 600 px as the widest common case.
-* The panel scrolls as a whole (`.panel-content`) in V1.1/V1.2; the header and status bar stay put. V1.3
-  replaces this with a fixed dock (preview + Time of Day + Ramp) and a scrolling section list (section 11).
+* The panel scrolls as a whole (`.panel-content`) in V1.1/V1.2; the header and status bar stay put. V1.3 keeps only
+  the preview and splitter fixed; Time of Day, the Ramp and the four sections share one scrolling list (section 11).
 * `<details>` / `<summary>` are supported by WebView2 and WKWebView and are the chosen disclosure primitive.
 * No network access, no external fonts required by the build. `_AdobeCleanFont/` in the repo root is an
   untracked asset pack supplied by the user; V1.2 uses Segoe UI/system instead because the pack's licence is
@@ -126,8 +126,9 @@ running `npm run plugin` first, or the WebView will 404 on `web/index.html`.
 * Every task in section 11.2 is `Done`.
 * The preview runs from the reference 412:227 shape up to 1:1, and the three spheres keep their reference
   composition at every allowed aspect without clipping.
-* The preview, Time of Day and the Ramp are a fixed dock; only the four collapsible sections scroll.
-* The splitter, the floating time slider and the compact ramp work at 320, 420 and 600 px and in both a tall
+* The preview and the splitter are fixed; Time of Day, the Ramp and the four collapsible sections share one
+  scrolling list. Collapsed, the Time of Day slider and the Ramp swatches still float on the preview.
+* The splitter, the floating time slider and the floating ramp work at 320, 420 and 600 px and in both a tall
   narrow dock and a short wide one.
 * No sphere geometry, material, lighting, atmosphere, shader or swatch-math change.
 * `npx tsc --noEmit`, `npm run build` and `npm run plugin` pass; version 1.3.0 and the `.ccx` are built; the
@@ -746,10 +747,10 @@ gradient unchanged, 1.2.0 `.ccx` built, and the three docs synced.
 
 V1.2 shipped a chrome-only skin and the preview stayed locked to 412:227. In a docked 235-260 px column that is a
 130-145 px picture: the fixed shape is the reason artists cannot fit the panel to their workspace. V1.3 makes the
-preview a resizable reference sheet with a bounded aspect range, gives it a fixed dock and compacts the two
-always-open essentials. It is the first phase since V1.0 that touches framing, and only framing: the camera and
-the three sphere slot positions are re-solved per aspect, while sphere geometry, materials, lighting, atmosphere,
-shaders and swatch maths stay exactly as they are.
+preview a resizable reference sheet with a bounded aspect range, keeps the preview fixed above one scrolling list,
+and floats the Time of Day slider and the Ramp swatches on the render when those rows are collapsed. It is the first
+phase since V1.0 that touches framing, and only framing: the camera and the three sphere slot positions are re-solved
+per aspect, while sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay exactly as they are.
 
 ### 11.1 Locked decision register (W1-W14)
 
@@ -761,11 +762,11 @@ shaders and swatch maths stay exactly as they are.
 | W4 | Resize source | Photoshop's native panel resize sets the width. A 6 px drag splitter directly under the preview sets its height. |
 | W5 | Panel width change | Keep the height the user set and clamp it to the new width. Double-click toggles the two snap stops (reference <-> 1:1). |
 | W6 | Splitter affordance | 6 px grab strip, 1 px rule in the middle, transparent until hover; strong line plus `row-resize` on hover and while dragging. `role="separator"`, focusable; Arrow 8 px, Shift+Arrow 32 px, Home = reference, End = 1:1. |
-| W7 | Dock order | `header -> preview (+ floating slider) -> splitter -> Time of Day row -> Ramp row -> scrolling section list -> status bar`. The scrollbar belongs to the list only. |
+| W7 | Dock order | `header -> preview (+ floating slider / ramp swatches) -> splitter -> scrolling list (Time of Day, Ramp, Spheres, Sun, Ground, Finish) -> status bar`. One scrollbar belongs to the list. |
 | W8 | List minimum | None. The list may be dragged to 0 and hidden completely. The splitter stays reachable above the Time of Day row; "Reset layout" in the guide restores a working split. |
-| W9 | Wheel | Hovering the preview or the dock never scrolls anything. Only the section list scrolls, with the pointer over it. |
+| W9 | Wheel | Hovering the preview or the splitter never scrolls anything; the list scrolls only with the pointer over it. |
 | W10 | Time of Day | Row: `Time of Day` + state (`Midday`, `Midday - edited`) + reset (always visible, in both states) + chevron. Expanded: the seven icons and the slider in place. Collapsed: a bare slider track floats on the bottom inside edge of the preview - 35 % at rest, 100 % while the pointer is in the bottom 28 px band, back to 35 % on leave; clickable and draggable at all times; sampling under the band still works unless the track itself is pressed. |
-| W11 | 5-Value Ramp | No in-body header. Row: `5-Value Ramp` + selected sphere name + five mini chips + chevron. Expanded body: five colour squares only, no tag, no hex, no hint; `title` and `aria-label` carry the tone and hex. Clicking still paints. |
+| W11 | 5-Value Ramp | No in-body header. Row: `5-Value Ramp` + selected sphere name + albedo dot + chevron. Expanded body: the five labelled tiles. Collapsed: five small swatches float centred on the preview's bottom edge; both surfaces paint. |
 | W12 | Persistence | `localStorage`: preview height, Time of Day collapsed, Ramp collapsed, the four section open states. "Reset layout" in the guide clears all of them. |
 | W13 | Existing resets | The four per-panel reset buttons (Spheres, Sun, Ground, Finish) and the Time of Day reset are unchanged. |
 | W14 | Scope guard | No sphere geometry, material, light, atmosphere, shader or swatch-math change. Only `src/core/framing.ts`, the viewport layout code, the panel DOM/CSS and layout persistence change. |
@@ -790,18 +791,17 @@ States follow the parent protocol. Only **5.6** is `current`.
 
 * [x] **Task 5.2: Fixed dock, splitter and scroll region**
   * **State:** `Done`
-  * **Description:** The panel is now a non-scrolling dock (preview, splitter, Time of Day, Ramp) plus a scrolling
-    section list. The splitter is a focusable `separator` with a 6 px grab strip inside the 8 px matte, pointer
-    capture, rAF-throttled height updates, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End keys.
-    The preview height is clamped from live panel, dock and frame measurements so a short panel collapses the list
-    instead of squeezing the dock.
-  * **Acceptance Criteria:** Met - the scrollbar exists only beside the four sections, scrolling the list leaves the
-    preview fixed, the splitter reaches reference, 1:1 and a 0-height list on a short panel, and both pointer and
-    keyboard work.
-  * **Evidence:** Preview stays at `y = 36` while the list scrolls 300 px; the panel and `document` never scroll;
-    drag 268 -> 348 px, `End` -> 486 (square), `Home` -> 268 (reference), double-click toggles; a 620 px panel
-    clamps to 409 px and the list becomes 0. `tsc`, `npm run build`, framing and queue tests pass. Commit
-    `8f54584`.
+  * **Description:** The panel is a fixed preview + splitter above one scrolling list (Time of Day, Ramp, Spheres,
+    Sun, Ground, Finish). The splitter is a focusable `separator` with a 6 px grab strip inside the 8 px matte,
+    pointer capture, rAF-throttled height updates, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End
+    keys. The preview height is clamped from live panel, dock and frame measurements so a short panel collapses the
+    list instead of squeezing the preview.
+  * **Acceptance Criteria:** Met - one scrollbar belongs to the list, scrolling leaves the preview fixed, the splitter
+    reaches reference, 1:1 and a 0-height list on a short panel, and both pointer and keyboard work.
+  * **Evidence:** Preview stays at `y = 28` while the list scrolls 300 px; Time of Day scrolls with the list; the
+    panel and `document` never scroll; drag 268 -> 348 px, `End` -> square, `Home` -> reference, double-click
+    toggles; a 620 px panel clamps the preview and the list becomes 0. `tsc`, `npm run build`, framing and queue
+    tests pass. Commits `8f54584`, `f28eb3b`.
 
 * [x] **Task 5.3: Collapsible Time of Day and floating slider**
   * **State:** `Done`
@@ -916,7 +916,9 @@ States follow the parent protocol. Only **5.6** is `current`.
 | 2026-11-02 | Task 4.7 Done and V1.2 closed. Per-panel reset buttons for Spheres, Sun & Atmosphere, Ground Surface & Color and Surface Finish & Reflectivity; the time-of-day slider re-centred at 320/420/600; the GitHub link fixed through `launchProcess.schemes: ["https"]`; Windows UXP keyboard forwarding added (`command-queue.js`, one interactive modal session reused across a burst, released after 750 ms idle or pointer-leave). `tsc`/build/plugin pass, `Lumiform-Colorpicker-1.2.0.ccx` packaged and installed, docs synced. |
 | 2026-11-02 | V1.3 plan locked as Stage 5 (section 11). The preview becomes a resizable reference sheet: bounded aspect from 412:227 to 1:1, fill framing with re-solved slots, a splitter under the preview, a fixed dock for the preview + Time of Day + Ramp, a scrolling section list that can be hidden to 0, a bare floating time slider at 35/100/35 % opacity, a compact ramp with no in-body header, and persisted layout state. No lighting, material, atmosphere, shader or swatch change. |
 | 2026-11-02 | Task 5.1 Done. `buildFraming(aspect)` keeps the lens, camera, horizon and depth fixed and moves only the horizontal slot positions, so the sphere sizes, haze and swatch ramp are invariant while the composition fits any frame from 1:1 to a wide strip. `Viewport` re-solves on resize; `test:framing` covers the reference identity, 1:1, wide strips, clipping and invalid aspects. |
-| 2026-11-02 | Task 5.2 Done. The panel is a fixed dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list whose scrollbar sits only beside the four sections. The splitter has pointer capture, rAF-throttled heights, reference/1:1 snaps, a double-click toggle and Arrow/Home/End keys; short panels collapse the list. |
+| 2026-11-02 | Task 5.2 Done. The panel is a fixed preview + splitter above one scrolling list (Time of Day, Ramp, Spheres, Sun, Ground, Finish) with a single scrollbar below the preview. The splitter has pointer capture, rAF-throttled heights, reference/1:1 snaps, a double-click toggle and Arrow/Home/End keys; short panels collapse the list. |
 | 2026-11-02 | Task 5.3 Done. Time of Day is a details row and, collapsed, moves its single slider into a full-bleed band below the canvas (35 / 100 / 35 % opacity, 36 px band, the whole band drags the splitter except the track). The canvas lost its matte, border and radius: it now meets the panel edges. |
 | 2026-11-02 | Task 5.4 Done. The ramp matches the approved mockup: expanded keeps the fully labelled tiles and the row carries the albedo dot + sphere name; minimized hides the body and floats five 24 px swatches 8 px above the canvas bottom, with the same click-to-paint path. |
-| 2026-11-02 | Task 5.5 Done. The layout persists in `lumiform.layout.v1` (preview height, both essentials' disclosure and the four section rows), restores before bind, and falls back to the shipped defaults on corrupt data. The guide gained a Layout section with Reset layout. Task 5.6 is current. |
+| 2026-11-02 | Task 5.5 Done. The layout persists in `lumiform.layout.v1` (preview height, both essentials' disclosure and the four section rows), restores before bind, and falls back to the shipped defaults on corrupt data. The guide gained a Layout section with Reset layout. |
+| 2026-11-02 | Revision during 5.6: Time of Day and the 5-Value Ramp moved from the fixed dock into the scrolling list, so only the preview and splitter stay fixed and one scrollbar covers every row. The floating slider and the floating ramp swatches stay on the preview when those rows are collapsed. |
+| 2026-11-02 | Task 5.6 release pass: browser matrix at 320/420/600 (reference, 1:1, height clamp, 0-height list, width-change height retention, four themes), version 1.3.0 packaged and installed. In-Photoshop acceptance is the remaining manual check. |

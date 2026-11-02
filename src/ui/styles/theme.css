@@ -1509,14 +1509,15 @@ body {
   min-height: 0;
 }
 
-/* V1.3 scrolling region: only the four collapsible sections move. */
+/* V1.3 scrolling region: everything below the preview moves. The splitter
+   above it draws the only divider. */
 .panel-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   background-color: var(--ps-surface);
-  border-top: 1px solid var(--ps-line);
+  border-top: 0;
 }
 
 .panel-scroll > .section-card:first-child {

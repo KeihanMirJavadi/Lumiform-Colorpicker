@@ -12,9 +12,9 @@
 > swatch-math changes.
 >
 > **V1.3 WORKSPACE LAYOUT:** Stage 5 makes the 3D preview a resizable reference sheet (bounded aspect up to 1:1),
-> splits the panel into a fixed dock and a scrolling section list, and compacts Time of Day and the 5-Value Ramp.
-> The locked plan is [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) section 11; this file mirrors the Stage 5 task states.
-> It is the first phase since V1.0 that touches framing, and only framing.
+> keeps the preview fixed above one scrolling list, and floats the Time of Day slider and Ramp swatches on the
+> render when those rows are collapsed. The locked plan is [AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md) section 11; this
+> file mirrors the Stage 5 task states. It is the first phase since V1.0 that touches framing, and only framing.
 
 ---
 
@@ -369,10 +369,10 @@ lighting, atmosphere or swatch-math changes, and the time-of-day gradient is unc
 ### Stage 5: V1.3 - Workspace Layout
 
 Full plan, locked decisions W1-W14 and verification matrix live in **[AI_CONTEXT_UI.md](./AI_CONTEXT_UI.md)
-section 11**. The preview gains a bounded aspect range from the reference 412:227 up to 1:1, a splitter and a fixed
-dock; only the four section rows scroll. It is the first phase since V1.0 that touches framing: `src/core/framing.ts`
-solves the camera and the three slot positions per aspect. Sphere geometry, materials, lighting, atmosphere,
-shaders and swatch maths stay untouched.
+section 11**. The preview gains a bounded aspect range from the reference 412:227 up to 1:1 and a splitter; the
+preview stays fixed above one scrolling list that holds Time of Day, the Ramp and the four sections. It is the
+first phase since V1.0 that touches framing: `src/core/framing.ts` solves the camera and the three slot positions
+per aspect. Sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched.
 
 * [x] **Task 5.1: Aspect-aware framing**
   * **State:** `Done`
@@ -381,8 +381,8 @@ shaders and swatch maths stay untouched.
 
 * [x] **Task 5.2: Fixed dock, splitter and scroll region**
   * **State:** `Done`
-  * **Description:** The panel is a non-scrolling dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list. The splitter is a focusable separator with a 6 px grab strip, pointer capture, rAF-throttled heights, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End keys. The preview is clamped from live panel, dock and frame measurements.
-  * **Acceptance Criteria:** Met - the scrollbar exists only beside the four sections, the preview never moves when the list scrolls, the splitter reaches both snaps and a 0-height list on a short panel, and pointer and keyboard both work.
+  * **Description:** The panel keeps only the preview + splitter fixed; Time of Day, the Ramp and the four sections share one scrolling list. The splitter is a focusable separator with a 6 px grab strip, pointer capture, rAF-throttled heights, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End keys. The preview is clamped from live panel, dock and frame measurements.
+  * **Acceptance Criteria:** Met - one scrollbar belongs to the list, the preview stays fixed, the splitter reaches both snaps and a 0-height list on a short panel, and pointer and keyboard both work.
 
 * [x] **Task 5.3: Collapsible Time of Day and floating slider**
   * **State:** `Done`
