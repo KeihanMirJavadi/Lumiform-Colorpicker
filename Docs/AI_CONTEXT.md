@@ -384,13 +384,13 @@ shaders and swatch maths stay untouched.
   * **Description:** The panel is a non-scrolling dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list. The splitter is a focusable separator with a 6 px grab strip, pointer capture, rAF-throttled heights, reference and 1:1 snaps, a double-click toggle and Arrow/Home/End keys. The preview is clamped from live panel, dock and frame measurements.
   * **Acceptance Criteria:** Met - the scrollbar exists only beside the four sections, the preview never moves when the list scrolls, the splitter reaches both snaps and a 0-height list on a short panel, and pointer and keyboard both work.
 
-* [ ] **Task 5.3: Collapsible Time of Day and floating slider**
-  * **State:** `current`
-  * **Description:** Convert Time of Day to `<details>` with title, state, reset and chevron. Collapsed, one slider instance moves to a bare overlay on the preview's bottom edge: 35 % at rest, 100 % inside the bottom 28 px band, clickable throughout.
-  * **Acceptance Criteria:** Both states stay in sync with the lighting engine, the reset works in both, and sampling under the band still works unless the track is pressed.
+* [x] **Task 5.3: Collapsible Time of Day and floating slider**
+  * **State:** `Done`
+  * **Description:** Time of Day is a `<details>` row with title, state, reset and chevron. Collapsed, one slider instance moves into a full-bleed band below the canvas: 35 % at rest, 100 % inside the band, clickable throughout; the whole band also drags the splitter except the track. The canvas is full-bleed with no matte or border.
+  * **Acceptance Criteria:** Met - both states stay in sync with the lighting engine, the reset works in both and never toggles, the floating slider and the preview resize coexist, and sampling is untouched.
 
 * [ ] **Task 5.4: Compact 5-Value Ramp**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Remove the in-body header; the row shows the sphere name and five mini chips; the body is five colour squares with tooltip/aria metadata.
   * **Acceptance Criteria:** Click-to-paint and live recalculation are unchanged and no tag/hex text remains in the body.
 

@@ -19,7 +19,7 @@
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
 | Current release | v1.2.0 - `release/Lumiform-Colorpicker-1.2.0.ccx` (built and installed) |
 | Next release | v1.3.0 |
-| Current task | **5.3 - Collapsible Time of Day and floating slider** |
+| Current task | **5.4 - Compact 5-Value Ramp** |
 | Renderer changes | None in V1.1/V1.2. V1.3 re-solves `src/core/framing.ts` (camera and slot positions per aspect); sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The WebView keyboard focus handoff (Adobe Windows UXP bug) stays open; shortcut forwarding is the shipped workaround. |
@@ -772,7 +772,7 @@ shaders and swatch maths stay exactly as they are.
 
 ### 11.2 Stage 5 roadmap
 
-States follow the parent protocol. Only **5.3** is `current`.
+States follow the parent protocol. Only **5.4** is `current`.
 
 * [x] **Task 5.1: Aspect-aware framing**
   * **State:** `Done`
@@ -803,17 +803,22 @@ States follow the parent protocol. Only **5.3** is `current`.
     clamps to 409 px and the list becomes 0. `tsc`, `npm run build`, framing and queue tests pass. Commit
     `8f54584`.
 
-* [ ] **Task 5.3: Collapsible Time of Day and floating slider**
-  * **State:** `current`
-  * **Description:** Convert the Time of Day section to `<details>` with the row described in W10 and move the
-    slider to a floating overlay on the preview while collapsed. One slider instance, moved in the DOM, keeps the
-    value authoritative.
-  * **Acceptance Criteria:** Expanded shows icons + slider; collapsed shows the row + floating slider; the 35/100/35
-    opacity behaviour and the 28 px reveal band work; the slider still snaps and relights; the reset works in both
-    states.
+* [x] **Task 5.3: Collapsible Time of Day and floating slider**
+  * **State:** `Done`
+  * **Description:** Time of Day is a `<details>` row with the preset name, edited marker, reset and chevron. Collapsed,
+    the single slider element moves into a full-bleed band below the canvas (36 px) and the preview frame grows to
+    host it; the track is 35 % at rest, 100 % while the pointer is in the band, and clickable throughout. The whole
+    band also starts the splitter drag, except the track, so resizing works from the natural grab area.
+  * **Acceptance Criteria:** Met - expanded shows icons + slider, collapsed shows the row + floating slider, both stay
+    in sync with the lighting engine, the reset works in both and never toggles the row, and sampling is untouched
+    because the band sits below the render.
+  * **Evidence:** Slider parent flips between `#time-strip` and `#preview-time-slider`; opacity 0.35/1.0 tracks the
+    28 px band; a collapsed drag 292 -> 332 px, `End` -> 530, `Home` -> 292; a press on the track does not resize;
+    the canvas is full-bleed (border 0, padding 0) with 13 px above and 19 px below the track. Commits `1191005`,
+    `acfd09e`, `14053a0`, `2ddbb09`.
 
 * [ ] **Task 5.4: Compact 5-Value Ramp**
-  * **State:** `planned`
+  * **State:** `current`
   * **Description:** Remove the in-body header, keep the row with the sphere name and five mini chips, and shrink
     the expanded body to five squares with tooltip/aria metadata.
   * **Acceptance Criteria:** Clicking still paints; the ramp still follows the selected sphere and every lighting
@@ -903,4 +908,5 @@ States follow the parent protocol. Only **5.3** is `current`.
 | 2026-11-02 | Task 4.7 Done and V1.2 closed. Per-panel reset buttons for Spheres, Sun & Atmosphere, Ground Surface & Color and Surface Finish & Reflectivity; the time-of-day slider re-centred at 320/420/600; the GitHub link fixed through `launchProcess.schemes: ["https"]`; Windows UXP keyboard forwarding added (`command-queue.js`, one interactive modal session reused across a burst, released after 750 ms idle or pointer-leave). `tsc`/build/plugin pass, `Lumiform-Colorpicker-1.2.0.ccx` packaged and installed, docs synced. |
 | 2026-11-02 | V1.3 plan locked as Stage 5 (section 11). The preview becomes a resizable reference sheet: bounded aspect from 412:227 to 1:1, fill framing with re-solved slots, a splitter under the preview, a fixed dock for the preview + Time of Day + Ramp, a scrolling section list that can be hidden to 0, a bare floating time slider at 35/100/35 % opacity, a compact ramp with no in-body header, and persisted layout state. No lighting, material, atmosphere, shader or swatch change. |
 | 2026-11-02 | Task 5.1 Done. `buildFraming(aspect)` keeps the lens, camera, horizon and depth fixed and moves only the horizontal slot positions, so the sphere sizes, haze and swatch ramp are invariant while the composition fits any frame from 1:1 to a wide strip. `Viewport` re-solves on resize; `test:framing` covers the reference identity, 1:1, wide strips, clipping and invalid aspects. |
-| 2026-11-02 | Task 5.2 Done. The panel is a fixed dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list whose scrollbar sits only beside the four sections. The splitter has pointer capture, rAF-throttled heights, reference/1:1 snaps, a double-click toggle and Arrow/Home/End keys; short panels collapse the list. Task 5.3 is current. |
+| 2026-11-02 | Task 5.2 Done. The panel is a fixed dock (preview, splitter, Time of Day, Ramp) plus a scrolling section list whose scrollbar sits only beside the four sections. The splitter has pointer capture, rAF-throttled heights, reference/1:1 snaps, a double-click toggle and Arrow/Home/End keys; short panels collapse the list. |
+| 2026-11-02 | Task 5.3 Done. Time of Day is a details row and, collapsed, moves its single slider into a full-bleed band below the canvas (35 / 100 / 35 % opacity, 36 px band, the whole band drags the splitter except the track). The canvas lost its matte, border and radius: it now meets the panel edges. Task 5.4 is current. |
