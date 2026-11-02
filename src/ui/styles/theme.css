@@ -1543,14 +1543,15 @@ body {
    the track itself takes the pointer. */
 .preview-time-slider {
   position: absolute;
-  left: 10px;
-  right: 10px;
+  left: 0;
+  right: 0;
   bottom: 0;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: row-resize;
   z-index: 2;
 }
 
@@ -1559,11 +1560,12 @@ body {
 }
 
 .preview-time-slider .ps-slider.time-range {
-  width: 100%;
-  margin: 0;
+  width: calc(100% - 20px);
+  margin: 0 10px;
   opacity: 0.35;
   transition: opacity 120ms ease;
   pointer-events: auto;
+  cursor: pointer;
 }
 
 .viewport-frame.is-slider-revealed .preview-time-slider .ps-slider.time-range {

@@ -1204,6 +1204,12 @@ export class AppShell {
     // bottom 28 px of the preview. The listener is passive: it never blocks
     // eyedropper sampling on the canvas underneath.
     if (frame && card && overlay) {
+      // While the section is collapsed the whole band resizes the preview; the
+      // track itself stays a slider so the two gestures never fight.
+      overlay.addEventListener('pointerdown', (event) => {
+        if (event.target === slider) return;
+        this.splitter?.beginDrag(event);
+      });
       frame.addEventListener('pointermove', (event) => {
         if (overlay.hidden) return;
         const rect = frame.getBoundingClientRect();

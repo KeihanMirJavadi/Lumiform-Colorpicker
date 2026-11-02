@@ -35,6 +35,8 @@ export interface SplitterOptions {
 export interface SplitterController {
   /** Re-sync the aria values after the shell changes the height externally. */
   refresh: () => void;
+  /** Start a drag from an alternative surface, such as the floating band. */
+  beginDrag: (event: PointerEvent) => void;
   destroy: () => void;
 }
 
@@ -44,7 +46,6 @@ export function bindSplitter(options: SplitterOptions): SplitterController {
   const largeStep = options.largeStep ?? 32;
 
   let dragging = false;
-  let pointerId: number | null = null;
   let startY = 0;
   let startHeight = 0;
   let frame = 0;
@@ -94,44 +95,52 @@ export function bindSplitter(options: SplitterOptions): SplitterController {
     refresh();
   };
 
-  const onPointerDown = (event: PointerEvent): void => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    dragging = true;
-    pointerId = event.pointerId;
-    startY = event.clientY;
-    startHeight = options.getHeight();
-    // Synthetic events (tests) have no active pointer to capture; the drag
-    // still works because the element receives the following moves.
-    try {
-      element.setPointerCapture(event.pointerId);
-    } catch {
-      pointerId = null;
-    }
-    element.dataset.dragging = 'true';
-    element.focus();
-  };
-
-  const onPointerMove = (event: PointerEvent): void => {
-    if (!dragging) return;
-    event.preventDefault();
-    schedule(clamp(startHeight + (event.clientY - startY)));
-  };
-
-  const endDrag = (event: PointerEvent): void => {
+  const finishDrag = (commitMove: boolean): void => {
     if (!dragging) return;
     dragging = false;
     element.dataset.dragging = 'false';
-    if (pointerId !== null && element.hasPointerCapture(pointerId)) {
-      element.releasePointerCapture(pointerId);
-    }
-    pointerId = null;
-    if (event.type === 'pointerup') {
+    window.removeEventListener('pointermove', onWindowMove);
+    window.removeEventListener('pointerup', onWindowUp);
+    window.removeEventListener('pointercancel', onWindowUp);
+
+    if (commitMove) {
       commit();
     } else {
       cancelPending();
       refresh();
     }
+  };
+
+  const onWindowMove = (event: PointerEvent): void => {
+    if (!dragging) return;
+    event.preventDefault();
+    schedule(clamp(startHeight + (event.clientY - startY)));
+  };
+
+  const onWindowUp = (event: PointerEvent): void => {
+    finishDrag(event.type === 'pointerup');
+  };
+
+  /**
+   * A drag can start on the splitter itself or on any surface that forwards
+   * its pointerdown here (the floating slider band). Move/up live on the
+   * window so the drag keeps working when the pointer leaves the handle.
+   */
+  const beginDrag = (event: PointerEvent): void => {
+    if (dragging || event.button !== 0) return;
+    event.preventDefault();
+    dragging = true;
+    startY = event.clientY;
+    startHeight = options.getHeight();
+    element.dataset.dragging = 'true';
+    element.focus();
+    window.addEventListener('pointermove', onWindowMove);
+    window.addEventListener('pointerup', onWindowUp);
+    window.addEventListener('pointercancel', onWindowUp);
+  };
+
+  const onPointerDown = (event: PointerEvent): void => {
+    beginDrag(event);
   };
 
   const onDoubleClick = (event: MouseEvent): void => {
@@ -175,9 +184,6 @@ export function bindSplitter(options: SplitterOptions): SplitterController {
   };
 
   element.addEventListener('pointerdown', onPointerDown);
-  element.addEventListener('pointermove', onPointerMove);
-  element.addEventListener('pointerup', endDrag);
-  element.addEventListener('pointercancel', endDrag);
   element.addEventListener('dblclick', onDoubleClick);
   element.addEventListener('keydown', onKeyDown);
 
@@ -185,12 +191,13 @@ export function bindSplitter(options: SplitterOptions): SplitterController {
 
   return {
     refresh,
+    beginDrag,
     destroy(): void {
       cancelPending();
+      window.removeEventListener('pointermove', onWindowMove);
+      window.removeEventListener('pointerup', onWindowUp);
+      window.removeEventListener('pointercancel', onWindowUp);
       element.removeEventListener('pointerdown', onPointerDown);
-      element.removeEventListener('pointermove', onPointerMove);
-      element.removeEventListener('pointerup', endDrag);
-      element.removeEventListener('pointercancel', endDrag);
       element.removeEventListener('dblclick', onDoubleClick);
       element.removeEventListener('keydown', onKeyDown);
     },
