@@ -40,34 +40,36 @@
           "height": 23,
           "path": "icons/icon-dark.png",
           "scale": [1, 2],
-          "theme": ["darkest", "dark", "medium"]
+          "theme": ["darkest", "dark", "medium"],
+          "species": ["panel"]
         },
         {
           "width": 23,
           "height": 23,
           "path": "icons/icon-light.png",
           "scale": [1, 2],
-          "theme": ["lightest", "light"]
+          "theme": ["lightest", "light"],
+          "species": ["panel"]
         }
       ]
     }
   ],
   "icons": [
     {
-      "width": 23,
-      "height": 23,
-      "path": "icons/icon-dark.png",
+      "width": 24,
+      "height": 24,
+      "path": "icons/icon-dark-24.png",
       "scale": [1, 2],
       "theme": ["darkest", "dark", "medium"],
-      "species": ["generic"]
+      "species": ["pluginList"]
     },
     {
-      "width": 23,
-      "height": 23,
-      "path": "icons/icon-light.png",
+      "width": 24,
+      "height": 24,
+      "path": "icons/icon-light-24.png",
       "scale": [1, 2],
       "theme": ["lightest", "light"],
-      "species": ["generic"]
+      "species": ["pluginList"]
     }
   ],
   "requiredPermissions": {
