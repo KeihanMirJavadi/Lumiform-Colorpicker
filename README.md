@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://github.com/KeihanMirJavadi/Lumiform-Colorpicker/releases/latest">
+    <img src="assets/lumiform-banner.jpg" alt="Lumiform Colorpicker — a real-time 3D lighting reference for Photoshop" width="100%">
+  </a>
+</p>
+
 # Lumiform Colorpicker
 
 A real-time 3D lighting reference and color picker for Photoshop. A Three.js viewport renders grounded spheres under a physically based sky, seven measured time-of-day lighting presets, depth haze, and a live 5-value swatch ramp. Pick a color from the render to set Photoshop's foreground/brush color.
