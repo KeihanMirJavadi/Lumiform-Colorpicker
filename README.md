@@ -34,7 +34,7 @@ Copy the `Lumiform Colorpicker` folder into Photoshop's Plug-ins directory:
 - **Windows:** `C:\Program Files\Adobe\Adobe Photoshop 2025\Plug-ins\`
 - **macOS:** `/Applications/Adobe Photoshop 2025/Plug-ins/`
 
-The folder must contain `manifest.json` directly. Do not copy the whole `Lumiform-Colorpicker-1.3.2` folder into `Plug-ins`, because the manifest would be nested one level too deep.
+The folder must contain `manifest.json` directly. Do not copy the whole `Lumiform-Colorpicker-1.3.3` folder into `Plug-ins`, because the manifest would be nested one level too deep.
 
 The folder name does not affect the menu label; Photoshop reads `manifest.json`. The menu entry is **Lumiform Colorpicker**.
 

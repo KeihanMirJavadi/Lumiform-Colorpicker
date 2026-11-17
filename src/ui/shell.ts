@@ -133,7 +133,7 @@ export class AppShell {
             <span class="section-title" id="time-of-day-heading">Time of Day</span>
             <span class="section-state time-of-day-state" aria-live="polite">
               <span class="time-state-name" id="time-of-day-label">Midday</span>
-              <span class="time-state-edited" id="time-of-day-edited" hidden>Â· edited</span>
+              <span class="time-state-edited" id="time-of-day-edited" hidden>· edited</span>
               <button
                 type="button"
                 class="section-reset-btn"
@@ -192,7 +192,7 @@ export class AppShell {
         <details class="section-card section-collapsible" id="section-spheres">
           <summary class="section-summary">
             <span class="section-title">Spheres</span>
-            <span class="section-state" id="spheres-summary">Near Â· #E3E3E3</span>
+            <span class="section-state" id="spheres-summary">Near · #E3E3E3</span>
             <button
               type="button"
               class="section-reset-btn"
@@ -211,7 +211,7 @@ export class AppShell {
                 data-state="selected"
                 aria-pressed="true"
                 aria-current="true"
-                title="Near â€” selected. Click to hide."
+                title="Near — selected. Click to hide."
               >Near</button>
               <button
                 type="button"
@@ -219,7 +219,7 @@ export class AppShell {
                 data-sphere="right"
                 data-state="on"
                 aria-pressed="true"
-                title="Mid â€” enabled. Click to select."
+                title="Mid — enabled. Click to select."
               >Mid</button>
               <button
                 type="button"
@@ -227,7 +227,7 @@ export class AppShell {
                 data-sphere="left"
                 data-state="on"
                 aria-pressed="true"
-                title="Far â€” enabled. Click to select."
+                title="Far — enabled. Click to select."
               >Far</button>
             </div>
 
@@ -244,7 +244,7 @@ export class AppShell {
 
             <!-- Sphere Size (selected sphere, or all enabled when Link Size is on) -->
             <div class="sun-slider-row mesh-scale-row">
-              <span class="sun-axis-name" style="width: 82px;">Size Â· <span id="size-target">Near</span></span>
+              <span class="sun-axis-name" style="width: 82px;">Size · <span id="size-target">Near</span></span>
               <div class="slider-track-wrap">
                 <input type="range" class="ps-slider" id="slider-mesh-scale" min="20" max="100" value="100" />
               </div>
@@ -290,7 +290,7 @@ export class AppShell {
                   <input type="range" class="ps-slider sun-slider-white" id="slider-sun-azim" min="0" max="360" value="284" />
                 </div>
                 <input type="number" class="ps-input-num" id="num-sun-azim" min="0" max="360" value="284" />
-                <span class="slider-unit">Â°</span>
+                <span class="slider-unit">°</span>
               </div>
 
               <!-- Axis 2: Elevation / Vertical Height -->
@@ -300,7 +300,7 @@ export class AppShell {
                   <input type="range" class="ps-slider sun-slider-yellow" id="slider-sun-elev" min="-89" max="89" value="58" />
                 </div>
                 <input type="number" class="ps-input-num" id="num-sun-elev" min="-89" max="89" value="58" />
-                <span class="slider-unit">Â°</span>
+                <span class="slider-unit">°</span>
               </div>
 
               <!-- Axis 3: Terminator / shadow edge hardness (key light angular size) -->
@@ -310,11 +310,11 @@ export class AppShell {
                   <input type="range" class="ps-slider terminator-slider" id="slider-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
                 </div>
                 <input type="number" class="ps-input-num" id="num-terminator" min="0" max="${MAX_KEY_ANGULAR_RADIUS_DEG}" value="14" />
-                <span class="slider-unit">Â°</span>
+                <span class="slider-unit">°</span>
               </div>
             </div>
             <p class="section-note" id="terminator-note">
-              0Â° gives a hard terminator, ${MAX_KEY_ANGULAR_RADIUS_DEG}Â° a broad softbox shadow. Choosing a preset restores its calibrated softness.
+              0° gives a hard terminator, ${MAX_KEY_ANGULAR_RADIUS_DEG}° a broad softbox shadow. Choosing a preset restores its calibrated softness.
             </p>
 
             <div class="section-divider"></div>
@@ -465,7 +465,7 @@ export class AppShell {
             <section class="guide-section">
               <h3>Spheres</h3>
               <p><strong>Near</strong>, <strong>Mid</strong> and <strong>Far</strong> carry visibility and selection: an off sphere enables and selects, an enabled sphere selects, and the selected sphere hides. The last sphere cannot be hidden, and hidden spheres remember their colour and size.</p>
-              <p>Link Colours and Link Size apply one edit to every enabled sphere. Click the albedo chip to send its exact hex to Photoshop, or open <strong>H Â· S Â· B</strong> for the sliders.</p>
+              <p>Link Colours and Link Size apply one edit to every enabled sphere. Click the albedo chip to send its exact hex to Photoshop, or open <strong>H · S · B</strong> for the sliders.</p>
             </section>
 
             <section class="guide-section">
@@ -480,7 +480,7 @@ export class AppShell {
 
             <section class="guide-section">
               <h3>Canvas &amp; Brush</h3>
-              <p>Drag the circular reticle to sample the rendered colour under it. It rests at 35 % opacity and shows its hex readout only while you drag it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H Â· S Â· B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
+              <p>Drag the circular reticle to sample the rendered colour under it. It rests at 35 % opacity and shows its hex readout only while you drag it. A ramp swatch or the albedo chip sends an exact colour; dragging <strong>H · S · B</strong> or typing a valid hex streams the albedo to the brush. The status bar shows the connection and the active foreground.</p>
             </section>
 
             <section class="guide-section">
@@ -681,28 +681,28 @@ export class AppShell {
   private updateSectionSummaries(): void {
     if (!this.viewport) return;
 
-    // Spheres Â· <selected depth name> Â· <selected albedo>
+    // Spheres · <selected depth name> · <selected albedo>
     const selectedId = this.viewport.getSelectedSphereId();
     const selectedSlot = SPHERE_SLOTS.find((slot) => slot.id === selectedId);
     this.setStateText(
       '#spheres-summary',
-      `${selectedSlot?.label ?? 'Near'} Â· ${this.viewport.getSelectedSphereColor().toUpperCase()}`
+      `${selectedSlot?.label ?? 'Near'} · ${this.viewport.getSelectedSphereColor().toUpperCase()}`
     );
 
-    // Sun & Atmosphere Â· <last preset> [Â· edited]
+    // Sun & Atmosphere · <last preset> [· edited]
     const timeOfDay = this.getTimeOfDayState();
     this.setStateText(
       '#sun-summary',
-      `${timeOfDay.name}${timeOfDay.edited ? ' Â· edited' : ''}`
+      `${timeOfDay.name}${timeOfDay.edited ? ' · edited' : ''}`
     );
 
-    // Ground Â· <current ground albedo>
+    // Ground · <current ground albedo>
     this.setStateText(
       '#ground-summary',
       `#${this.viewport.getGroundColor().getHexString().toUpperCase()}`
     );
 
-    // Surface Finish Â· <finish name>
+    // Surface Finish · <finish name>
     const finish = this.viewport.getSurfaceFinish();
     const finishName =
       finish === 'custom'
@@ -1144,11 +1144,11 @@ export class AppShell {
       const lastOne = active && activeCount <= 1;
       btn.title = selected
         ? lastOne
-          ? `${name} â€” selected. At least one sphere must stay visible.`
-          : `${name} â€” selected. Click to hide.`
+          ? `${name} — selected. At least one sphere must stay visible.`
+          : `${name} — selected. Click to hide.`
         : active
-          ? `${name} â€” enabled. Click to select.`
-          : `${name} â€” hidden. Click to show and select.`;
+          ? `${name} — enabled. Click to select.`
+          : `${name} — hidden. Click to show and select.`;
       btn.setAttribute('aria-label', btn.title);
     });
 
@@ -1307,7 +1307,7 @@ export class AppShell {
       applyPreset(LIGHTING_PRESET_ORDER[index]);
     });
 
-    // `â†º` re-applies only the last preset's six lighting values (D10).
+    // `↺` re-applies only the last preset's six lighting values (D10).
     resetBtn.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();

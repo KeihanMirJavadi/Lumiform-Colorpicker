@@ -17,16 +17,16 @@
 | Phase | **V1.1 - UI Design** (Stage 3, complete) · **V1.2 - Native Photoshop Skin** (Stage 4, complete) · **V1.3 - Workspace Layout** (Stage 5, complete) |
 | Branch | V1.1: `feature/3.1-ui-redesign`; V1.2: `feature/4.1-native-ps-skin`; V1.3: `feature/5.1-workspace-layout` |
 | Shipped baseline | v1.0.0, frozen on `release/1.0-uxp-plugin` @ `1181f9e` (source + `.ccx`) |
-| Current release | v1.3.2 - `release/Lumiform-Colorpicker-1.3.2.ccx` (built, installed and accepted) |
-| Next release | Not planned; V1.3.2 is the current release. |
-| Current task | None - Stage 5 is complete; 1.3.1/1.3.2 are post-release fixes. |
+| Current release | v1.3.3 - `release/Lumiform-Colorpicker-1.3.3.ccx` (release polish) |
+| Next release | Not planned; V1.3.3 is the current release. |
+| Current task | None - 1.3.3 is a polish release on top of V1.3. |
 | Renderer changes | None in V1.1/V1.2. V1.3 re-solves `src/core/framing.ts` (camera and slot positions per aspect); sphere geometry, materials, lighting, atmosphere, shaders and swatch maths stay untouched. |
 | Reference | `_UI/ps-references/ps-reference.png` - the Dark Gray chrome capture sampled in section 10.3 |
 | Deferred | The WebView keyboard focus handoff (Adobe Windows UXP bug) stays open. Shortcut forwarding was removed in 1.3.2 because it swallowed Photoshop shortcuts and added modal latency; the document gets the keyboard back when it is clicked. |
 
 The V1.1 panel is built and packaged. V1.2 restyles its chrome to Photoshop's four built-in themes and V1.3 turns
 the 3D preview into a resizable reference sheet. All three phases are complete; V1.3 shipped as
-`release/Lumiform-Colorpicker-1.3.0.ccx`, and 1.3.1/1.3.2 are fixes on top. The V1.2 plan is section 10; the V1.3
+`release/Lumiform-Colorpicker-1.3.0.ccx`, and 1.3.1/1.3.2/1.3.3 are fixes on top. The V1.2 plan is section 10; the V1.3
 plan is section 11.
 
 ---
@@ -932,3 +932,4 @@ States follow the parent protocol. Stage 5 is complete; no task is `current`.
 | 2026-11-02 | Task 5.6 Done and V1.3 closed. The 11.3 matrix passed at 320/420/600 (reference and 1:1 renders, height clamp, 0-height list, width-change height retention, floating slider and ramp, four themes) plus the manual Photoshop pass (splitter drag/Home/End/double-click, floating controls, persistence, Reset layout, forwarded shortcuts). `release/Lumiform-Colorpicker-1.3.0.ccx` is built, installed and accepted. |
 | 2026-11-02 | **1.3.1 color-picker fix.** The crosshair puck's box is now exactly the ring, so the element centre, the crosshair and the sampled pixel coincide (the old 18 px badge made the ring sit 11.5 px above the sampled point). The hex badge is absolutely positioned and appears only while dragging; the puck rests at 35 % opacity and reaches 100 % while dragged. Verified against `gl.readPixels`: the sampled hex equals the badge and the ring colour. Accepted in Photoshop. |
 | 2026-11-02 | **1.3.2 removes shortcut forwarding.** The panel no longer captures letters/brackets or replays Photoshop tools, brush size, history, clipboard, save, group or color actions. The forwarding was swallowing most Photoshop shortcuts, diverging from Photoshop's behaviour (Shift+letter, tool cycling, Ctrl+Shift+N) and holding an interactive modal session open, which added lag to tool switches and painting. `command-queue.js`, its test, the bridge message types and the host handlers are gone; clicking the document returns the keyboard to Photoshop. Accepted in Photoshop: tool keys, Ctrl+Z/T/0, Shift+letter cycling and painting all behave natively with no lag. |
+| 2026-11-17 | **1.3.3 release polish.** Restored the pre-art-style 3D color picker, fixed the double-encoded panel text (middle dots, degrees, dashes and the reset arrow), and added the new Lumiform Photoshop icon at 23/46 px for the dark and light themes. Rebuilt the inlined panel, `.ccx` and ZIP. |
